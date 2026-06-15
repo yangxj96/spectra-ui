@@ -148,12 +148,7 @@ export async function decryptAesGcm(encryptedDataBase64: string, keyBytes: Uint8
 /**
  * 一键解密
  */
-export async function decrypt(
-    key: string,
-    data: string,
-    ivHex: string,
-    privateKeyBase64: string
-): Promise<string> {
+export async function decrypt(key: string, data: string, ivHex: string, privateKeyBase64: string): Promise<string> {
     const aesKeyBytes = await decryptAesKey(key, privateKeyBase64);
     return await decryptAesGcm(data, aesKeyBytes, ivHex);
 }

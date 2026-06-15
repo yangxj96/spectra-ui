@@ -40,4 +40,5 @@ const form = reactive({
             </el-form-item>
         </el-form>
     </el-row>
+    <el-image src="https://127.0.0.1:4004/api/file/preview/019eca6f-16cb-7294-a5d4-030a682bf387" />
 </template>

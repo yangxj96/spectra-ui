@@ -6,23 +6,31 @@ import { DocumentContent, DocumentManagerPluginPackage } from "@embedpdf/plugin-
 import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/vue";
 import { Scroller, ScrollPluginPackage } from "@embedpdf/plugin-scroll/vue";
 import { Viewport, ViewportPluginPackage } from "@embedpdf/plugin-viewport/vue";
+import { computed } from "vue";
 
 defineOptions({
     name: "PDFViewer"
 });
 
-// 1. 使用 Vue 组合式函数初始化引擎
+const props = defineProps({
+    src: {
+        type: String,
+        required: true
+    }
+});
+
+// 使用 Vue 组合式函数初始化引擎
 const { engine, isLoading } = usePdfiumEngine();
 
-// 2. 注册需要的插件
-const plugins = [
+// 注册需要的插件
+const plugins = computed(() => [
     createPluginRegistration(DocumentManagerPluginPackage, {
-        initialDocuments: [{ url: "https://snippet.embedpdf.com/ebook.pdf" }]
+        initialDocuments: [{ url: props.src }]
     }),
     createPluginRegistration(ViewportPluginPackage),
     createPluginRegistration(ScrollPluginPackage),
     createPluginRegistration(RenderPluginPackage)
-];
+]);
 </script>
 
 <template>

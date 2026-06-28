@@ -2,7 +2,7 @@
 import { reactive, ref } from "vue";
 
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
-import { decrypt, verifySignature } from "@/utils/crypto-utils.ts";
+import { decrypt, verifySignature } from "@/utils/crypto/crypto-utils";
 
 import type { Language } from "element-plus/es/locale";
 

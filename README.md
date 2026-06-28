@@ -14,28 +14,28 @@
 
 本项目是 [spectra-admin](https://github.com/yangxj96/spectra-admin) 的前端部分，原项目采用前后端一体的仓库结构。为降低复杂度、提升开发体验，现将前后端拆分为独立仓库：
 
-| 仓库 | 说明 |
-|------|------|
+| 仓库                                                       | 说明                            |
+| ---------------------------------------------------------- | ------------------------------- |
 | [spectra-admin](https://github.com/yangxj96/spectra-admin) | 后端（Spring Boot 4 + Java 25） |
-| **spectra-ui**（本仓库） | 前端（Vue 3 + Vite） |
+| **spectra-ui**（本仓库）                                   | 前端（Vue 3 + Vite）            |
 
 ---
 
 ## 技术栈
 
-| 包名 | 版本 | 用途 |
-|------|------|------|
-| Vue | 3.5.28 | 渐进式前端框架 |
-| Vue Router | 5.0.2 | 路由管理 |
-| Pinia | 3.0.4 | 状态管理 |
-| @vueuse/core | 14.2.0 | Composition API 工具库 |
-| Vite | 8.0.11 | 构建工具 |
-| Element Plus | 2.13.2 | UI 组件库 |
-| ECharts | 6.0.0 | 数据可视化 |
-| vue-echarts | 8.0.1 | Vue 封装的 ECharts 组件 |
-| TypeScript | 5.9.3 | 类型系统 |
-| ESLint | 9.39.2 | 代码质量检查 |
-| Prettier | 3.8.1 | 代码格式化 |
+| 包名         | 版本   | 用途                    |
+| ------------ | ------ | ----------------------- |
+| Vue          | 3.5.28 | 渐进式前端框架          |
+| Vue Router   | 5.0.2  | 路由管理                |
+| Pinia        | 3.0.4  | 状态管理                |
+| @vueuse/core | 14.2.0 | Composition API 工具库  |
+| Vite         | 8.0.11 | 构建工具                |
+| Element Plus | 2.13.2 | UI 组件库               |
+| ECharts      | 6.0.0  | 数据可视化              |
+| vue-echarts  | 8.0.1  | Vue 封装的 ECharts 组件 |
+| TypeScript   | 5.9.3  | 类型系统                |
+| ESLint       | 9.39.2 | 代码质量检查            |
+| Prettier     | 3.8.1  | 代码格式化              |
 
 ---
 
@@ -69,17 +69,17 @@ pnpm start
 
 ## 可用命令
 
-| 命令 | 说明 |
-|------|------|
-| `pnpm start` | 启动开发服务器（自动执行 format + lint:fix + type-check） |
-| `pnpm run build` | 生产环境构建 |
-| `pnpm run preview` | 预览生产构建 |
-| `pnpm run lint` | ESLint 检查 |
-| `pnpm run lint:fix` | ESLint 自动修复 |
-| `pnpm run format` | Prettier 格式化 |
-| `pnpm run type-check` | TypeScript 类型检查 |
-| `pnpm run test` | 运行测试（Vitest） |
-| `pnpm run test:watch` | 监听模式运行测试 |
+| 命令                  | 说明                                                      |
+| --------------------- | --------------------------------------------------------- |
+| `pnpm start`          | 启动开发服务器（自动执行 format + lint:fix + type-check） |
+| `pnpm run build`      | 生产环境构建                                              |
+| `pnpm run preview`    | 预览生产构建                                              |
+| `pnpm run lint`       | ESLint 检查                                               |
+| `pnpm run lint:fix`   | ESLint 自动修复                                           |
+| `pnpm run format`     | Prettier 格式化                                           |
+| `pnpm run type-check` | TypeScript 类型检查                                       |
+| `pnpm run test`       | 运行测试（Vitest）                                        |
+| `pnpm run test:watch` | 监听模式运行测试                                          |
 
 ---
 
@@ -87,10 +87,10 @@ pnpm start
 
 在项目根目录创建 `.env` 文件（不提交至 Git）：
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `VITE_API_URL` | 后端 API 基础地址（末尾需带 `/`） | `https://127.0.0.1:4004/` |
-| `VITE_WEB_TITLE` | 网站标题 | `光谱平台` |
+| 变量             | 说明                              | 示例                      |
+| ---------------- | --------------------------------- | ------------------------- |
+| `VITE_API_URL`   | 后端 API 基础地址（末尾需带 `/`） | `https://127.0.0.1:4004/` |
+| `VITE_WEB_TITLE` | 网站标题                          | `光谱平台`                |
 
 支持 `.env.development`、`.env.production` 等多环境配置文件。
 

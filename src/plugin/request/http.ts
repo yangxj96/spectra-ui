@@ -1,11 +1,27 @@
 import qs from "qs";
 
 import { hideLoading, showLoading } from "@/plugin/element/loading";
+import { decrypt, encrypt, generateIv, verifySignature } from "@/utils/crypto/crypto-utils";
 import { GlobalUtils } from "@/utils/global-utils";
 import { MessageUtils } from "@/utils/message-utils";
 
 import { getToken, refreshToken } from "./auth";
 import { getCache, setCache } from "./cache";
+
+/**
+ * 是否启用请求加解密
+ */
+const CRYPTO_ENABLED = import.meta.env.VITE_CRYPTO_ENABLED === "true";
+
+/**
+ * RSA 公钥（用于加密请求 / 验证响应签名）
+ */
+const RSA_PUBLIC_KEY = import.meta.env.VITE_RSA_PUBLIC_KEY;
+
+/**
+ * RSA 私钥（用于解密响应）
+ */
+const RSA_PRIVATE_KEY = import.meta.env.VITE_RSA_PRIVATE_KEY;
 
 /**
  * API 基础地址
@@ -159,6 +175,54 @@ function stableStringify(value: unknown): string {
 }
 
 /**
+ * 加密请求体
+ */
+async function encryptRequest(body: string): Promise<{
+    data: string;
+    key: string;
+    iv: string;
+    nonce: string;
+    timestamp: number;
+}> {
+    const iv = generateIv();
+    const timestamp = Date.now();
+    const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+
+    const { encryptedData, encryptedKey } = await encrypt(body, iv, RSA_PUBLIC_KEY);
+
+    return {
+        data: encryptedData,
+        key: encryptedKey,
+        iv,
+        nonce,
+        timestamp
+    };
+}
+
+/**
+ * 解密响应体
+ */
+async function decryptResponse<T>(encryptedBody: {
+    data: string;
+    key: string;
+    iv: string;
+    nonce: string;
+    signature: string;
+    timestamp: number;
+}): Promise<T> {
+    // 验签
+    const signData = `data=${encryptedBody.data}&nonce=${encryptedBody.nonce}&timestamp=${encryptedBody.timestamp}`;
+    const isValid = await verifySignature(encryptedBody.signature, signData, RSA_PUBLIC_KEY);
+    if (!isValid) {
+        throw new Error("签名验证失败，数据可能被篡改");
+    }
+
+    // 解密
+    const json = await decrypt(encryptedBody.key, encryptedBody.data, encryptedBody.iv, RSA_PRIVATE_KEY);
+    return JSON.parse(json) as T;
+}
+
+/**
  * 路径替换
  */
 function resolvePathParams(url: string, pathParams?: Record<string, unknown>) {
@@ -246,6 +310,11 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
         try {
             const isFormData = rest.body instanceof FormData;
 
+            // 加密请求体
+            if (CRYPTO_ENABLED && !isFormData && rest.body && method !== "GET") {
+                rest.body = JSON.stringify(await encryptRequest(rest.body as string));
+            }
+
             // 等待优先级
             await waitPriority(priority);
 
@@ -310,6 +379,19 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
 
             // JSON 响应
             const result: IResult<T> = await res.json();
+
+            // 解密响应体
+            if (CRYPTO_ENABLED && result.data && typeof result.data === "object" && "signature" in (result.data as Record<string, unknown>)) {
+                const encrypted = result.data as unknown as {
+                    data: string;
+                    key: string;
+                    iv: string;
+                    nonce: string;
+                    signature: string;
+                    timestamp: number;
+                };
+                result.data = await decryptResponse<T>(encrypted);
+            }
 
             // 业务错误处理
             if (result.code !== 200) {

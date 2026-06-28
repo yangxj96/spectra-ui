@@ -1,3 +1,4 @@
+import { authApi } from "@/api/auth/auth";
 import { useUserStore } from "@/plugin/store/modules/use-user-store";
 
 let refreshing = false;
@@ -8,38 +9,47 @@ export function getToken(): string | null {
     return token || null;
 }
 
-export async function refreshToken(): Promise<string | null> {
+export async function refreshToken(): Promise<Token | null> {
+    const store = useUserStore();
+    const refreshTokenValue = store.token.refresh_token;
+
+    if (!refreshTokenValue) {
+        return null;
+    }
+
     if (refreshing) {
         return new Promise(resolve => {
-            queue.push(() => resolve(getToken()));
+            queue.push(() => resolve(store.token));
         });
     }
 
     refreshing = true;
 
     try {
-        const res = await fetch("/auth/refresh", {
-            method: "POST",
-            credentials: "include"
-        });
+        const newToken = await authApi.refresh(refreshTokenValue);
 
-        if (!res.ok) {
-            return null;
-        }
-
-        const data = await res.json();
-
-        const store = useUserStore();
-
-        store.token.access_token = data.token;
+        store.token = newToken;
 
         queue.forEach(cb => cb());
         queue = [];
 
-        return data.token;
+        return newToken;
     } catch {
+        queue = [];
         return null;
     } finally {
         refreshing = false;
     }
+}
+
+export async function validateToken(): Promise<boolean> {
+    const store = useUserStore();
+
+    if (!store.token.refresh_token) {
+        return false;
+    }
+
+    const newToken = await refreshToken();
+
+    return newToken !== null;
 }

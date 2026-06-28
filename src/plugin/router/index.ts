@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
 import { hideLoading, showLoading } from "@/plugin/element/loading";
+import { validateToken } from "@/plugin/request/auth.ts";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
 import routes from "@/plugin/router/routes";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
@@ -53,7 +54,13 @@ router.beforeEach(async (to, _, next) => {
 
     // 4. 需要加载菜单（首次进入或刷新）
     if (menus.length === 0 || sessionStorage.getItem("reloaded")) {
-        console.debug("[守卫] 需要加载菜单");
+        console.debug("[守卫] 需要验证token并加载菜单");
+        const valid = await validateToken();
+        if (!valid) {
+            console.debug("[守卫] token验证失败，跳转登录页");
+            hideLoading();
+            return next({ path: "/login" });
+        }
         return await loadMenu(router, to, next);
     }
 

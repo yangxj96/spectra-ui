@@ -381,7 +381,12 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
             const result: IResult<T> = await res.json();
 
             // 解密响应体
-            if (CRYPTO_ENABLED && result.data && typeof result.data === "object" && "signature" in (result.data as Record<string, unknown>)) {
+            if (
+                CRYPTO_ENABLED &&
+                result.data &&
+                typeof result.data === "object" &&
+                "signature" in (result.data as Record<string, unknown>)
+            ) {
                 const encrypted = result.data as unknown as {
                     data: string;
                     key: string;

@@ -16,6 +16,8 @@ declare global {
         username: string;
         // 认证token
         access_token: string;
+        // 刷新token
+        refresh_token: string;
         // 权限列表
         authorities: string[];
         // 角色

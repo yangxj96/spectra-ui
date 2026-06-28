@@ -24,9 +24,9 @@ export const authApi = {
         return post<void>("/api/auth/logout");
     },
     /**
-     * 检查token是否还能用
+     * 刷新token
      */
-    check(): Promise<void> {
-        return post<void>("/api/auth/logout");
+    refresh(refreshToken: string): Promise<Token> {
+        return post<Token>("/api/auth/refresh", { refresh_token: refreshToken });
     }
 };

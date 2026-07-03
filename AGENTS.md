@@ -2,7 +2,11 @@
 
 ## Project
 
-Vue 3 SPA admin panel (光谱后端管理系统). TypeScript, Vite, Element Plus, Pinia, Vue Router.
+Vue 3 SPA admin panel (光谱后端管理系统) — the **web frontend** for `spectra-admin`. TypeScript, Vite, Element Plus, Pinia, Vue Router.
+
+- Backend API: `spectra-admin` (Spring Boot, port 4004)
+- Dev server: port 5173
+- All API calls go to `VITE_API_URL` (defaults to `https://127.0.0.1:4004/`)
 
 ## Quick Commands
 
@@ -84,7 +88,7 @@ API helpers: `get()`, `post()`, `put()`, `del()`, `upload()`, `download()` in `s
 
 ## Env Variables
 
-- `VITE_API_URL` — backend API base URL
+- `VITE_API_URL` — backend API base URL (pointing to `spectra-admin`)
 - `VITE_WEB_TITLE` — page title
 - Dev defaults in `.env` (https://127.0.0.1:4004/), prod override in `.env.production`
 
@@ -95,3 +99,4 @@ API helpers: `get()`, `post()`, `put()`, `del()`, `upload()`, `download()` in `s
 - Views use `vue/block-order` rule: script must come before template in SFCs.
 - `RequestOptions` type uses template literal types for type-safe path params — match the pattern when adding new API functions.
 - The `RequestOptions` generic `U extends string` threads the URL string through for path param type inference.
+- API endpoints and response formats are defined by `spectra-admin` — if the backend changes an endpoint, update the corresponding `src/api/` module here.

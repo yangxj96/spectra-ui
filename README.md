@@ -12,12 +12,15 @@
 
 ## 项目说明
 
-本项目是 [spectra-admin](https://github.com/yangxj96/spectra-admin) 的前端部分，原项目采用前后端一体的仓库结构。为降低复杂度、提升开发体验，现将前后端拆分为独立仓库：
+本项目是 [spectra-admin](https://github.com/yangxj96/spectra-admin) 的 **Web 管理端前端**。Spectra 系统由三个项目组成：
 
-| 仓库                                                       | 说明                            |
-| ---------------------------------------------------------- | ------------------------------- |
-| [spectra-admin](https://github.com/yangxj96/spectra-admin) | 后端（Spring Boot 4 + Java 25） |
-| **spectra-ui**（本仓库）                                   | 前端（Vue 3 + Vite）            |
+| 项目 | 说明 |
+|---|---|
+| [spectra-admin](https://github.com/yangxj96/spectra-admin) | 后端 API（Spring Boot 4 + Java 25） |
+| **spectra-ui**（本仓库） | Web 管理端（Vue 3 + Element Plus） |
+| [spectra-app](https://github.com/yangxj96/spectra-app) | 移动端（uni-app，H5 / 微信小程序） |
+
+本项目通过 `VITE_API_URL` 连接 `spectra-admin` 作为 API 后端（开发环境默认 `https://127.0.0.1:4004/`）。
 
 ---
 

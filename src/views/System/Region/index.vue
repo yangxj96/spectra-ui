@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 
 import { regionApi } from "@/api/system/region.ts";
 import UseTable from "@/hooks/use-table.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
+
+import RegionEdit from "./components/RegionEdit/index.vue";
 
 // 查询条件
 const condition = ref<RegionPageParams>({
@@ -15,6 +18,54 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     regionApi.page,
     condition.value
 );
+
+// 编辑抽屉状态
+const editDrawer = reactive({
+    visible: false,
+    row: undefined as Region | undefined,
+    tableData: [] as Region[]
+});
+
+// 加载树形数据供编辑使用
+const treeData = ref<Region[]>([]);
+
+const loadTreeData = async () => {
+    treeData.value = (await regionApi.load({ level: 1 })) || [];
+};
+
+// 新增
+const handleAdd = () => {
+    loadTreeData().then(() => {
+        editDrawer.row = undefined;
+        editDrawer.tableData = treeData.value;
+        editDrawer.visible = true;
+    });
+};
+
+// 编辑
+const handleEdit = (row: Region) => {
+    loadTreeData().then(() => {
+        editDrawer.row = JSON.parse(JSON.stringify(row));
+        editDrawer.tableData = treeData.value;
+        editDrawer.visible = true;
+    });
+};
+
+// 删除
+const handleDelete = (row: Region) => {
+    MessageUtils.box.confirm(`是否要删除[${row.name}]`, "提示").then(async () => {
+        await regionApi.deleteById(row.id);
+        MessageUtils.success("删除成功", () => {
+            handlerConditionQuery();
+        });
+    });
+};
+
+// 抽屉关闭回调
+const handleEditClose = () => {
+    editDrawer.visible = false;
+    handlerConditionQuery();
+};
 </script>
 
 <template>
@@ -27,7 +78,7 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                 <el-button>重置</el-button>
-                <el-button v-owner="'DEPT:INSERT'">新增</el-button>
+                <el-button v-owner="'DEPT:INSERT'" @click="handleAdd">新增</el-button>
             </el-form-item>
         </el-form>
     </el-row>
@@ -45,9 +96,18 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
             <el-table-column align="center" width="300" prop="status" label="状态" />
             <el-table-column align="center" width="300" prop="sort" label="排序" />
             <el-table-column align="center" width="180" label="操作" fixed="right">
-                <template #default>
-                    <el-button v-owner="'DEPT:UPDATE'" link type="primary" size="small">编辑</el-button>
-                    <el-button v-owner="'DEPT:DELETE'" link type="primary" size="small">删除</el-button>
+                <template #default="scope">
+                    <el-button v-owner="'DEPT:UPDATE'" link type="primary" size="small" @click="handleEdit(scope.row)">
+                        编辑
+                    </el-button>
+                    <el-button
+                        v-owner="'DEPT:DELETE'"
+                        link
+                        type="primary"
+                        size="small"
+                        @click="handleDelete(scope.row)">
+                        删除
+                    </el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -61,6 +121,12 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
     </el-row>
+    <!-- 新增/编辑抽屉 -->
+    <RegionEdit
+        v-if="editDrawer.visible"
+        :row="editDrawer.row"
+        :table-data="editDrawer.tableData"
+        @close="handleEditClose" />
 </template>
 
 <style scoped lang="scss">

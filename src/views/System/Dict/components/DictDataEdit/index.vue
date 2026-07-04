@@ -59,6 +59,12 @@ const handleInitData = async () => {
     gropus.value = (await dictApi.getTypesGroupTree()) || [];
 };
 
+// 处理关闭
+const handleClose = () => {
+    edit.visible = false;
+    emit("close");
+};
+
 // 保存
 const handleSaveDictGroup = () => {
     if (!editForm.value) return;
@@ -80,10 +86,12 @@ const handleSaveDictGroup = () => {
 </script>
 
 <template>
-    <el-dialog v-model="edit.visible" width="500" class="loading-box">
+    <el-drawer v-model="edit.visible" class="loading-box" :modal="true" @close="handleClose">
         <template #header>
-            <ComponentsIcons name="icon-edit" />
-            {{ edit.title }}
+            <div>
+                <ComponentsIcons name="icon-edit" />
+                {{ edit.title }}
+            </div>
         </template>
         <template #default>
             <el-form ref="editForm" :model="edit.form" :rules="edit.rules" label-width="auto">
@@ -123,10 +131,8 @@ const handleSaveDictGroup = () => {
             </el-form>
         </template>
         <template #footer>
-            <div class="dialog-footer">
-                <el-button @click="$emit('close')">取消</el-button>
-                <el-button type="primary" @click="handleSaveDictGroup">确认</el-button>
-            </div>
+            <el-button @click="handleClose">取消</el-button>
+            <el-button type="primary" @click="handleSaveDictGroup">确认</el-button>
         </template>
-    </el-dialog>
+    </el-drawer>
 </template>

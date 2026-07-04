@@ -6,7 +6,7 @@ import DictTag from "@/components/DictTag/index.vue";
 import { deptConverter } from "@/converter/dept-converter.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-import OrganizationEdit from "./components/Edit/index.vue";
+import DeptEdit from "./components/DeptEdit/index.vue";
 
 const table_data = ref<DepartmentTreeVO[]>();
 
@@ -113,7 +113,7 @@ const handleDialogClose = () => {
         </el-table>
     </el-row>
     <!-- 新增或编辑 -->
-    <OrganizationEdit
+    <DeptEdit
         v-if="edit.dialog"
         :show="edit.dialog"
         :form="edit.form"

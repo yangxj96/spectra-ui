@@ -5,7 +5,7 @@ import { configuredApi } from "@/api/system/configured.ts";
 import DictTag from "@/components/DictTag/index.vue";
 import { configuredConverter } from "@/converter/configured-converter.ts";
 import UseTable from "@/hooks/use-table.ts";
-import ConfiguredEdit from "@/views/System/Configured/components/Edit/index.vue";
+import ConfiguredEdit from "@/views/System/Configured/components/ConfiguredEdit/index.vue";
 
 const edit = ref<{
     show: boolean;

@@ -11,7 +11,7 @@ import { useDictStore } from "@/plugin/store/modules/use-dict-store.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-import UserEdit from "./components/Edit/index.vue";
+import UserEdit from "./components/UserEdit/index.vue";
 
 // 编辑组件
 const dialog_edit = ref<{

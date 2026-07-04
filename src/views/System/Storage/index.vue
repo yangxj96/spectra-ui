@@ -5,6 +5,8 @@ import { fileApi } from "@/api/system/file.ts";
 import UseTable from "@/hooks/use-table.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
+import FileUpload from "./components/FileUpload/index.vue";
+
 // 查询条件
 const condition = ref<FilePageParams>({
     page_num: 1,
@@ -18,6 +20,9 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     fileApi.page,
     condition.value
 );
+
+// 上传对话框状态
+const uploadVisible = ref(false);
 
 // 格式化文件大小
 const formatFileSize = (bytes: number): string => {
@@ -57,6 +62,8 @@ const formatContentType = (contentType: string): string => {
         "application/zip": "ZIP",
         "application/x-rar-compressed": "RAR",
         "application/gzip": "GZIP",
+        // 通用二进制
+        "application/octet-stream": "二进制文件",
         // 视频
         "video/mp4": "MP4",
         "video/avi": "AVI",
@@ -97,6 +104,12 @@ const handleDelete = (row: FileInfo) => {
     });
 };
 
+// 上传成功回调
+const handleUploadSuccess = () => {
+    uploadVisible.value = false;
+    handlerConditionQuery();
+};
+
 // 重置查询条件
 const handleReset = () => {
     condition.value = {
@@ -125,19 +138,21 @@ const handleReset = () => {
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                 <el-button @click="handleReset">重置</el-button>
+                <el-button type="success" @click="uploadVisible = true">上传文件</el-button>
             </el-form-item>
         </el-form>
     </el-row>
     <!-- 数据区 -->
     <el-row class="box-body">
-            <el-table :data="table_data" height="95%" border stripe>
-                <el-table-column align="center" prop="original_name" label="文件名" min-width="200" show-overflow-tooltip />
-                <el-table-column align="center" prop="filename" label="存储路径" min-width="250" show-overflow-tooltip />
-                <el-table-column align="center" label="文件类型" width="120">
-                    <template #default="scope">
-                        {{ formatContentType(scope.row.content_type) }}
-                    </template>
-                </el-table-column>
+        <el-table :data="table_data" height="95%" border stripe>
+            <el-table-column align="center" prop="id" label="ID" width="300" show-overflow-tooltip />
+            <el-table-column align="center" prop="original_name" label="文件名" min-width="200" show-overflow-tooltip />
+            <el-table-column align="center" prop="filename" label="存储路径" min-width="250" show-overflow-tooltip />
+            <el-table-column align="center" label="文件类型" width="120">
+                <template #default="scope">
+                    {{ formatContentType(scope.row.content_type) }}
+                </template>
+            </el-table-column>
             <el-table-column align="center" label="文件大小" width="120">
                 <template #default="scope">
                     {{ formatFileSize(scope.row.size) }}
@@ -180,6 +195,8 @@ const handleReset = () => {
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
     </el-row>
+    <!-- 上传组件 -->
+    <FileUpload v-if="uploadVisible" @close="uploadVisible = false" @success="handleUploadSuccess" />
 </template>
 
 <style scoped lang="scss">

@@ -2,6 +2,7 @@
 import { reactive, ref } from "vue";
 
 import { regionApi } from "@/api/system/region.ts";
+import DictTag from "@/components/DictTag/index.vue";
 import UseTable from "@/hooks/use-table.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -10,7 +11,8 @@ import RegionEdit from "./components/RegionEdit/index.vue";
 // 查询条件
 const condition = ref<RegionPageParams>({
     page_num: 1,
-    page_size: 15
+    page_size: 15,
+    name: ""
 });
 
 // table分页请求
@@ -72,36 +74,43 @@ const handleEditClose = () => {
     <!-- 搜索区 -->
     <el-row class="box-search">
         <el-form :inline="true">
-            <el-form-item label="部门名称" prop="name">
-                <el-input placeholder="请输入部门名称" clearable />
+            <el-form-item label="区域名称" prop="name">
+                <el-input v-model="condition.name" placeholder="请输入区域名称" clearable />
             </el-form-item>
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                 <el-button>重置</el-button>
-                <el-button v-owner="'DEPT:INSERT'" @click="handleAdd">新增</el-button>
+                <el-button v-owner="'REGION:INSERT'" @click="handleAdd">新增</el-button>
             </el-form-item>
         </el-form>
     </el-row>
     <!-- 数据区 -->
     <el-row class="box-body">
         <el-table :data="table_data" height="95%" border stripe default-expand-all row-key="id">
-            <el-table-column align="center" width="060" type="index" label="主键ID" />
-            <el-table-column align="center" width="200" prop="name" label="名称" />
-            <el-table-column align="center" width="300" prop="full_name" label="全称" :show-overflow-tooltip="true" />
-            <el-table-column align="center" width="300" prop="short_name" label="简称" />
-            <el-table-column align="center" width="300" prop="code" label="编码" />
-            <el-table-column align="center" width="300" prop="path" label="路径" :show-overflow-tooltip="true" />
-            <el-table-column align="center" width="300" prop="pid" label="父级" />
-            <el-table-column align="center" width="300" prop="level" label="层级" />
-            <el-table-column align="center" width="300" prop="status" label="状态" />
-            <el-table-column align="center" width="300" prop="sort" label="排序" />
+            <el-table-column align="center" prop="name" label="名称" />
+            <el-table-column align="center" prop="full_name" label="全称" :show-overflow-tooltip="true" />
+            <el-table-column align="center" prop="short_name" label="简称" />
+            <el-table-column align="center" width="150" prop="code" label="编码" />
+            <el-table-column align="center" width="120" prop="level" label="层级">
+                <template #default="scope">
+                    <DictTag v-model="scope.row.level" dict_code="sys_region_level" />
+                </template>
+            </el-table-column>
+            <el-table-column align="center" width="100" prop="status" label="状态">
+                <template #default="scope">
+                    <el-tag :type="scope.row.status ? 'success' : 'danger'">
+                        {{ scope.row.status ? "启用" : "禁用" }}
+                    </el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" width="100" prop="sort" label="排序" />
             <el-table-column align="center" width="180" label="操作" fixed="right">
                 <template #default="scope">
-                    <el-button v-owner="'DEPT:UPDATE'" link type="primary" size="small" @click="handleEdit(scope.row)">
+                    <el-button v-owner="'REGION:UPDATE'" link type="primary" size="small" @click="handleEdit(scope.row)">
                         编辑
                     </el-button>
                     <el-button
-                        v-owner="'DEPT:DELETE'"
+                        v-owner="'REGION:DELETE'"
                         link
                         type="primary"
                         size="small"
@@ -114,7 +123,7 @@ const handleEditClose = () => {
         <!-- 分页 -->
         <el-pagination
             layout="total, sizes, prev, pager, next"
-            :default-page-size="pagination.default_page_size"
+            :page-size="pagination.size"
             :page-sizes="pagination.page_sizes"
             :total="pagination.total"
             style="padding: 0 10px; margin-left: auto"

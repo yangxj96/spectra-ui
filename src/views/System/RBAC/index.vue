@@ -21,7 +21,7 @@ const menu_tree = ref<Menu[]>();
 const authority_tree = ref<AuthorityTree[]>();
 const condition = ref<RolePageParams>({
     page_num: 1,
-    page_size: 100
+    page_size: 15
 });
 const edit = reactive<{
     dialog: boolean;
@@ -203,9 +203,8 @@ const handleSaveRoleMenu = async () => {
             <!-- 分页 -->
             <el-pagination
                 background
-                hide-on-single-page
                 layout="total, sizes, prev, pager, next"
-                :default-page-size="pagination.default_page_size"
+                :page-size="pagination.size"
                 :page-sizes="pagination.page_sizes"
                 :total="pagination.total"
                 style="padding: 10px; float: right"

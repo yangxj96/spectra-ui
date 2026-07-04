@@ -73,8 +73,8 @@ for (let i = 0; i < 25; i++) {
         <!-- 分页 -->
         <el-pagination
             layout="total, sizes, prev, pager, next"
-            :default-page-size="10"
-            :page-sizes="[10, 50, 100, 150, 300]"
+            :page-size="15"
+            :page-sizes="[15, 50, 100, 150, 300]"
             :total="1000"
             style="padding: 10px; margin-left: auto" />
     </el-row>

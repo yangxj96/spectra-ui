@@ -5,7 +5,7 @@ export function useTable<T>(request: (parameters?: BasePageParams) => Promise<Pa
     const pagination = ref<Pagination>({
         size: 10,
         page: 1,
-        page_sizes: [10, 50, 100, 150, 300],
+        page_sizes: [10, 15, 50, 100, 150, 300],
         default_page_size: 10,
         total: 0
     });
@@ -16,6 +16,7 @@ export function useTable<T>(request: (parameters?: BasePageParams) => Promise<Pa
     onMounted(() => {
         pagination.value.page = parameters.page_num;
         pagination.value.size = parameters.page_size;
+        pagination.value.default_page_size = parameters.page_size;
         handleCurrentChange(pagination.value.page);
     });
 

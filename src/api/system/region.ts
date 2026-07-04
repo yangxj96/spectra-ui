@@ -20,7 +20,7 @@ export const regionApi = {
         return get<Page<Region>>("/api/region/page", params);
     },
     /**
-     * ����ID��ѯ·����Ϣ
+     * 根据ID查询路径信息
      * @param id id
      */
     path(id: string): Promise<RegionPathVO> {

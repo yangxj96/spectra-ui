@@ -25,7 +25,7 @@ const dialog_edit = ref<{
 // 查询条件
 const condition = ref<UserPageParams>({
     page_num: 1,
-    page_size: 10
+    page_size: 15
 });
 
 const organizationTree = ref<DepartmentTreeVO[]>([]);
@@ -210,7 +210,7 @@ onMounted(async () => {
             <!-- 分页 -->
             <el-pagination
                 layout="total, sizes, prev, pager, next"
-                :default-page-size="pagination.default_page_size"
+                :page-size="pagination.size"
                 :page-sizes="pagination.page_sizes"
                 :total="pagination.total"
                 style="padding: 0 10px; margin-left: auto"

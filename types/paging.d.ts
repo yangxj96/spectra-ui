@@ -58,5 +58,6 @@ declare global {
     // 行政区划分页请求参数定义
     type RegionPageParams = BasePageParams & {
         str?: string;
+        name?: string;
     };
 }

@@ -106,7 +106,12 @@ const handleEditClose = () => {
             <el-table-column align="center" width="100" prop="sort" label="排序" />
             <el-table-column align="center" width="180" label="操作" fixed="right">
                 <template #default="scope">
-                    <el-button v-owner="'REGION:UPDATE'" link type="primary" size="small" @click="handleEdit(scope.row)">
+                    <el-button
+                        v-owner="'REGION:UPDATE'"
+                        link
+                        type="primary"
+                        size="small"
+                        @click="handleEdit(scope.row)">
                         编辑
                     </el-button>
                     <el-button

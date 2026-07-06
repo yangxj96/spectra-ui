@@ -113,12 +113,7 @@ const handleDialogClose = () => {
         </el-table>
     </el-row>
     <!-- 新增或编辑 -->
-    <DeptEdit
-        v-if="edit.dialog"
-        :show="edit.dialog"
-        :form="edit.form"
-        :tree="table_data!"
-        @close="handleDialogClose" />
+    <DeptEdit v-if="edit.dialog" :show="edit.dialog" :form="edit.form" :tree="table_data!" @close="handleDialogClose" />
 </template>
 
 <style scoped lang="scss">

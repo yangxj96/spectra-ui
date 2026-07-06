@@ -168,18 +168,9 @@ const handleReset = () => {
             <el-table-column align="center" prop="created_at" label="上传时间" width="180" />
             <el-table-column align="center" label="操作" width="200" fixed="right">
                 <template #default="scope">
-                    <el-button link type="primary" size="small" @click="handlePreview(scope.row)">
-                        预览
-                    </el-button>
-                    <el-button link type="primary" size="small" @click="handleDownload(scope.row)">
-                        下载
-                    </el-button>
-                    <el-button
-                        v-owner="'FILE:DELETE'"
-                        link
-                        type="danger"
-                        size="small"
-                        @click="handleDelete(scope.row)">
+                    <el-button link type="primary" size="small" @click="handlePreview(scope.row)">预览</el-button>
+                    <el-button link type="primary" size="small" @click="handleDownload(scope.row)">下载</el-button>
+                    <el-button v-owner="'FILE:DELETE'" link type="danger" size="small" @click="handleDelete(scope.row)">
                         删除
                     </el-button>
                 </template>

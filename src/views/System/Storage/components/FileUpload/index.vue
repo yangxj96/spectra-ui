@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { UploadFile, UploadFiles } from "element-plus";
 
 import { fileUploadApi } from "@/api/common/file-upload.ts";
 import { getToken } from "@/plugin/request/auth.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
+
+import type { UploadFile, UploadFiles } from "element-plus";
 
 const emit = defineEmits(["close", "success"]);
 
@@ -14,6 +15,9 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 // 上传状态
 const uploading = ref(false);
 const fileList = ref<UploadFile[]>([]);
+
+// 跟踪正在分片上传的文件 UID
+const chunkUploadFiles = new Set<number>();
 
 // 格式化文件大小
 const formatFileSize = (bytes: number): string => {
@@ -51,10 +55,10 @@ const uploadWithProgress = (url: string, formData: FormData, file: UploadFile): 
         const xhr = new XMLHttpRequest();
 
         // 监听上传进度
-        xhr.upload.addEventListener("progress", (e) => {
+        xhr.upload.addEventListener("progress", e => {
             if (e.lengthComputable) {
                 // 分片上传时，进度由外部控制
-                if (!file._chunkProgress) {
+                if (!chunkUploadFiles.has(file.uid)) {
                     file.percentage = Math.round((e.loaded / e.total) * 100);
                 }
             }
@@ -102,17 +106,12 @@ const uploadSingle = async (file: UploadFile, hash: string, uploadId: string): P
 };
 
 // 分片上传
-const uploadChunked = async (
-    file: UploadFile,
-    hash: string,
-    uploadId: string,
-    chunkSize: number
-): Promise<void> => {
+const uploadChunked = async (file: UploadFile, hash: string, uploadId: string, chunkSize: number): Promise<void> => {
     const rawFile = file.raw!;
     const totalChunks = Math.ceil(rawFile.size / chunkSize);
 
     // 标记为分片上传，进度由外部控制
-    file._chunkProgress = true;
+    chunkUploadFiles.add(file.uid);
 
     for (let i = 0; i < totalChunks; i++) {
         const start = i * chunkSize;
@@ -137,7 +136,7 @@ const uploadChunked = async (
     await fileUploadApi.merge(uploadId);
 
     // 清理标记
-    delete file._chunkProgress;
+    chunkUploadFiles.delete(file.uid);
 };
 
 // 上传单个文件（完整流程）
@@ -221,12 +220,7 @@ const handleClose = () => {
 <template>
     <el-dialog title="上传文件" width="660px" :model-value="true" :close-on-click-modal="false" @close="handleClose">
         <!-- 上传按钮 -->
-        <el-upload
-            multiple
-            :auto-upload="false"
-            :show-file-list="false"
-            :on-change="handleFileChange"
-        >
+        <el-upload multiple :auto-upload="false" :show-file-list="false" :on-change="handleFileChange">
             <el-button type="primary">选择文件</el-button>
             <template #tip>
                 <div class="el-upload__tip">支持任意文件，可同时选择多个文件</div>
@@ -250,8 +244,7 @@ const handleClose = () => {
                                 : scope.row.status === 'fail'
                                   ? 'exception'
                                   : undefined
-                        "
-                    />
+                        " />
                 </template>
             </el-table-column>
             <el-table-column label="操作" width="80">

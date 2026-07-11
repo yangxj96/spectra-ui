@@ -1,102 +1,102 @@
 # AGENTS.md
 
-## Project
+## 项目概述
 
-Vue 3 SPA admin panel (光谱后端管理系统) — the **web frontend** for `spectra-admin`. TypeScript, Vite, Element Plus, Pinia, Vue Router.
+Vue 3 SPA 管理后台（光谱后端管理系统）— `spectra-admin` 的 **Web 前端**。TypeScript, Vite, Element Plus, Pinia, Vue Router。
 
-- Backend API: `spectra-admin` (Spring Boot, port 4004)
-- Dev server: port 5173
-- All API calls go to `VITE_API_URL` (defaults to `https://127.0.0.1:4004/`)
+- 后端 API：`spectra-admin`（Spring Boot，端口 4004）
+- 开发服务器：端口 5173
+- 所有 API 调用指向 `VITE_API_URL`（默认 `https://127.0.0.1:4004/`）
 
-## Quick Commands
+## 常用命令
 
-- `pnpm start` — dev server (**runs format + lint:fix + type-check first** via `prestart` hook)
-- `pnpm run build` — production build
-- `pnpm run lint` — ESLint (cached)
-- `pnpm run lint:fix` — ESLint + auto-fix
+- `pnpm start` — 开发服务器（**先执行 format + lint:fix + type-check**，通过 `prestart` 钩子）
+- `pnpm run build` — 生产构建
+- `pnpm run lint` — ESLint（带缓存）
+- `pnpm run lint:fix` — ESLint + 自动修复
 - `pnpm run format` — Prettier
-- `pnpm run type-check` — vue-tsc (composite false)
-- `pnpm run test` — Vitest single run
-- `pnpm run test:watch` — Vitest watch
+- `pnpm run type-check` — vue-tsc（composite: false）
+- `pnpm run test` — Vitest 单次运行
+- `pnpm run test:watch` — Vitest 监视模式
 
-Verification order: `format → lint:fix → type-check → test`
+验证顺序：`format → lint:fix → type-check → test`
 
-## Toolchain
+## 工具链
 
-- Node 24.14.0, pnpm 11.0.9 (managed via `mise.toml`)
-- npm registry: `registry.npmmirror.com` (taobao mirror, `.npmrc`)
+- Node 24.14.0, pnpm 11.0.9（通过 `mise.toml` 管理）
+- npm 镜像：`registry.npmmirror.com`（淘宝镜像，`.npmrc`）
 - Vite 8, Vue 3.5, TypeScript 5.9, ESLint 9, Prettier 3
-- Tests: Vitest 4 + happy-dom + @vue/test-utils + @pinia/testing
+- 测试：Vitest 4 + happy-dom + @vue/test-utils + @pinia/testing
 
-## Code Style
+## 代码规范
 
-- **4-space indent**, no tabs. Double quotes. Semicolons. 120 char line width.
-- `endOfLine: lf`. `arrowParens: avoid`. `trailingComma: none`.
-- Path alias: `@` → `src/`
+- **4 空格缩进**，禁用 Tab。双引号。分号。120 字符行宽。
+- `endOfLine: lf`。`arrowParens: avoid`。`trailingComma: none`。
+- 路径别名：`@` → `src/`
 
-## ESLint Rules (enforced)
+## ESLint 规则（强制）
 
-- `no-any` — zero tolerance for `any` types
-- `consistent-type-imports` — use `import type` (inline style: `import { type Foo }`)
-- `import/order` — groups: builtin → external → internal (`@/**`) → parent → sibling → index → type. Alphabetical within groups. Newlines between groups.
-- `import/no-cycle` — no circular dependencies
-- Vue SFC block order: `<script>` → `<template>` → `<style>`
-- Vue components in template: **PascalCase**
-- Views (`src/views/**`): single-word component names allowed (e.g., `Login.vue`)
-- Max function length: 200 lines. Max params: 4. No nested ternary.
+- `no-any` — 零容忍 `any` 类型
+- `consistent-type-imports` — 使用 `import type`（内联风格：`import { type Foo }`）
+- `import/order` — 分组：builtin → external → internal（`@/**`）→ parent → sibling → index → type。组内按字母排序。组间空行分隔。
+- `import/no-cycle` — 禁止循环依赖
+- Vue SFC 块顺序：`<script>` → `<template>` → `<style>`
+- Vue 模板中组件名：**PascalCase**
+- 视图文件（`src/views/**`）：允许单词组件名（如 `Login.vue`）
+- 函数最大行数：200 行。最大参数：4 个。禁止嵌套三元表达式。
 
-## Project Structure
+## 项目结构
 
 ```
 src/
-  api/            # API modules (auth/, common/, system/, user/)
-  assets/         # Static assets
-  components/     # Shared components (DictSelect, FileUpload, IconPicker, etc.)
-  converter/      # Data converters (entity → display format)
-  directive/      # Custom Vue directives (v-owner)
-  hooks/          # Composables (useTable, useFileUpload)
+  api/            # API 模块（auth/, common/, system/, user/）
+  assets/         # 静态资源
+  components/     # 共享组件（DictSelect, FileUpload, IconPicker 等）
+  converter/      # 数据转换器（实体 → 显示格式）
+  directive/      # 自定义 Vue 指令（v-owner）
+  hooks/          # 组合式函数（useTable, useFileUpload）
   plugin/
-    element/      # Element Plus theme/scss overrides
-    request/      # HTTP client (http.ts, api.ts, auth.ts, cache.ts)
-    router/       # Vue Router config
-    store/        # Pinia stores (modules: app, dict, props, user)
-  utils/          # Utilities (common, crypto, message, route, verify)
-  views/          # Page components (Dashboard, Login, Monitor, System, Example, Common)
-types/            # Global .d.ts type declarations
-tests/            # Test files (flat, no subdirs)
+    element/      # Element Plus 主题/scss 覆盖
+    request/      # HTTP 客户端（http.ts, api.ts, auth.ts, cache.ts）
+    router/       # Vue Router 配置
+    store/        # Pinia stores（模块：app, dict, props, user）
+  utils/          # 工具函数（common, crypto, message, route, verify）
+  views/          # 页面组件（Dashboard, Login, Monitor, System, Example, Common）
+types/            # 全局 .d.ts 类型声明
+tests/            # 测试文件（扁平结构，无子目录）
 ```
 
-## HTTP Client
+## HTTP 客户端
 
-Custom `request()` in `src/plugin/request/http.ts` — not Axios. Key features:
+自定义 `request()` 在 `src/plugin/request/http.ts` 中——非 Axios。核心特性：
 
-- Token auto-refresh on 401
-- Request deduplication (inflight map) and abort on re-request
-- Priority queue: `high`(10) / `normal`(6) / `low`(2) concurrent limits
-- Optional caching and retry
-- Path params via template literals: `request("/api/users/{id}", { pathParams: { id } })`
-- FormData upload auto-converts snake_case keys to camelCase
+- Token 401 自动刷新
+- 请求去重（进行中映射表）和重复请求时中止上一个
+- 优先级队列：`high`(10) / `normal`(6) / `low`(2) 并发限制
+- 可选缓存和重试
+- 路径参数通过模板字面量：`request("/api/users/{id}", { pathParams: { id } })`
+- FormData 上传自动将 snake_case 键转为 camelCase
 
-API helpers: `get()`, `post()`, `put()`, `del()`, `upload()`, `download()` in `src/plugin/request/api.ts`.
+API 辅助函数：`get()`, `post()`, `put()`, `del()`, `upload()`, `download()` 在 `src/plugin/request/api.ts`。
 
-## Testing
+## 测试
 
-- Test files live in `tests/` (flat), named `*.test.ts`
-- Setup file: `tests/setup.ts` — stubs `RouterLink` globally
-- Tests use `createTestingPinia`, `@vue/test-utils` mount, and `vi.mock` for stores
-- Run single test: `pnpm run test -- DictSelect` (vitest name filter)
+- 测试文件位于 `tests/`（扁平结构），命名格式 `*.test.ts`
+- 设置文件：`tests/setup.ts` — 全局 stub `RouterLink`
+- 测试使用 `createTestingPinia`、`@vue/test-utils` mount 和 `vi.mock` 处理 stores
+- 运行单个测试：`pnpm run test -- DictSelect`（vitest name filter）
 
-## Env Variables
+## 环境变量
 
-- `VITE_API_URL` — backend API base URL (pointing to `spectra-admin`)
-- `VITE_WEB_TITLE` — page title
-- Dev defaults in `.env` (https://127.0.0.1:4004/), prod override in `.env.production`
+- `VITE_API_URL` — 后端 API 基础 URL（指向 `spectra-admin`）
+- `VITE_WEB_TITLE` — 页面标题
+- 开发默认值在 `.env`（https://127.0.0.1:4004/），生产覆盖在 `.env.production`
 
-## Gotchas
+## 注意事项
 
-- `pnpm start` auto-runs format, lint, and type-check before starting the dev server (via `prestart` script). Don't manually chain these.
-- `pnpm-workspace.yaml` exists but only configures `allowBuilds` — this is NOT a monorepo.
-- Views use `vue/block-order` rule: script must come before template in SFCs.
-- `RequestOptions` type uses template literal types for type-safe path params — match the pattern when adding new API functions.
-- The `RequestOptions` generic `U extends string` threads the URL string through for path param type inference.
-- API endpoints and response formats are defined by `spectra-admin` — if the backend changes an endpoint, update the corresponding `src/api/` module here.
+- `pnpm start` 会在启动开发服务器前自动执行 format、lint 和 type-check（通过 `prestart` 脚本）。不要手动串联这些命令。
+- `pnpm-workspace.yaml` 存在但仅配置了 `allowBuilds`——本项目不是 monorepo。
+- 视图使用 `vue/block-order` 规则：SFC 中 script 必须在 template 之前。
+- `RequestOptions` 类型使用模板字面量类型实现类型安全的路径参数——添加新 API 函数时请遵循该模式。
+- `RequestOptions` 的泛型 `U extends string` 将 URL 字符串传入以实现路径参数类型推断。
+- API 端点和响应格式由 `spectra-admin` 定义——若后端更改端点，需同步更新此处的 `src/api/` 模块。

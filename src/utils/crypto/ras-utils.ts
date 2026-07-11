@@ -69,7 +69,24 @@ export async function importRsaOaepPublicKey(base64Key: string): Promise<CryptoK
 }
 
 /**
- * RSA-PSS 验签
+ * 导入 RSA 私钥（用于签名，RSASSA-PKCS1-v1_5）
+ */
+export async function importRsaPrivateKeyForSign(base64Key: string): Promise<CryptoKey> {
+    const keyData = base64ToBytes(base64Key);
+    return await crypto.subtle.importKey(
+        "pkcs8",
+        toBufferSource(keyData),
+        {
+            name: "RSASSA-PKCS1-v1_5",
+            hash: "SHA-256"
+        },
+        false,
+        ["sign"]
+    );
+}
+
+/**
+ * RSA-PKCS1-v1_5 验签
  */
 export async function verifySignature(
     signatureBase64: string,
@@ -84,8 +101,7 @@ export async function verifySignature(
     return await crypto.subtle.verify(
         {
             name: "RSASSA-PKCS1-v1_5",
-            hash: "SHA-256",
-            saltLength: 32
+            hash: "SHA-256"
         },
         publicKey,
         toBufferSource(signature),

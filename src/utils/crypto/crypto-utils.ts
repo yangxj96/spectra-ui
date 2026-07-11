@@ -1,5 +1,12 @@
 import { decryptAesGcm, encryptAesGcm } from "./aes-utils";
-import { base64ToBytes, decryptAesKey, importRsaOaepPublicKey, importRsaPublicKey, toBufferSource } from "./ras-utils";
+import {
+    base64ToBytes,
+    decryptAesKey,
+    importRsaOaepPublicKey,
+    importRsaPrivateKeyForSign,
+    importRsaPublicKey,
+    toBufferSource
+} from "./ras-utils";
 
 /**
  * 一键解密：RSA 解密 AES 密钥 + AES-GCM 解密业务数据
@@ -50,7 +57,7 @@ export function generateIv(): string {
 }
 
 /**
- * RSA-PSS 验签
+ * RSA-PKCS1-v1_5 验签
  */
 export async function verifySignature(
     signatureBase64: string,
@@ -65,11 +72,30 @@ export async function verifySignature(
     return await crypto.subtle.verify(
         {
             name: "RSASSA-PKCS1-v1_5",
-            hash: "SHA-256",
-            saltLength: 32
+            hash: "SHA-256"
         },
         publicKey,
         toBufferSource(signature),
         data
     );
+}
+
+/**
+ * RSA 签名（RSASSA-PKCS1-v1_5 + SHA-256）
+ */
+export async function sign(dataString: string, privateKeyBase64: string): Promise<string> {
+    const privateKey = await importRsaPrivateKeyForSign(privateKeyBase64);
+    const encoder = new TextEncoder();
+    const data = encoder.encode(dataString);
+
+    const signature = await crypto.subtle.sign(
+        {
+            name: "RSASSA-PKCS1-v1_5",
+            hash: "SHA-256"
+        },
+        privateKey,
+        data
+    );
+
+    return btoa(String.fromCharCode(...new Uint8Array(signature)));
 }

@@ -1,7 +1,7 @@
 import qs from "qs";
 
 import { hideLoading, showLoading } from "@/plugin/element/loading";
-import { decrypt, encrypt, generateIv, verifySignature } from "@/utils/crypto/crypto-utils";
+import { decrypt, encrypt, generateIv, sign, verifySignature } from "@/utils/crypto/crypto-utils";
 import { GlobalUtils } from "@/utils/global-utils";
 import { MessageUtils } from "@/utils/message-utils";
 
@@ -177,25 +177,31 @@ function stableStringify(value: unknown): string {
 /**
  * 加密请求体
  */
-async function encryptRequest(body: string): Promise<{
+async function encryptRequest(body: unknown): Promise<{
     data: string;
     key: string;
     iv: string;
     nonce: string;
     timestamp: number;
+    signature: string;
 }> {
+    const bodyStr = typeof body === "string" ? body : JSON.stringify(body);
     const iv = generateIv();
     const timestamp = Date.now();
     const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
 
-    const { encryptedData, encryptedKey } = await encrypt(body, iv, RSA_PUBLIC_KEY);
+    const { encryptedData, encryptedKey } = await encrypt(bodyStr, iv, RSA_PUBLIC_KEY);
+
+    const signContent = `data=${encryptedData}&nonce=${nonce}&timestamp=${timestamp}`;
+    const signature = await sign(signContent, RSA_PRIVATE_KEY);
 
     return {
         data: encryptedData,
         key: encryptedKey,
         iv,
         nonce,
-        timestamp
+        timestamp,
+        signature
     };
 }
 
@@ -312,7 +318,8 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
 
             // 加密请求体
             if (CRYPTO_ENABLED && !isFormData && rest.body && method !== "GET") {
-                rest.body = JSON.stringify(await encryptRequest(rest.body as string));
+                const encrypted = await encryptRequest(rest.body);
+                rest.body = JSON.stringify(encrypted);
             }
 
             // 等待优先级

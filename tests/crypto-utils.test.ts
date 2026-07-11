@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decrypt, encrypt, generateIv, verifySignature } from "../src/utils/crypto/crypto-utils";
+import { decrypt, encrypt, generateIv, sign, verifySignature } from "../src/utils/crypto/crypto-utils";
 import { toBufferSource } from "../src/utils/crypto/ras-utils";
 
 /**
@@ -96,7 +96,7 @@ describe("crypto-utils", () => {
             const data = "test data to sign";
             const encoded = new TextEncoder().encode(data);
             const signatureBuffer = await crypto.subtle.sign(
-                { name: "RSASSA-PKCS1-v1_5", saltLength: 32 },
+                { name: "RSASSA-PKCS1-v1_5" },
                 keyPair.privateKey,
                 toBufferSource(new Uint8Array(encoded))
             );
@@ -125,7 +125,7 @@ describe("crypto-utils", () => {
             const data = "original data";
             const encoded = new TextEncoder().encode(data);
             const signatureBuffer = await crypto.subtle.sign(
-                { name: "RSASSA-PKCS1-v1_5", saltLength: 32 },
+                { name: "RSASSA-PKCS1-v1_5" },
                 keyPair.privateKey,
                 toBufferSource(new Uint8Array(encoded))
             );
@@ -133,6 +133,59 @@ describe("crypto-utils", () => {
 
             // 用篡改过的数据验证
             const isValid = await verifySignature(signatureBase64, "tampered data", publicKeyBase64);
+            expect(isValid).toBe(false);
+        });
+    });
+
+    describe("sign", () => {
+        it("签名后用公钥验签应通过", async () => {
+            const keyPair = (await crypto.subtle.generateKey(
+                {
+                    name: "RSASSA-PKCS1-v1_5",
+                    modulusLength: 2048,
+                    publicExponent: new Uint8Array([1, 0, 1]),
+                    hash: "SHA-256"
+                },
+                true,
+                ["sign", "verify"]
+            )) as CryptoKeyPair;
+
+            const spki = await crypto.subtle.exportKey("spki", keyPair.publicKey);
+            const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(spki)));
+
+            const pkcs8 = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+            const privateKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(pkcs8)));
+
+            const data = "data to sign and verify";
+            const signature = await sign(data, privateKeyBase64);
+
+            expect(signature).toBeTruthy();
+            expect(typeof signature).toBe("string");
+
+            const isValid = await verifySignature(signature, data, publicKeyBase64);
+            expect(isValid).toBe(true);
+        });
+
+        it("签名后篡改数据验签应失败", async () => {
+            const keyPair = (await crypto.subtle.generateKey(
+                {
+                    name: "RSASSA-PKCS1-v1_5",
+                    modulusLength: 2048,
+                    publicExponent: new Uint8Array([1, 0, 1]),
+                    hash: "SHA-256"
+                },
+                true,
+                ["sign", "verify"]
+            )) as CryptoKeyPair;
+
+            const spki = await crypto.subtle.exportKey("spki", keyPair.publicKey);
+            const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(spki)));
+
+            const pkcs8 = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+            const privateKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(pkcs8)));
+
+            const signature = await sign("original data", privateKeyBase64);
+            const isValid = await verifySignature(signature, "tampered data", publicKeyBase64);
             expect(isValid).toBe(false);
         });
     });

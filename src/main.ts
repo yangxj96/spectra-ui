@@ -5,6 +5,7 @@ import { useDark, useToggle } from "@vueuse/core";
 import ElementPlus from "element-plus";
 import { createApp } from "vue";
 
+import { initCrypto } from "@/api/system/crypto";
 import { registerDirectives } from "@/directive";
 import router from "@/plugin/router";
 import createStore from "@/plugin/store";
@@ -37,6 +38,10 @@ registerDirectives(app);
 
 // 注册 store + router
 app.use(createStore());
+
+// 加解密初始化必须在路由之前，避免被 beforeEach 的 cancelAllRequests 误杀
+await initCrypto();
+
 app.use(router);
 
 // 挂载

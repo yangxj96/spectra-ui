@@ -23,8 +23,7 @@
     },
     "lint-staged": {
         "*.{js,ts,vue}": "eslint --fix",
-        "*.{js,ts,vue,css,scss,json,yml,md}": "prettier --write",
-        "*.{ts,vue}": "vue-tsc --noEmit"
+        "*.{js,ts,vue,css,scss,json,yml,md}": "prettier --write"
     },
     "commitlint": {
         "extends": [

@@ -1,5 +1,6 @@
 import qs from "qs";
 
+import { isCryptoEnabled, getServerPublicKey, getClientPrivateKey } from "@/api/system/crypto";
 import { hideLoading, showLoading } from "@/plugin/element/loading";
 import { decrypt, encrypt, generateIv, sign, verifySignature } from "@/utils/crypto/crypto-utils";
 import { GlobalUtils } from "@/utils/global-utils";
@@ -7,21 +8,6 @@ import { MessageUtils } from "@/utils/message-utils";
 
 import { getToken, refreshToken } from "./auth";
 import { getCache, setCache } from "./cache";
-
-/**
- * 是否启用请求加解密
- */
-const CRYPTO_ENABLED = import.meta.env.VITE_CRYPTO_ENABLED === "true";
-
-/**
- * RSA 公钥（用于加密请求 / 验证响应签名）
- */
-const RSA_PUBLIC_KEY = import.meta.env.VITE_RSA_PUBLIC_KEY;
-
-/**
- * RSA 私钥（用于解密响应）
- */
-const RSA_PRIVATE_KEY = import.meta.env.VITE_RSA_PRIVATE_KEY;
 
 /**
  * API 基础地址
@@ -185,15 +171,21 @@ async function encryptRequest(body: unknown): Promise<{
     timestamp: number;
     signature: string;
 }> {
+    const pubKey = getServerPublicKey();
+    const privKey = getClientPrivateKey();
+    if (!pubKey || !privKey) {
+        throw new Error("密钥未就绪，无法加密请求");
+    }
+
     const bodyStr = typeof body === "string" ? body : JSON.stringify(body);
     const iv = generateIv();
     const timestamp = Math.floor(Date.now() / 1000);
     const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
 
-    const { encryptedData, encryptedKey } = await encrypt(bodyStr, iv, RSA_PUBLIC_KEY);
+    const { encryptedData, encryptedKey } = await encrypt(bodyStr, iv, pubKey);
 
     const signContent = `data=${encryptedData}&nonce=${nonce}&timestamp=${timestamp}`;
-    const signature = await sign(signContent, RSA_PRIVATE_KEY);
+    const signature = await sign(signContent, privKey);
 
     return {
         data: encryptedData,
@@ -202,6 +194,37 @@ async function encryptRequest(body: unknown): Promise<{
         nonce,
         timestamp,
         signature
+    };
+}
+
+/**
+ * 加密请求体（不签名，用于 clientPrivateKey 未就绪时，如登录请求）
+ */
+async function encryptBodyWithoutSign(body: unknown): Promise<{
+    data: string;
+    key: string;
+    iv: string;
+    nonce: string;
+    timestamp: number;
+}> {
+    const pubKey = getServerPublicKey();
+    if (!pubKey) {
+        throw new Error("服务端公钥未就绪，无法加密请求");
+    }
+
+    const bodyStr = typeof body === "string" ? body : JSON.stringify(body);
+    const iv = generateIv();
+    const timestamp = Math.floor(Date.now() / 1000);
+    const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+
+    const { encryptedData, encryptedKey } = await encrypt(bodyStr, iv, pubKey);
+
+    return {
+        data: encryptedData,
+        key: encryptedKey,
+        iv,
+        nonce,
+        timestamp
     };
 }
 
@@ -216,15 +239,21 @@ async function decryptResponse<T>(encryptedBody: {
     signature: string;
     timestamp: number;
 }): Promise<T> {
-    // 验签
+    const pubKey = getServerPublicKey();
+    const privKey = getClientPrivateKey();
+    if (!pubKey || !privKey) {
+        throw new Error("密钥未就绪，无法解密响应");
+    }
+
+    // 验签（使用服务端公钥验证后端签名）
     const signData = `data=${encryptedBody.data}&nonce=${encryptedBody.nonce}&timestamp=${encryptedBody.timestamp}`;
-    const isValid = await verifySignature(encryptedBody.signature, signData, RSA_PUBLIC_KEY);
+    const isValid = await verifySignature(encryptedBody.signature, signData, pubKey);
     if (!isValid) {
         throw new Error("签名验证失败，数据可能被篡改");
     }
 
-    // 解密
-    const json = await decrypt(encryptedBody.key, encryptedBody.data, encryptedBody.iv, RSA_PRIVATE_KEY);
+    // 解密（使用客户端私钥解密响应 AES 密钥）
+    const json = await decrypt(encryptedBody.key, encryptedBody.data, encryptedBody.iv, privKey);
     return JSON.parse(json) as T;
 }
 
@@ -317,9 +346,12 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
             const isFormData = rest.body instanceof FormData;
 
             // 加密请求体
-            if (CRYPTO_ENABLED && !isFormData && rest.body && method !== "GET") {
-                const encrypted = await encryptRequest(rest.body);
-                rest.body = JSON.stringify(encrypted);
+            if (isCryptoEnabled() && getServerPublicKey() && !isFormData && rest.body && method !== "GET") {
+                if (getClientPrivateKey()) {
+                    rest.body = JSON.stringify(await encryptRequest(rest.body));
+                } else {
+                    rest.body = JSON.stringify(await encryptBodyWithoutSign(rest.body));
+                }
             }
 
             // 等待优先级
@@ -389,7 +421,8 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
 
             // 解密响应体
             if (
-                CRYPTO_ENABLED &&
+                isCryptoEnabled() &&
+                getClientPrivateKey() &&
                 result.data &&
                 typeof result.data === "object" &&
                 "signature" in (result.data as Record<string, unknown>)

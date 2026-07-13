@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from "element-plus";
 import { onMounted, ref } from "vue";
 
 import { configuredApi } from "@/api/system/configured.ts";
+import { cryptoApi } from "@/api/system/crypto.ts";
 import DictTag from "@/components/DictTag/index.vue";
 import { configuredConverter } from "@/converter/configured-converter.ts";
 import UseTable from "@/hooks/use-table.ts";
@@ -48,6 +50,23 @@ const handleConfiguredEdit = (row: ConfiguredPageVO) => {
     edit.value.form = configuredConverter.toForm(row);
     edit.value.show = true;
 };
+
+const handleGenerateKeyPair = async () => {
+    try {
+        await ElMessageBox.confirm(
+            "此操作将重新生成两对 RSA 密钥对（服务端 + 客户端），现有密钥将立即失效。确认继续？",
+            "生成 RSA 密钥对",
+            { confirmButtonText: "确认生成", cancelButtonText: "取消", type: "warning" }
+        );
+        await cryptoApi.generateKeyPair();
+        ElMessage.success("RSA 密钥对已生成并生效");
+        await handlerConditionQuery();
+    } catch (e: unknown) {
+        if (e !== "cancel") {
+            ElMessage.error(e instanceof Error ? e.message : "生成失败");
+        }
+    }
+};
 </script>
 
 <template>
@@ -61,6 +80,9 @@ const handleConfiguredEdit = (row: ConfiguredPageVO) => {
                 <el-button type="primary" @click="handlerConditionQuery()">查询</el-button>
                 <el-button>重置</el-button>
                 <el-button type="primary" @click="handleConfiguredAdd()">新增</el-button>
+                <el-button v-owner="'ROLE:ROLE_DEV_OPS'" type="danger" plain @click="handleGenerateKeyPair()">
+                    生成RSA密钥对
+                </el-button>
             </el-form-item>
         </el-form>
     </el-row>

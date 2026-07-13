@@ -5,6 +5,7 @@ import { computed, reactive, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { authApi } from "@/api/auth/auth.ts";
+import { fetchClientPrivateKey } from "@/api/system/crypto";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -60,10 +61,10 @@ const handleLogin = async () => {
     }
 
     try {
-        const token = await authApi.login(login.form);
+        useUserStore().token = await authApi.login(login.form);
+        useUserStore().isLoggedIn = true;
+        await fetchClientPrivateKey();
         MessageUtils.success("登录成功", () => {
-            useUserStore().token = token;
-            useUserStore().isLoggedIn = true;
             const path = "/redirect" + (redirect.value ?? "");
             router.push({ path });
         });

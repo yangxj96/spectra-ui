@@ -2,11 +2,6 @@ import { post } from "@/plugin/request/api.ts";
 import { request } from "@/plugin/request/http.ts";
 import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 
-/**
- * 是否启用请求加解密（前端本地开关，优先级低于后端 crypto.enabled）
- */
-const CRYPTO_LOCAL_ENABLED = import.meta.env.VITE_CRYPTO_ENABLED === "true";
-
 // =================================================
 // 状态读取（供 http.ts 加解密使用）
 // =================================================
@@ -16,11 +11,11 @@ export function isCryptoEnabled(): boolean {
 }
 
 export function getServerPublicKey(): string | null {
-    return useCryptoStore().serverPublicKey;
+    return useCryptoStore().server_public_key;
 }
 
 export function getClientPrivateKey(): string | null {
-    return useCryptoStore().clientPrivateKey;
+    return useCryptoStore().client_private_key;
 }
 
 // =================================================
@@ -32,12 +27,8 @@ export function getClientPrivateKey(): string | null {
  * 应用启动时调用，从后端获取加解密开关和服务端公钥
  */
 export async function initCrypto(): Promise<void> {
-    if (!CRYPTO_LOCAL_ENABLED) {
-        console.log("[Crypto] 前端本地开关已关闭，跳过初始化");
-        return;
-    }
     try {
-        const data = await request<{ enabled: boolean; serverPublicKey: string | null }, "/api/system/crypto/config">(
+        const data = await request<{ enabled: boolean; server_public_key: string | null }, "/api/system/crypto/config">(
             "/api/system/crypto/config",
             {
                 method: "GET",
@@ -48,7 +39,7 @@ export async function initCrypto(): Promise<void> {
         console.log(`[Crypto] 初始化完成: enabled=${data.enabled}`);
     } catch (e) {
         console.warn("[Crypto] 初始化失败，加解密已禁用:", e);
-        useCryptoStore().setConfig({ enabled: false, serverPublicKey: null });
+        useCryptoStore().setConfig({ enabled: false, server_public_key: null });
     }
 }
 
@@ -59,14 +50,14 @@ export async function initCrypto(): Promise<void> {
 export async function fetchClientPrivateKey(): Promise<void> {
     if (!isCryptoEnabled()) return;
     try {
-        const data = await request<{ privateKey: string | null }, "/api/system/crypto/keypair/client-private">(
+        const data = await request<{ private_key: string | null }, "/api/system/crypto/keypair/client-private">(
             "/api/system/crypto/keypair/client-private",
             {
                 method: "GET",
                 loading: false
             }
         );
-        useCryptoStore().setClientPrivateKey(data.privateKey);
+        useCryptoStore().setClientPrivateKey(data.private_key);
         console.log("[Crypto] 客户端私钥已获取");
     } catch (e) {
         console.warn("[Crypto] 获取客户端私钥失败:", e);

@@ -18,7 +18,7 @@ export const fileApi = {
      * @param filename 文件名
      */
     async download(id: string, filename: string): Promise<void> {
-        const blob = await request<Blob>(`/api/file/upload/download/${id}`, {
+        const blob = await request<Blob, string>(`/api/file/upload/download/${id}`, {
             method: "GET"
         });
         const url = window.URL.createObjectURL(blob);

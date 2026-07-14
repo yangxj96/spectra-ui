@@ -3,19 +3,19 @@ import { defineStore } from "pinia";
 export const useCryptoStore = defineStore("crypto", {
     state: () => ({
         enabled: false,
-        serverPublicKey: null as string | null,
-        clientPrivateKey: null as string | null
+        server_public_key: null as string | null,
+        client_private_key: null as string | null
     }),
     actions: {
-        setConfig(payload: { enabled: boolean; serverPublicKey: string | null }) {
+        setConfig(payload: { enabled: boolean; server_public_key: string | null }) {
             this.enabled = payload.enabled;
-            this.serverPublicKey = payload.serverPublicKey;
+            this.server_public_key = payload.server_public_key;
         },
         setClientPrivateKey(key: string | null) {
-            this.clientPrivateKey = key;
+            this.client_private_key = key;
         }
     },
     persist: {
-        pick: ["enabled", "serverPublicKey"]
+        pick: ["enabled", "server_public_key"]
     }
 });

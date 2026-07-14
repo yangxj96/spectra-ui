@@ -5,7 +5,6 @@ import type { Directive } from "vue";
 interface ImportMetaEnvironment {
     readonly VITE_API_URL: string;
     readonly VITE_WEB_TITLE: string;
-    readonly VITE_CRYPTO_ENABLED: string;
 }
 
 interface ImportMeta {

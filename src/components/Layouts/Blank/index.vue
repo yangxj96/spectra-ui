@@ -61,7 +61,7 @@ function handlerRouter(r: RouteLocationMatched[] = []) {
     height: 100vh;
 }
 
-.box-aside {
+.box__aside {
     width: 64px;
 }
 

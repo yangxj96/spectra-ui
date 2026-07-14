@@ -71,20 +71,20 @@ function handleMenu() {
 
 <template>
     <el-container class="box">
-        <el-header class="box-header">
+        <el-header class="box__header">
             <Navbar />
         </el-header>
 
-        <el-container class="box-container">
+        <el-container class="box__container">
             <el-aside width="10vw">
                 <Sidebar />
             </el-aside>
 
-            <el-main class="box-main">
+            <el-main class="box__main">
                 <!-- 面包屑横条 -->
-                <el-row class="box-breadcrumb">
+                <el-row class="box__breadcrumb">
                     <el-col :span="21">
-                        <i class="box-unfold-a" @click="handleMenu">
+                        <i class="box__unfold-a" @click="handleMenu">
                             <ComponentsIcons v-if="appStore.unfold" name="icon-fold-left" />
                             <ComponentsIcons v-else name="icon-fold-right" />
                         </i>
@@ -116,10 +116,10 @@ function handleMenu() {
                                 </el-switch>
                             </el-form-item>
                             <!-- 全屏切换 -->
-                            <el-form-item class="form-item form-item-end">
+                            <el-form-item class="form-item form-item--end">
                                 <ComponentsIcons
                                     name="icon-fullScreen"
-                                    class="box-unfold-a"
+                                    class="box__unfold-a"
                                     style="width: 1.4em; height: 1.4em"
                                     @click="fullscreenToggle" />
                             </el-form-item>
@@ -214,7 +214,7 @@ function handleMenu() {
         }
     }
 
-    .box-unfold-a:hover {
+    .box__unfold-a:hover {
         cursor: pointer;
     }
 }

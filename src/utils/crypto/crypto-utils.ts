@@ -6,7 +6,7 @@ import {
     importRsaPrivateKeyForSign,
     importRsaPublicKey,
     toBufferSource
-} from "./ras-utils";
+} from "./rsa-utils";
 
 /**
  * 一键解密：RSA 解密 AES 密钥 + AES-GCM 解密业务数据

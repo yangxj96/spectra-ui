@@ -68,7 +68,7 @@ export async function fetchClientPrivateKey(): Promise<void> {
 // 密钥管理 API
 // =================================================
 
-export const cryptoApi = {
+export const CryptoApi = {
     /**
      * 生成 RSA 密钥对（服务端 + 客户端）
      * 需要 ROLE_DEV_OPS 权限

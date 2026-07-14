@@ -1,12 +1,12 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ElTree } from "element-plus";
 import { onMounted, reactive, ref, useTemplateRef } from "vue";
 
-import { authorityApi } from "@/api/auth/authority.ts";
-import { roleApi } from "@/api/auth/role.ts";
-import { menuApi } from "@/api/system/menu.ts";
+import { AuthorityApi } from "@/api/auth/authority-api.ts";
+import { RoleApi } from "@/api/auth/role-api.ts";
+import { MenuApi } from "@/api/system/menu-api.ts";
 import { roleConverter } from "@/converter/role-converter.ts";
-import UseTable from "@/hooks/use-table.ts";
+import useTable from "@/hooks/use-table.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -32,8 +32,8 @@ const edit = reactive<{
 });
 const currentRow = ref<RolePageVO>();
 
-const { handlerConditionQuery, handleCurrentChange, handleSizeChange, pagination, table_data } = UseTable<RolePageVO>(
-    roleApi.page,
+const { handlerConditionQuery, handleCurrentChange, handleSizeChange, pagination, table_data } = useTable<RolePageVO>(
+    RoleApi.page,
     condition.value
 );
 
@@ -43,8 +43,8 @@ onMounted(() => {
 
 // 初始化数据
 const handleInitData = async () => {
-    menu_tree.value = await menuApi.tree();
-    authority_tree.value = await authorityApi.tree();
+    menu_tree.value = await MenuApi.tree();
+    authority_tree.value = await AuthorityApi.tree();
 };
 
 const handleRoleAdd = () => {
@@ -60,7 +60,7 @@ const handleRoleEdit = (row: RolePageVO) => {
 // 角色删除
 const handleRoleDelete = (row: RolePageVO) => {
     MessageUtils.box.confirm(`是否要删除[${row.name}]`, "提示").then(async () => {
-        await roleApi.delete(row.id);
+        await RoleApi.delete(row.id);
         MessageUtils.success("删除成功");
         await handlerConditionQuery();
     });
@@ -93,12 +93,12 @@ const handleRoleTableRowClick = async (row: RolePageVO) => {
         currentRow.value = row;
         cleanTreeCheckState();
         // 权限部分
-        const roleAuthority = await roleApi.getRoleAuthority(row.id);
+        const roleAuthority = await RoleApi.getRoleAuthority(row.id);
         const roleAuthorityIds = roleAuthority.map(i => i.id);
         powerRef.value?.setCheckedKeys(roleAuthorityIds);
 
         // 菜单部分
-        const roleMenu = await roleApi.getRoleMenu(row.id);
+        const roleMenu = await RoleApi.getRoleMenu(row.id);
         menuRef.value?.setCheckedKeys(roleMenu.map(i => i.id));
     } catch (error: unknown) {
         console.error("未知错误", error);
@@ -115,7 +115,7 @@ const handleSaveRoleAuthority = async () => {
         role_id: currentRow.value.id,
         authority_ids: powerRef.value?.getCheckedKeys()
     };
-    await roleApi.saveRoleAuthority(params);
+    await RoleApi.saveRoleAuthority(params);
     MessageUtils.success("保存成功");
 };
 
@@ -129,7 +129,7 @@ const handleSaveRoleMenu = async () => {
         role_id: currentRow.value.id,
         menu_ids: menuRef.value?.getCheckedKeys()
     };
-    await roleApi.saveRoleMenu(params);
+    await RoleApi.saveRoleMenu(params);
     MessageUtils.success("保存成功");
 };
 </script>

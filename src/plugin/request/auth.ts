@@ -1,4 +1,4 @@
-import { authApi } from "@/api/auth/auth";
+﻿import { AuthApi } from "@/api/auth/auth-api";
 import { useUserStore } from "@/plugin/store/modules/use-user-store";
 
 let refreshing = false;
@@ -26,7 +26,7 @@ export async function refreshToken(): Promise<Token | null> {
     refreshing = true;
 
     try {
-        const newToken = await authApi.refresh(refreshTokenValue);
+        const newToken = await AuthApi.refresh(refreshTokenValue);
 
         store.token = newToken;
 

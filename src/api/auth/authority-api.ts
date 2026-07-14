@@ -7,7 +7,7 @@ import { del, get, post, put } from "@/plugin/request/api";
  * @version 1.0
  * @since 2025-11-11 15:00:00
  */
-export const authorityApi = {
+export const AuthorityApi = {
     /**
      * 创建权限
      * @param params 权限入参

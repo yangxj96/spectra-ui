@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { fileUploadApi } from "@/api/common/file-upload.ts";
+﻿<script setup lang="ts">
+import { FileUploadApi } from "@/api/common/file-upload-api.ts";
 import { CommonUtils } from "@/utils/common-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -22,7 +22,7 @@ const props = defineProps<UploadProps>();
 const handleUpload = async (options: UploadRequestOptions) => {
     const hash = CommonUtils.UUIDUpper();
     // 先进行预处理
-    const { exists, url, multipart, upload_id, chunk_size } = await fileUploadApi.pre({
+    const { exists, url, multipart, upload_id, chunk_size } = await FileUploadApi.pre({
         filename: options.file.name,
         hash: hash,
         size: options.file.size
@@ -45,7 +45,7 @@ const handleUpload = async (options: UploadRequestOptions) => {
             upload_id: upload_id,
             chunk_size: chunk_size
         });
-        finalUrl = await fileUploadApi.merge(upload_id);
+        finalUrl = await FileUploadApi.merge(upload_id);
     } else {
         finalUrl = await uploadSingle({
             file: options.file,
@@ -68,7 +68,7 @@ const uploadSingle = async ({ file, hash, upload_id }: SingleParams) => {
     params.append("file", file);
     params.append("hash", hash);
     params.append("upload_id", upload_id);
-    await fileUploadApi.uploadSingle(params);
+    await FileUploadApi.uploadSingle(params);
     return "";
 };
 
@@ -86,7 +86,7 @@ const uploadChunk = async ({ file, filename, hash, upload_id, chunk_size }: Chun
         params.append("count", chunks.length.toString());
         params.append("index", (index + 1).toString());
 
-        return fileUploadApi.uploadChunk(params);
+        return FileUploadApi.uploadChunk(params);
     });
 
     // 等所有成功

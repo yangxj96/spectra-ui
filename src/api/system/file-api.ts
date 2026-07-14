@@ -4,7 +4,7 @@ import { request } from "@/plugin/request/http";
 /**
  * 文件管理相关接口
  */
-export const fileApi = {
+export const FileApi = {
     /**
      * 分页查询文件列表
      * @param params 分页参数

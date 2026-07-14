@@ -1,9 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
 import { computed, onMounted, ref, useTemplateRef } from "vue";
 
-import { roleApi } from "@/api/auth/role.ts";
-import { departmentApi } from "@/api/user/organization.ts";
+import { RoleApi } from "@/api/auth/role-api.ts";
+import { DepartmentApi } from "@/api/user/department-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import { roleConverter } from "@/converter/role-converter.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
@@ -57,7 +57,7 @@ const rules: FormRules<RoleForm> = {
 };
 
 onMounted(async () => {
-    department_tree.value = await departmentApi.tree();
+    department_tree.value = await DepartmentApi.tree();
 });
 
 // 处理关闭
@@ -72,9 +72,9 @@ const handleSave = async () => {
     try {
         await formRef.value?.validate();
         if (modify.value) {
-            await roleApi.update(roleConverter.toDTO(form.value));
+            await RoleApi.update(roleConverter.toDTO(form.value));
         } else {
-            await roleApi.create(roleConverter.toDTO(form.value));
+            await RoleApi.create(roleConverter.toDTO(form.value));
         }
         MessageUtils.success(modify.value ? "修改角色成功" : "新增角色成功", handleClose);
     } catch (error) {

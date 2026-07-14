@@ -1,7 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { defineAsyncComponent, markRaw, reactive, ref, watch } from "vue";
 
-import { dictApi } from "@/api/system/dict.ts";
+import { DictApi } from "@/api/system/dict-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictTag from "@/components/DictTag/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -44,12 +44,12 @@ watch(
 
 // 初始化数据
 const initData = async () => {
-    dictGroupTableData.value = await dictApi.getTypesGroupTree();
+    dictGroupTableData.value = await DictApi.getTypesGroupTree();
 };
 
 const handleGetDictData = async () => {
     // 如果当前字典组有值，获取对应的字典数据
-    dictDataTableData.value = await dictApi.getDataByTypeCode(currentGroup.value!.code);
+    dictDataTableData.value = await DictApi.getDataByTypeCode(currentGroup.value!.code);
 };
 
 const handleDialogOpen = (type: string, row: DictGroup | DictItem | unknown = {} as unknown) => {

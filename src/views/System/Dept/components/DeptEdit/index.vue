@@ -1,8 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
 import { computed, useTemplateRef } from "vue";
 
-import { departmentApi } from "@/api/user/organization.ts";
+import { DepartmentApi } from "@/api/user/department-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
 import RegionSelectLazy from "@/components/RegionSelectLazy/index.vue";
@@ -53,9 +53,9 @@ const handleOrganizationSave = async () => {
     try {
         await formRef.value?.validate();
         if (modify.value) {
-            await departmentApi.update(deptConverter.toDTO(form.value));
+            await DepartmentApi.update(deptConverter.toDTO(form.value));
         } else {
-            await departmentApi.create(deptConverter.toDTO(form.value));
+            await DepartmentApi.create(deptConverter.toDTO(form.value));
         }
         MessageUtils.success(modify.value ? "修改组织机构成功" : "新增组织机构成功", handleClose);
     } catch (error) {

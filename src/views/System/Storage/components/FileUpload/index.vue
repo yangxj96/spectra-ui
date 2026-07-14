@@ -1,7 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from "vue";
 
-import { fileUploadApi } from "@/api/common/file-upload.ts";
+import { FileUploadApi } from "@/api/common/file-upload-api.ts";
 import { getToken } from "@/plugin/request/auth.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -133,7 +133,7 @@ const uploadChunked = async (file: UploadFile, hash: string, uploadId: string, c
     }
 
     // 合并分片
-    await fileUploadApi.merge(uploadId);
+    await FileUploadApi.merge(uploadId);
 
     // 清理标记
     chunkUploadFiles.delete(file.uid);
@@ -148,7 +148,7 @@ const uploadFile = async (file: UploadFile): Promise<void> => {
     const hash = await calculateHash(rawFile);
 
     // 2. 调用预处理接口
-    const preResult = await fileUploadApi.pre({
+    const preResult = await FileUploadApi.pre({
         filename: file.name,
         size: file.size,
         hash: hash

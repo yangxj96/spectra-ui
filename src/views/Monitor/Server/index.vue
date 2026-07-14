@@ -1,11 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { LineChart } from "echarts/charts";
 import { GridComponent, LegendComponent, TitleComponent, TooltipComponent } from "echarts/components";
 import { use } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { defineAsyncComponent, onMounted, ref, useTemplateRef } from "vue";
 
-import { serviceMonitorApi } from "@/api/system/service-monitor.ts";
+import { ServiceMonitorApi } from "@/api/system/service-monitor-api.ts";
 
 const VChart = defineAsyncComponent(() => import("vue-echarts"));
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, TitleComponent, LegendComponent]);
@@ -76,7 +76,7 @@ onMounted(() => {
 
 // 初始化所需数据
 const initData = () => {
-    const requests = [serviceMonitorApi.getCPUInfo(), serviceMonitorApi.getRAMInfo(), serviceMonitorApi.getJVMInfo()];
+    const requests = [ServiceMonitorApi.getCPUInfo(), ServiceMonitorApi.getRAMInfo(), ServiceMonitorApi.getJVMInfo()];
     Promise.all(requests).then(res => {
         cpuInfo.value = (res[0] ?? []) as CPUInfo;
         ramInfo.value = (res[1] ?? []) as RAMInfo;

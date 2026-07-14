@@ -1,8 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
 import { onMounted, reactive, useTemplateRef } from "vue";
 
-import { menuApi } from "@/api/system/menu.ts";
+import { MenuApi } from "@/api/system/menu-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import IconPicker from "@/components/IconPicker/index.vue";
 import JsonEditor from "@/components/JsonEditor/index.vue";
@@ -50,9 +50,9 @@ const handleMenuSave = async () => {
     await menuForm.value?.validate(async valid => {
         if (valid) {
             if (has_edit) {
-                await menuApi.update(edit.form);
+                await MenuApi.update(edit.form);
             } else {
-                await menuApi.create(edit.form);
+                await MenuApi.create(edit.form);
             }
             MessageUtils.success(has_edit ? "修改菜单成功" : "新增菜单成功", handleClose);
         }

@@ -1,8 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
-import { authApi } from "@/api/auth/auth.ts";
+import { AuthApi } from "@/api/auth/auth-api.ts";
 import avatar from "@/assets/images/avatar.png";
 import logo from "@/assets/images/logo.svg";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
@@ -100,7 +100,7 @@ function resolveSideMenus(path: string) {
 
 function handleUserLogout() {
     cancelAllRequests();
-    authApi.logout();
+    AuthApi.logout();
     MessageUtils.success("退出成功", () => {
         GlobalUtils.exit();
     });

@@ -1,6 +1,6 @@
-import { type AsyncComponentLoader, type defineAsyncComponent } from "vue";
+﻿import { type AsyncComponentLoader, type defineAsyncComponent } from "vue";
 
-import { menuApi } from "@/api/system/menu.ts";
+import { MenuApi } from "@/api/system/menu-api.ts";
 import { hideLoading } from "@/plugin/element/loading.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -104,7 +104,7 @@ export const loadMenu = async (router: Router, to: RouteLocationNormalizedLoaded
     appStore.isFetchingMenus = true; // 设置加载状态
 
     try {
-        const menus = await menuApi.tree();
+        const menus = await MenuApi.tree();
         // if (res.code === 200 && res.data) {
         // 不使用 as 会出现 TS2589,暂时没搞定
         appStore.menus = menus as never;

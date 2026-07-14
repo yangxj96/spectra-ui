@@ -1,7 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 
-import { departmentApi } from "@/api/user/organization.ts";
+import { DepartmentApi } from "@/api/user/department-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
 import { deptConverter } from "@/converter/dept-converter.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -25,14 +25,14 @@ onMounted(() => {
 
 // 初始化数据
 const handleCriteriaQuery = async () => {
-    table_data.value = await departmentApi.tree();
+    table_data.value = await DepartmentApi.tree();
 };
 
 // 表行删除按钮被单击
 const handleTableItemDelete = (row: DepartmentTreeVO) => {
     MessageUtils.box.confirm(`是否要删除[${row.name}]`, "提示").then(async () => {
         try {
-            await departmentApi.deleteById(row.id);
+            await DepartmentApi.deleteById(row.id);
             MessageUtils.success("删除成功");
         } finally {
             await handleCriteriaQuery();

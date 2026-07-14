@@ -1,9 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { reactive, ref } from "vue";
 
-import { regionApi } from "@/api/system/region.ts";
+import { RegionApi } from "@/api/system/region-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
-import UseTable from "@/hooks/use-table.ts";
+import useTable from "@/hooks/use-table.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 import RegionEdit from "./components/RegionEdit/index.vue";
@@ -16,8 +16,8 @@ const condition = ref<RegionPageParams>({
 });
 
 // table分页请求
-const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = UseTable<Region>(
-    regionApi.page,
+const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<Region>(
+    RegionApi.page,
     condition.value
 );
 
@@ -32,7 +32,7 @@ const editDrawer = reactive({
 const treeData = ref<Region[]>([]);
 
 const loadTreeData = async () => {
-    treeData.value = (await regionApi.load({ level: 1 })) || [];
+    treeData.value = (await RegionApi.load({ level: 1 })) || [];
 };
 
 // 新增
@@ -56,7 +56,7 @@ const handleEdit = (row: Region) => {
 // 删除
 const handleDelete = (row: Region) => {
     MessageUtils.box.confirm(`是否要删除[${row.name}]`, "提示").then(async () => {
-        await regionApi.deleteById(row.id);
+        await RegionApi.deleteById(row.id);
         MessageUtils.success("删除成功", () => {
             handlerConditionQuery();
         });

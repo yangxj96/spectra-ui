@@ -1,11 +1,11 @@
-import formCreate from "@form-create/element-ui";
+﻿import formCreate from "@form-create/element-ui";
 import { loadSlim } from "@tsparticles/slim";
 import Particles from "@tsparticles/vue3";
 import { useDark, useToggle } from "@vueuse/core";
 import ElementPlus from "element-plus";
 import { createApp } from "vue";
 
-import { initCrypto } from "@/api/system/crypto";
+import { initCrypto } from "@/api/system/crypto-api";
 import { registerDirectives } from "@/directive";
 import router from "@/plugin/router";
 import createStore from "@/plugin/store";

@@ -7,7 +7,7 @@ import { get } from "@/plugin/request/api.ts";
  * @version 1.0
  * @since 2026-07-11
  */
-export const meetingApi = {
+export const MeetingApi = {
     /**
      * 分页查询会议列表
      * @param params 查询参数

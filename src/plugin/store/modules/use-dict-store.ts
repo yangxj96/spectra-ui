@@ -1,7 +1,7 @@
-import PQueue from "p-queue";
+﻿import PQueue from "p-queue";
 import { defineStore } from "pinia";
 
-import { dictApi } from "@/api/system/dict.ts";
+import { DictApi } from "@/api/system/dict-api.ts";
 
 // 创建一个串行队列（concurrency=1）
 const serialQueue = new PQueue({ concurrency: 1 });
@@ -21,7 +21,7 @@ export const useDictStore = defineStore("dict", {
                     return this.dicts[key];
                 }
                 try {
-                    const data = await dictApi.getDataByTypeCode(key);
+                    const data = await DictApi.getDataByTypeCode(key);
                     this.dicts[key] = data ?? [];
                     return this.dicts[key];
                 } catch (error) {

@@ -41,7 +41,7 @@ declare global {
         jvm_name: string;
         jvm_vendor: string;
         jvm_version: string;
-        jvm_spec_name;
+        jvm_spec_name: string;
         jvm_spec_version: string;
         jvm_spec_vendor: string;
         java_version: string;
@@ -52,7 +52,7 @@ declare global {
         pid: string;
         process_id: string;
         jvm_arguments: string[];
-        system_properties: Map<string, string>;
+        system_props: Map<string, string>;
         class_path: string;
         library_path: string;
     };

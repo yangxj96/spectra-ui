@@ -1,12 +1,12 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
 import { onMounted, ref } from "vue";
 
-import { configuredApi } from "@/api/system/configured.ts";
-import { cryptoApi } from "@/api/system/crypto.ts";
+import { ConfiguredApi } from "@/api/system/configured-api.ts";
+import { CryptoApi } from "@/api/system/crypto-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
 import { configuredConverter } from "@/converter/configured-converter.ts";
-import UseTable from "@/hooks/use-table.ts";
+import useTable from "@/hooks/use-table.ts";
 import ConfiguredEdit from "@/views/System/Configured/components/ConfiguredEdit/index.vue";
 
 const edit = ref<{
@@ -25,7 +25,7 @@ const condition = ref<ConfiguredPageParams>({
 
 // table分页请求
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } =
-    UseTable<ConfiguredPageVO>(configuredApi.page, condition.value);
+    useTable<ConfiguredPageVO>(ConfiguredApi.page, condition.value);
 
 onMounted(() => {});
 
@@ -58,7 +58,7 @@ const handleGenerateKeyPair = async () => {
             "生成 RSA 密钥对",
             { confirmButtonText: "确认生成", cancelButtonText: "取消", type: "warning" }
         );
-        await cryptoApi.generateKeyPair();
+        await CryptoApi.generateKeyPair();
         ElMessage.success("RSA 密钥对已生成并生效");
         await handlerConditionQuery();
     } catch (e: unknown) {

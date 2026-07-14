@@ -1,12 +1,12 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-import { departmentApi } from "@/api/user/organization.ts";
-import { userApi } from "@/api/user/user.ts";
+import { DepartmentApi } from "@/api/user/department-api.ts";
+import { UserApi } from "@/api/user/user-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictTag from "@/components/DictTag/index.vue";
 import { userConverter } from "@/converter/user-converter.ts";
-import UseTable from "@/hooks/use-table.ts";
+import useTable from "@/hooks/use-table.ts";
 import { useDictStore } from "@/plugin/store/modules/use-dict-store.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -33,13 +33,13 @@ const organizationTree = ref<DepartmentTreeVO[]>([]);
 const dictStore = useDictStore();
 
 // table分页请求
-const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = UseTable<UserPageVO>(
-    userApi.page,
+const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<UserPageVO>(
+    UserApi.page,
     condition.value
 );
 
 const handleInitData = async () => {
-    organizationTree.value = (await departmentApi.tree()) || [];
+    organizationTree.value = (await DepartmentApi.tree()) || [];
 };
 
 const handleUserAdd = () => {
@@ -55,7 +55,7 @@ const handleUserEdit = (row: UserPageVO) => {
 // 表行删除按钮被单击
 const handleTableItemDelete = (row: UserPageVO) => {
     MessageUtils.box.confirm(`是否要删除[${row.username}]`, "提示").then(async () => {
-        await userApi.deleteById(row.id);
+        await UserApi.deleteById(row.id);
         MessageUtils.success("删除成功", () => {
             handlerConditionQuery();
         });
@@ -66,7 +66,7 @@ const handleTableItemDelete = (row: UserPageVO) => {
 const handleTableItemResetPassword = (row: UserPageVO) => {
     console.log(`重置密码:${JSON.stringify(row)}`);
     MessageUtils.box.confirm(`是否要重置[${row.username}]的密码`, "提示").then(async () => {
-        await userApi.passwordResetById(row.id);
+        await UserApi.passwordResetById(row.id);
         MessageUtils.success("重置成功", () => {
             handlerConditionQuery();
         });

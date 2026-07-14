@@ -7,7 +7,7 @@ import { post, upload } from "@/plugin/request/api.ts";
  * @version 1.0
  * @since 2025-12-18 00:28:33
  */
-export const fileUploadApi = {
+export const FileUploadApi = {
     /**
      * 文件预处理
      * @param params 上传文件入参

@@ -1,6 +1,6 @@
 import { get, put } from "@/plugin/request/api.ts";
 
-export const configuredApi = {
+export const ConfiguredApi = {
     /**
      * 分页查询系统配置信息
      */

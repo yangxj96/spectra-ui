@@ -8,7 +8,7 @@ import Footer from "@/components/Layouts/components/Footer/index.vue";
 import Navbar from "@/components/Layouts/components/Navbar/index.vue";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 
-import Sidebar from "./components/sidebar/index.vue";
+import Sidebar from "./components/Sidebar/index.vue";
 
 defineOptions({
     name: "LayoutsDefault"

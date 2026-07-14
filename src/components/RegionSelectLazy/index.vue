@@ -1,7 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-import { regionApi } from "@/api/system/region.ts";
+import { RegionApi } from "@/api/system/region-api.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 import type { CascaderNode, CascaderProps, CascaderValue } from "element-plus";
@@ -34,7 +34,7 @@ const cascaderValue = ref<string[]>([]);
  */
 const handleLoad: CascaderProps["lazyLoad"] = async (node: CascaderNode, resolve) => {
     try {
-        const res = await regionApi.load({
+        const res = await RegionApi.load({
             level: node.level + 1,
             id: (node.data as Region | undefined)?.id
         });
@@ -59,7 +59,7 @@ const handleChange = async (value: CascaderValue | null | undefined) => {
     model.value = last;
 
     try {
-        const res = await regionApi.path(last);
+        const res = await RegionApi.path(last);
         name.value = res.full_name;
     } catch (e) {
         MessageUtils.error((e as Error).message);
@@ -73,7 +73,7 @@ const initPath = async () => {
     if (!model.value) return;
 
     try {
-        const res = await regionApi.path(model.value);
+        const res = await RegionApi.path(model.value);
 
         // ✔ 设置路径数组（关键）
         cascaderValue.value = res.ids;

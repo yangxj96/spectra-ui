@@ -3,7 +3,7 @@ import { del, get, post, put } from "@/plugin/request/api.ts";
 /**
  * 行政区域相关接口
  */
-export const regionApi = {
+export const RegionApi = {
     /**
      * 获取行政区域
      *

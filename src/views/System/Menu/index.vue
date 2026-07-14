@@ -1,8 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ElTable } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
 
-import { menuApi } from "@/api/system/menu.ts";
+import { MenuApi } from "@/api/system/menu-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -23,7 +23,7 @@ onMounted(() => {
 
 // 初始化数据
 const handleCriteriaQuery = async () => {
-    table_data.value = await menuApi.tree();
+    table_data.value = await MenuApi.tree();
 };
 
 // 表行修改按钮被单击
@@ -37,7 +37,7 @@ const handleTableItemModify = (row: Menu) => {
 const handleTableItemDelete = (row: Menu) => {
     MessageUtils.box.confirm(`是否要删除[${row.name}]`, "提示").then(async () => {
         console.log(`确定删除`);
-        await menuApi.deleteById(row.id);
+        await MenuApi.deleteById(row.id);
         MessageUtils.success("删除菜单成功", () => {
             handleCriteriaQuery();
         });

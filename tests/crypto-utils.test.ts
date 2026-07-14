@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { decrypt, encrypt, generateIv, sign, verifySignature } from "../src/utils/crypto/crypto-utils";
-import { toBufferSource } from "../src/utils/crypto/ras-utils";
+import { toBufferSource } from "../src/utils/crypto/rsa-utils";
 
 /**
  * 生成 RSA 测试密钥对

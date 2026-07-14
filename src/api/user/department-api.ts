@@ -7,7 +7,7 @@ import { del, get, post, put } from "@/plugin/request/api.ts";
  * @version 1.0
  * @since 2025-11-11 15:00:00
  */
-export const departmentApi = {
+export const DepartmentApi = {
     /**
      * 获取组织机构树形列表
      */

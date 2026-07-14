@@ -5,7 +5,7 @@ declare global {
         type: "PASSWORD" | "SMS" | "SCAN" | "WECHAT" | "GITHUB";
         username: string;
         password: string;
-        clientId: string;
+        client_id: string;
         captcha: string;
     };
 

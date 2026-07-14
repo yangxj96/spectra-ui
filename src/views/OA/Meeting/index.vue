@@ -1,7 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from "vue";
 
-import { meetingApi } from "@/api/oa/meeting.ts";
+import { MeetingApi } from "@/api/oa/meeting-api.ts";
 import useTable from "@/hooks/use-table.ts";
 
 // 会议状态下拉选项（查询用：业务状态）
@@ -36,7 +36,7 @@ const condition = ref<MeetingPageParams>({
 
 // table分页请求
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<MeetingVO>(
-    meetingApi.page,
+    MeetingApi.page,
     condition.value
 );
 

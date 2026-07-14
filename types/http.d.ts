@@ -75,12 +75,12 @@ declare global {
         // 主键ID
         id: string;
         // 创建人
-        created_user?: string;
+        created_by?: string;
         // 创建时间
-        created_time?: string;
+        created_at?: string;
         // 最后更新人
-        updated_user?: string;
+        updated_by?: string;
         // 最后更新时间
-        updated_time?: string;
+        updated_at?: string;
     };
 }

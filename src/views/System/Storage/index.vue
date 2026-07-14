@@ -1,8 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from "vue";
 
-import { fileApi } from "@/api/system/file.ts";
-import UseTable from "@/hooks/use-table.ts";
+import { FileApi } from "@/api/system/file-api.ts";
+import useTable from "@/hooks/use-table.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 import FileUpload from "./components/FileUpload/index.vue";
@@ -16,8 +16,8 @@ const condition = ref<FilePageParams>({
 });
 
 // table分页请求
-const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = UseTable<FileInfo>(
-    fileApi.page,
+const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<FileInfo>(
+    FileApi.page,
     condition.value
 );
 
@@ -85,19 +85,19 @@ const formatStorageType = (type: string): string => {
 
 // 下载文件
 const handleDownload = async (row: FileInfo) => {
-    await fileApi.download(row.id, row.original_name);
+    await FileApi.download(row.id, row.original_name);
     MessageUtils.success("下载成功");
 };
 
 // 预览文件
 const handlePreview = (row: FileInfo) => {
-    window.open(fileApi.previewUrl(row.id), "_blank");
+    window.open(FileApi.previewUrl(row.id), "_blank");
 };
 
 // 删除文件
 const handleDelete = (row: FileInfo) => {
     MessageUtils.box.confirm(`是否要删除文件[${row.original_name}]`, "提示").then(async () => {
-        await fileApi.deleteById(row.id);
+        await FileApi.deleteById(row.id);
         MessageUtils.success("删除成功", () => {
             handlerConditionQuery();
         });

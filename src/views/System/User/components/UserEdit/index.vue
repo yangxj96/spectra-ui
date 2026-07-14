@@ -1,10 +1,10 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { type AutocompleteData, type FormInstance, type FormRules } from "element-plus";
 import { onMounted, ref, useTemplateRef } from "vue";
 
-import { roleApi } from "@/api/auth/role.ts";
-import { departmentApi } from "@/api/user/organization.ts";
-import { userApi } from "@/api/user/user.ts";
+import { RoleApi } from "@/api/auth/role-api.ts";
+import { DepartmentApi } from "@/api/user/department-api.ts";
+import { UserApi } from "@/api/user/user-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
 import { userConverter } from "@/converter/user-converter.ts";
@@ -54,8 +54,8 @@ onMounted(async () => {
             emailSuffixes.value = items.map(i => i.value);
         });
 
-    roles.value = await roleApi.list();
-    department_tree.value = await departmentApi.tree();
+    roles.value = await RoleApi.list();
+    department_tree.value = await DepartmentApi.tree();
 });
 
 // 处理关闭
@@ -70,9 +70,9 @@ const handleUserSave = async () => {
     try {
         await formRef.value?.validate();
         if (form.value.id) {
-            await userApi.update(userConverter.toDTO(form.value));
+            await UserApi.update(userConverter.toDTO(form.value));
         } else {
-            await userApi.create(userConverter.toDTO(form.value));
+            await UserApi.create(userConverter.toDTO(form.value));
         }
         MessageUtils.success(form.value.id ? "修改用户成功" : "新增用户成功", handleClose);
     } catch (error) {

@@ -1,8 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { type FormInstance } from "element-plus";
 import { onMounted, reactive, ref, useTemplateRef } from "vue";
 
-import { dictApi } from "@/api/system/dict.ts";
+import { DictApi } from "@/api/system/dict-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -56,7 +56,7 @@ onMounted(() => {
 
 // 初始化数据
 const handleInitData = async () => {
-    gropus.value = (await dictApi.getTypesGroupTree()) || [];
+    gropus.value = (await DictApi.getTypesGroupTree()) || [];
 };
 
 // 处理关闭
@@ -74,9 +74,9 @@ const handleSaveDictGroup = () => {
             return;
         }
         if (has_edit) {
-            await dictApi.updateData(edit.form);
+            await DictApi.updateData(edit.form);
         } else {
-            await dictApi.createData(edit.form);
+            await DictApi.createData(edit.form);
         }
         MessageUtils.success("保存成功", () => {
             emit("close");

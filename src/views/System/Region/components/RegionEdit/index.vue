@@ -1,8 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
 import { onMounted, reactive, useTemplateRef } from "vue";
 
-import { regionApi } from "@/api/system/region.ts";
+import { RegionApi } from "@/api/system/region-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -51,9 +51,9 @@ const handleSave = async () => {
             return;
         }
         if (has_edit) {
-            await regionApi.update(edit.form);
+            await RegionApi.update(edit.form);
         } else {
-            await regionApi.create(edit.form);
+            await RegionApi.create(edit.form);
         }
         MessageUtils.success("保存成功", handleClose);
     });

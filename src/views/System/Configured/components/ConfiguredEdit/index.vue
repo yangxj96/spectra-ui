@@ -1,7 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useTemplateRef } from "vue";
 
-import { configuredApi } from "@/api/system/configured.ts";
+import { ConfiguredApi } from "@/api/system/configured-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
 import { configuredConverter } from "@/converter/configured-converter.ts";
@@ -35,7 +35,7 @@ const handleConfiguredSave = async () => {
     if (!formRef.value) return;
     try {
         await formRef.value.validate();
-        await configuredApi.upload(configuredConverter.toDTO(form.value));
+        await ConfiguredApi.upload(configuredConverter.toDTO(form.value));
         MessageUtils.success("修改配置成功", handleClose);
     } catch (error) {
         console.error(error);

@@ -90,7 +90,7 @@ initData();
 
 <template>
     <!-- 过滤行 -->
-    <el-row class="box-search">
+    <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item>
                 <el-button v-owner="'DICT:INSERT'" @click="handleDialogOpen('DictGroup')">
@@ -105,7 +105,7 @@ initData();
         </el-form>
     </el-row>
     <!-- 数据行 -->
-    <el-row class="box-body">
+    <el-row class="box__body">
         <el-col :span="4">
             <el-tree
                 node-key="id"
@@ -188,7 +188,7 @@ initData();
 </template>
 
 <style scoped lang="scss">
-.box-search {
+.box__search {
     height: 10%;
     display: flex;
     align-items: center;
@@ -200,7 +200,7 @@ initData();
     }
 }
 
-.box-body {
+.box__body {
     padding-left: 1em;
     padding-right: 1em;
     height: 90%;

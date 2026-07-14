@@ -64,7 +64,7 @@ const handleDialogClose = () => {
 
 <template>
     <!-- 搜索区 -->
-    <el-row class="box-search">
+    <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item label="部门名称" prop="name">
                 <el-input placeholder="请输入部门名称" clearable />
@@ -77,7 +77,7 @@ const handleDialogClose = () => {
         </el-form>
     </el-row>
     <!-- 数据区 -->
-    <el-row class="box-body">
+    <el-row class="box__body">
         <el-table :data="table_data" height="100%" border stripe default-expand-all row-key="id">
             <el-table-column align="center" width="060" type="index" label="序号" />
             <el-table-column header-align="center" align="left" width="200" prop="name" label="名称" />
@@ -117,7 +117,7 @@ const handleDialogClose = () => {
 </template>
 
 <style scoped lang="scss">
-.box-search {
+.box__search {
     height: 10%;
     display: flex;
     align-items: center;
@@ -128,7 +128,7 @@ const handleDialogClose = () => {
     }
 }
 
-.box-body {
+.box__body {
     padding-left: 1vw;
     padding-right: 1vw;
     height: 90%;

@@ -127,7 +127,7 @@ function handleMenu() {
                     </el-col>
                 </el-row>
                 <!-- 内容部分 -->
-                <div ref="content" class="box-content loading-box">
+                <div ref="content" class="box__content loading-box">
                     <router-view></router-view>
                 </div>
                 <!-- 底部版权 -->
@@ -146,20 +146,20 @@ function handleMenu() {
     width: 64px;
 }
 
-.box-header {
+.box__header {
     height: auto;
     border-bottom: solid 1px var(--el-border-color);
     padding: 0;
 }
 
-.box-container {
+.box__container {
     height: calc(100vh - 66px);
 }
 
-.box-main {
+.box__main {
     padding: 0;
 
-    .box-breadcrumb {
+    .box__breadcrumb {
         margin-top: 0.5vh;
         margin-bottom: 0.5vh;
         padding-left: 2vh;
@@ -170,12 +170,12 @@ function handleMenu() {
             margin-bottom: 0;
         }
 
-        .form-item-end {
+        .form-item--end {
             margin-right: 0;
         }
     }
 
-    .box-content {
+    .box__content {
         width: 100%;
         // 面包屑3.6vh,有个地方计算错了,改成5vh,头高62px,底部版权20px
         // 5vh - 面包屑
@@ -185,19 +185,19 @@ function handleMenu() {
         overflow: auto;
     }
 
-    .box-content > div {
+    .box__content > div {
         padding: 10px;
     }
 
-    .box-content:-webkit-full-screen {
+    .box__content:-webkit-full-screen {
         background-color: var(--el-bg-color);
     }
 
-    .box-content:fullscreen {
+    .box__content:fullscreen {
         background-color: var(--el-bg-color);
     }
 
-    .box-unfold-a {
+    .box__unfold-a {
         margin-right: 8px;
     }
 

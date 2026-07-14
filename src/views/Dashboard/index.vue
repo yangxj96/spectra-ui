@@ -70,7 +70,7 @@ onMounted(initTime);
         <el-card>
             <div class="block-title">快捷入口</div>
             <div class="shortcut-grid">
-                <div v-for="item in shortcuts" :key="item.path" class="shortcut-item" @click="go(item.path)">
+                <div v-for="item in shortcuts" :key="item.path" class="shortcut__item" @click="go(item.path)">
                     {{ item.name }}
                 </div>
             </div>
@@ -87,7 +87,7 @@ onMounted(initTime);
 
                 <el-calendar v-model="selectedDate" controller-type="select">
                     <template #date-cell="{ data }">
-                        <div class="date-cell">
+                        <div class="date__cell">
                             <span>{{ data.day.split("-")[2] }}</span>
                             <div v-if="todos.some(t => t.date === data.day)" class="dot" />
                         </div>
@@ -103,7 +103,7 @@ onMounted(initTime);
                 </div>
 
                 <div class="scroll">
-                    <div v-for="item in filteredTodos" :key="item.id" class="list-item">
+                    <div v-for="item in filteredTodos" :key="item.id" class="list__item">
                         <span>{{ item.title }}</span>
                         <el-tag size="small" :type="item.done ? 'success' : 'danger'">
                             {{ item.done ? "已完成" : "待处理" }}
@@ -122,7 +122,7 @@ onMounted(initTime);
                 </div>
 
                 <div class="scroll">
-                    <div v-for="item in notices" :key="item.id" class="list-item">
+                    <div v-for="item in notices" :key="item.id" class="list__item">
                         {{ item.title }}
                     </div>
                 </div>
@@ -161,7 +161,7 @@ onMounted(initTime);
     gap: 8px;
 }
 
-.shortcut-item {
+.shortcut__item {
     padding: 10px;
     background: #f5f7fa;
     border-radius: 6px;
@@ -205,7 +205,7 @@ onMounted(initTime);
 }
 
 /* 列表 */
-.list-item {
+.list__item {
     display: flex;
     justify-content: space-between;
     padding: 6px 0;
@@ -219,7 +219,7 @@ onMounted(initTime);
 }
 
 /* 日历标记 */
-.date-cell {
+.date__cell {
     position: relative;
 }
 .dot {

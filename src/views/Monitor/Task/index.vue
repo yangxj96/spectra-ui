@@ -18,7 +18,7 @@ for (let i = 0; i < 21; i++) {
 
 <template>
     <!-- 搜索区 -->
-    <el-row class="box-search">
+    <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item label="任务名称">
                 <el-input placeholder="请输入任务名称" clearable />
@@ -32,7 +32,7 @@ for (let i = 0; i < 21; i++) {
         </el-form>
     </el-row>
     <!-- 数据区 -->
-    <el-row class="box-body">
+    <el-row class="box__body">
         <el-table :data="tableData" border style="width: 100%; height: 70vh">
             <el-table-column align="center" width="250" prop="name" show-overflow-tooltip label="任务名称" />
             <el-table-column align="center" width="200" prop="bean" show-overflow-tooltip label="BEAN名称" />
@@ -67,13 +67,13 @@ for (let i = 0; i < 21; i++) {
 </template>
 
 <style scoped lang="scss">
-.box-search {
+.box__search {
     padding-left: 10px;
     padding-right: 10px;
     padding-top: 10px;
 }
 
-.box-body {
+.box__body {
     padding-left: 10px;
     padding-right: 10px;
 }

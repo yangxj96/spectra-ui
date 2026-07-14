@@ -110,7 +110,7 @@ const handleLogin = async () => {
                                 <el-image :src="kaptchaUrl" class="v-code" @click="refreshKaptcha">
                                     <template v-slot:placeholder>
                                         <div class="el-image__error" style="">
-                                            <ComponentsIcons name="icon-loading" class-name="v-code-ico" />
+                                            <ComponentsIcons name="icon-loading" class-name="v-code__ico" />
                                             加载中...
                                         </div>
                                     </template>
@@ -160,12 +160,12 @@ const handleLogin = async () => {
     cursor: pointer;
 }
 
-.v-code-ico {
+.v-code__ico {
     color: var(--el-text-color-placeholder);
-    animation: v-code-ico-rotate 2s linear infinite;
+    animation: v-code__ico-rotate 2s linear infinite;
 }
 
-@keyframes v-code-ico-rotate {
+@keyframes v-code__ico-rotate {
     0% {
         transform: rotate(0deg);
     }

@@ -132,7 +132,7 @@ const updateData = () => {
         <!-- 固定内容行 -->
         <el-row style="margin-top: 1vh">
             <el-col :span="8">
-                <el-card class="card" body-class="card-body" header="CPU信息">
+                <el-card class="card" body-class="card__body" header="CPU信息">
                     <el-row>CPU型号: {{ cpuInfo?.name }}</el-row>
                     <el-row>完整标识: {{ cpuInfo?.identifier }}</el-row>
                     <el-row>
@@ -156,7 +156,7 @@ const updateData = () => {
             </el-col>
 
             <el-col :span="8">
-                <el-card class="card" body-class="card-body" header="内存信息">
+                <el-card class="card" body-class="card__body" header="内存信息">
                     <el-row>
                         <el-col :span="12">合计:{{ ramInfo?.summary }}</el-col>
                     </el-row>
@@ -181,7 +181,7 @@ const updateData = () => {
             </el-col>
 
             <el-col :span="8">
-                <el-card class="card" body-class="card-body-jvm" header="JVM信息">
+                <el-card class="card" body-class="card__body--jvm" header="JVM信息">
                     <el-row>名称: {{ jvmInfo?.jvm_name }}</el-row>
                     <el-row>版本: {{ jvmInfo?.jvm_version }}</el-row>
                     <el-row>
@@ -237,11 +237,11 @@ const updateData = () => {
     height: 30vh;
 }
 
-.card-body > div {
+.card__body > div {
     line-height: 1.6rem;
 }
 
-.card-body-jvm > div {
+.card__body--jvm > div {
     line-height: 2rem;
 }
 </style>

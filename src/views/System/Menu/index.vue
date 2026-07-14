@@ -60,7 +60,7 @@ const handleEditClose = () => {
 
 <template>
     <!-- 搜索区 -->
-    <el-row class="box-search">
+    <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item label="菜单名称" prop="name">
                 <el-input placeholder="请输入菜单名称" clearable />
@@ -73,7 +73,7 @@ const handleEditClose = () => {
         </el-form>
     </el-row>
     <!-- 数据区 -->
-    <el-row class="box-body">
+    <el-row class="box__body">
         <ElTable
             ref="ref_table"
             v-if="table_data.length > 0"
@@ -130,7 +130,7 @@ const handleEditClose = () => {
 </template>
 
 <style scoped lang="scss">
-.box-search {
+.box__search {
     height: 10%;
     display: flex;
     align-items: center;
@@ -141,7 +141,7 @@ const handleEditClose = () => {
     }
 }
 
-.box-body {
+.box__body {
     height: 90%;
 }
 </style>

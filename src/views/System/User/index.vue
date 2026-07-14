@@ -103,7 +103,7 @@ onMounted(async () => {
 
 <template>
     <!-- 搜索区 -->
-    <el-row class="box-search">
+    <el-row class="box__search">
         <el-form :inline="true" :model="condition">
             <el-form-item label="姓名" prop="username">
                 <el-input v-model="condition.username" placeholder="请输入姓名" clearable />
@@ -128,7 +128,7 @@ onMounted(async () => {
         </el-form>
     </el-row>
     <!-- 数据区 -->
-    <el-row class="box-body">
+    <el-row class="box__body">
         <el-col :span="4">
             <el-tree
                 :data="organizationTree"
@@ -227,7 +227,7 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
-.box-search {
+.box__search {
     height: 10%;
     display: flex;
     align-items: center;
@@ -238,7 +238,7 @@ onMounted(async () => {
     }
 }
 
-.box-body {
+.box__body {
     height: 90%;
 }
 </style>

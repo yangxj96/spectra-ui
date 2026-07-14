@@ -4,7 +4,7 @@ import { ElMessage, ElMessageBox, ElNotification, type MessageOptions, type Mess
 
 // ElMessage默认配置
 const DEFAULT_OPTIONS: Partial<MessageOptions> = {
-    appendTo: ".box-content",
+    appendTo: ".box__content",
     showClose: true,
     duration: 3000
 };
@@ -73,7 +73,7 @@ async function confirm(
         confirmButtonText: "确定",
         cancelButtonText: "取消",
         type: "warning",
-        appendTo: ".box-content",
+        appendTo: ".box__content",
         ...options
     });
 }

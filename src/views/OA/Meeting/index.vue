@@ -50,7 +50,7 @@ const handleReset = () => {
 
 <template>
     <!-- 搜索区 -->
-    <el-row class="box-search">
+    <el-row class="box__search">
         <el-form :inline="true" :model="condition">
             <el-form-item label="会议标题" prop="title">
                 <el-input v-model="condition.title" placeholder="请输入会议标题" clearable />
@@ -71,7 +71,7 @@ const handleReset = () => {
         </el-form>
     </el-row>
     <!-- 数据区 -->
-    <el-row class="box-body">
+    <el-row class="box__body">
         <el-table :data="table_data" height="92%" stripe>
             <el-table-column align="center" type="index" width="60" />
             <el-table-column align="center" width="200" show-overflow-tooltip label="会议标题" prop="title" />
@@ -108,7 +108,7 @@ const handleReset = () => {
 </template>
 
 <style scoped lang="scss">
-.box-search {
+.box__search {
     height: 10%;
     display: flex;
     align-items: center;
@@ -119,7 +119,7 @@ const handleReset = () => {
     }
 }
 
-.box-body {
+.box__body {
     height: 90%;
 }
 </style>

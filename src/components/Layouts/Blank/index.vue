@@ -39,14 +39,14 @@ function handlerRouter(r: RouteLocationMatched[] = []) {
 
 <template>
     <el-container class="box">
-        <el-header class="box-header">
+        <el-header class="box__header">
             <Navbar />
         </el-header>
 
-        <el-container class="box-container">
-            <el-main class="box-main">
+        <el-container class="box__container">
+            <el-main class="box__main">
                 <!-- 内容部分 -->
-                <div ref="content" class="box-content loading-box">
+                <div ref="content" class="box__content loading-box">
                     <router-view></router-view>
                 </div>
                 <!-- 底部版权 -->
@@ -65,20 +65,20 @@ function handlerRouter(r: RouteLocationMatched[] = []) {
     width: 64px;
 }
 
-.box-header {
+.box__header {
     height: auto;
     border-bottom: solid 1px var(--el-border-color);
     padding: 0;
 }
 
-.box-container {
+.box__container {
     height: calc(100vh - 66px);
 }
 
-.box-main {
+.box__main {
     padding: 0;
 
-    .box-breadcrumb {
+    .box__breadcrumb {
         margin-top: 0.5vh;
         margin-bottom: 0.5vh;
         padding-left: 2vh;
@@ -89,12 +89,12 @@ function handlerRouter(r: RouteLocationMatched[] = []) {
             margin-bottom: 0;
         }
 
-        .form-item-end {
+        .form-item--end {
             margin-right: 0;
         }
     }
 
-    .box-content {
+    .box__content {
         width: 100%;
         // 面包屑3.6vh,有个地方计算错了,改成5vh,头高62px,底部版权20px
         // 5vh - 面包屑
@@ -104,19 +104,19 @@ function handlerRouter(r: RouteLocationMatched[] = []) {
         overflow: auto;
     }
 
-    .box-content > div {
+    .box__content > div {
         padding: 10px;
     }
 
-    .box-content:-webkit-full-screen {
+    .box__content:-webkit-full-screen {
         background-color: var(--el-bg-color);
     }
 
-    .box-content:fullscreen {
+    .box__content:fullscreen {
         background-color: var(--el-bg-color);
     }
 
-    .box-unfold-a {
+    .box__unfold-a {
         margin-right: 8px;
     }
 
@@ -133,7 +133,7 @@ function handlerRouter(r: RouteLocationMatched[] = []) {
         }
     }
 
-    .box-unfold-a:hover {
+    .box__unfold-a:hover {
         cursor: pointer;
     }
 }

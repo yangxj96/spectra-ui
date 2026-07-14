@@ -124,7 +124,7 @@ const handleReset = () => {
 
 <template>
     <!-- 搜索区 -->
-    <el-row class="box-search">
+    <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item label="文件名" prop="original_name">
                 <el-input v-model="condition.original_name" placeholder="请输入文件名" clearable />
@@ -143,7 +143,7 @@ const handleReset = () => {
         </el-form>
     </el-row>
     <!-- 数据区 -->
-    <el-row class="box-body">
+    <el-row class="box__body">
         <el-table :data="table_data" height="95%" border stripe>
             <el-table-column align="center" prop="id" label="ID" width="300" show-overflow-tooltip />
             <el-table-column align="center" prop="original_name" label="文件名" min-width="200" show-overflow-tooltip />
@@ -191,7 +191,7 @@ const handleReset = () => {
 </template>
 
 <style scoped lang="scss">
-.box-search {
+.box__search {
     height: 10%;
     display: flex;
     align-items: center;
@@ -202,7 +202,7 @@ const handleReset = () => {
     }
 }
 
-.box-body {
+.box__body {
     padding-left: 1vw;
     padding-right: 1vw;
     height: 90%;

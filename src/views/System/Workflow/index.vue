@@ -32,7 +32,7 @@ const handleFormEdit = () => {
 
 <template>
     <!-- 搜索区 -->
-    <el-row class="box-search">
+    <el-row class="box__search">
         <el-form :inline="true" :model="condition">
             <el-form-item label="流程名称" prop="name">
                 <el-input v-model="condition.name" placeholder="请输入流程名称" clearable style="width: 10vw" />
@@ -53,7 +53,7 @@ const handleFormEdit = () => {
         </el-form>
     </el-row>
     <!-- 数据区 -->
-    <el-row class="box-body">
+    <el-row class="box__body">
         <!-- 列表 -->
         <el-table :data="table_data" height="92%" stripe>
             <el-table-column align="center" type="index" />
@@ -88,7 +88,7 @@ const handleFormEdit = () => {
 </template>
 
 <style scoped lang="scss">
-.box-search {
+.box__search {
     height: 10%;
     display: flex;
     align-items: center;
@@ -99,7 +99,7 @@ const handleFormEdit = () => {
     }
 }
 
-.box-body {
+.box__body {
     height: 90%;
 }
 </style>

@@ -71,7 +71,7 @@ const handleGenerateKeyPair = async () => {
 
 <template>
     <!-- 搜索区 -->
-    <el-row class="box-search">
+    <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item label="菜单名称" prop="name">
                 <el-input placeholder="请输入菜单名称" clearable />
@@ -87,7 +87,7 @@ const handleGenerateKeyPair = async () => {
         </el-form>
     </el-row>
     <!-- 数据区 -->
-    <el-row class="box-body">
+    <el-row class="box__body">
         <el-table :data="table_data" height="95%" stripe default-expand-all row-key="id">
             <el-table-column align="center" type="index" label="序号" width="100" />
             <el-table-column align="center" prop="id" label="主键" />
@@ -138,14 +138,14 @@ const handleGenerateKeyPair = async () => {
 </template>
 
 <style scoped lang="scss">
-.box-search {
+.box__search {
     height: 10%;
     display: flex;
     align-items: center;
     padding-left: 20px;
 }
 
-.box-body {
+.box__body {
     height: 90%;
 }
 </style>

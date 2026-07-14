@@ -36,7 +36,7 @@ function onMenuItemClick() {
 
 <template>
     <el-menu
-        class="box-menu"
+        class="box__menu"
         router
         :default-active="$route.path"
         :collapse="!unfold"
@@ -70,11 +70,11 @@ function onMenuItemClick() {
 </template>
 
 <style scoped lang="scss">
-.box-menu {
+.box__menu {
     height: 100%;
 }
 
-.box-menu:not(.el-menu--collapse) {
+.box__menu:not(.el-menu--collapse) {
     width: 100%;
 }
 

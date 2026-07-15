@@ -66,7 +66,7 @@
         "@tsparticles/slim": "3.9.1",
         "@tsparticles/vue3": "3.0.1",
         "@vueuse/core": "14.2.0",
-        "@yangxj96/logicflow-plugin-flowable": "file:../logicflow-flowable",
+        "@yangxj96/logicflow-plugin-flowable": "file:../logicflow-plugin-flowable",
         "echarts": "6.0.0",
         "element-plus": "2.13.2",
         "jsoneditor": "10.4.2",

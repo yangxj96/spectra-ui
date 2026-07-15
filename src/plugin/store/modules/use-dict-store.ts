@@ -52,7 +52,7 @@ export const useDictStore = defineStore("dict", {
          * @param value 字典项的VALUE
          */
         getDictItemSync(key: string, value: string | number): DictItem | undefined {
-            return this.dicts[key]?.find(item => item.value.toString() === value.toString());
+            return this.dicts[key]?.find(item => item.value === String(value));
         }
     }
 });

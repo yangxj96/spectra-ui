@@ -2,9 +2,14 @@ import { ElMessage, ElMessageBox, ElNotification, type MessageOptions, type Mess
 
 /* ===================== 公用部分 ===================== */
 
+// 动态获取容器：优先使用 .box__content，找不到时回退到 document.body
+function getContainer(): HTMLElement {
+    return document.querySelector<HTMLElement>(".box__content") ?? document.body;
+}
+
 // ElMessage默认配置
 const DEFAULT_OPTIONS: Partial<MessageOptions> = {
-    appendTo: ".box__content",
+    appendTo: getContainer(),
     showClose: true,
     duration: 3000
 };
@@ -73,7 +78,7 @@ async function confirm(
         confirmButtonText: "确定",
         cancelButtonText: "取消",
         type: "warning",
-        appendTo: ".box__content",
+        appendTo: getContainer(),
         ...options
     });
 }

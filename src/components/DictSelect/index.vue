@@ -43,7 +43,7 @@ onMounted(async () => {
     try {
         options.value = (await dictStore.getDictData(dict_code.value)) || [];
         // 如果外部 model 未传值，使用 default_flag 的值
-        if (model.value === undefined) {
+        if (model.value === undefined || model.value === null) {
             const defaultItem = options.value.find(item => item.default_flag);
             if (defaultItem) {
                 localValue.value = defaultItem.value;
@@ -74,7 +74,7 @@ function toInner(val: ModelType): string | undefined {
 function toOuter(val: string | undefined): ModelType {
     if (val === undefined) return undefined;
 
-    switch (model.value) {
+    switch (typeof model.value) {
         case "number":
             return Number(val);
         case "boolean":
@@ -86,7 +86,7 @@ function toOuter(val: string | undefined): ModelType {
 </script>
 
 <template>
-    <el-select v-model="localComputed" v-bind="{ clearable: true, 'append-to': '.box-content', ...$attrs }">
+    <el-select v-model="localComputed" v-bind="{ clearable: true, ...$attrs }">
         <el-option v-for="item in options" :key="item.id" :label="item.label" :value="item.value" />
     </el-select>
 </template>

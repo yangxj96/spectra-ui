@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
+import { fetchClientPrivateKey, getClientPrivateKey, isCryptoEnabled } from "@/api/system/crypto-api.ts";
 import { hideLoading, showLoading } from "@/plugin/element/loading";
 import { validateToken } from "@/plugin/request/auth.ts";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
@@ -60,6 +61,10 @@ router.beforeEach(async (to, _, next) => {
             console.debug("[守卫] token验证失败，跳转登录页");
             hideLoading();
             return next({ path: "/login" });
+        }
+        // 获取客户端私钥（用于解密后续响应）
+        if (isCryptoEnabled() && !getClientPrivateKey()) {
+            await fetchClientPrivateKey();
         }
         return await loadMenu(router, to, next);
     }

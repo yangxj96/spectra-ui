@@ -401,7 +401,9 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
             if (
                 contentType?.includes("application/octet-stream") ||
                 contentType?.includes("application/pdf") ||
-                contentType?.includes("application/vnd")
+                contentType?.includes("application/vnd") ||
+                contentType?.includes("image/png") ||
+                contentType?.includes("image/jpeg")
             ) {
                 const blob = await res.blob();
                 if (disposition) {

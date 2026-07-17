@@ -61,5 +61,26 @@ export const WorkflowApi = {
      */
     getProcessInstanceDiagram(processInstanceId: string): Promise<Blob> {
         return get<Blob>(`/api/workflow/process-instances/${processInstanceId}/diagram`);
+    },
+
+    /**
+     * 获取流程定义的 BPMN XML 源码
+     * @param id 流程定义ID
+     */
+    getProcessDefinitionBpmnXml(id: string): Promise<ProcessDefinitionResourceVO> {
+        return get<ProcessDefinitionResourceVO>(`/api/workflow/process-definitions/${id}/resource`);
+    },
+
+    /**
+     * 部署流程定义
+     * @param params 部署参数
+     */
+    deployProcess(params: {
+        bpmn_xml: string;
+        name?: string;
+        key?: string;
+        category?: string;
+    }): Promise<ProcessDefinitionVO> {
+        return post<ProcessDefinitionVO>("/api/workflow/process-definitions/deploy", params);
     }
 };

@@ -44,4 +44,9 @@ declare global {
         createTime: string;
         description: string;
     };
+
+    // 流程定义资源VO（BPMN XML）
+    type ProcessDefinitionResourceVO = {
+        bpmn_xml: string;
+    };
 }

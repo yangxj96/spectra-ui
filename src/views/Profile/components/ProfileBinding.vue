@@ -237,6 +237,26 @@ onMounted(() => {
         <el-divider />
 
         <div class="binding-section">
+            <h4 class="section-title">绑定新账号</h4>
+            <div class="bind-actions">
+                <el-button :disabled="isPhoneBound" @click="handleBindPhoneClick">
+                    <el-icon><Phone /></el-icon>
+                    绑定手机
+                </el-button>
+                <el-button :disabled="isEmailBound" @click="handleBindEmailClick">
+                    <el-icon><Message /></el-icon>
+                    绑定邮箱
+                </el-button>
+                <el-button disabled>
+                    <el-icon><Iphone /></el-icon>
+                    绑定微信
+                </el-button>
+            </div>
+        </div>
+
+        <el-divider />
+
+        <div class="binding-section">
             <h4 class="section-title">已绑定账号</h4>
             <el-table :data="accountBindings" stripe class="binding-table">
                 <el-table-column label="类型" width="120">
@@ -272,26 +292,6 @@ onMounted(() => {
                     </template>
                 </el-table-column>
             </el-table>
-        </div>
-
-        <el-divider />
-
-        <div class="binding-section">
-            <h4 class="section-title">绑定新账号</h4>
-            <div class="bind-actions">
-                <el-button :disabled="isPhoneBound" @click="handleBindPhoneClick">
-                    <el-icon><Phone /></el-icon>
-                    绑定手机
-                </el-button>
-                <el-button :disabled="isEmailBound" @click="handleBindEmailClick">
-                    <el-icon><Message /></el-icon>
-                    绑定邮箱
-                </el-button>
-                <el-button disabled>
-                    <el-icon><Iphone /></el-icon>
-                    绑定微信
-                </el-button>
-            </div>
         </div>
     </div>
 

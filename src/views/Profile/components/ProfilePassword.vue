@@ -2,8 +2,11 @@
 import { Lock } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 
+import { AuthApi } from "@/api/auth/auth-api";
 import { UserApi, type ChangePasswordFrom } from "@/api/user/user-api";
+import { useUserStore } from "@/plugin/store/modules/use-user-store";
 
 import type { FormInstance } from "element-plus";
 
@@ -11,6 +14,7 @@ defineOptions({
     name: "ProfilePassword"
 });
 
+const router = useRouter();
 const formRef = ref<FormInstance>();
 const loading = ref(false);
 
@@ -57,9 +61,23 @@ async function handleChangePassword() {
         loading.value = true;
         try {
             await UserApi.changePassword(passwordForm.value);
+
+            // 1. 调用后端退出接口，使 token 失效
+            try {
+                await AuthApi.logout();
+            } catch {
+                // 即使服务端退出失败也继续清理本地状态
+            }
+
+            // 2. 清除本地状态
+            const userStore = useUserStore();
+            userStore.token = {} as Token;
+            userStore.isLoggedIn = false;
+
+            // 3. 提示并跳转
             ElMessage.success("密码修改成功，请重新登录");
             setTimeout(() => {
-                window.location.href = "/login";
+                router.push("/login");
             }, 1500);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "修改密码失败";

@@ -11,8 +11,7 @@ import { MessageUtils } from "@/utils/message-utils.ts";
 
 // model
 const dialog = defineModel<boolean>("show", {
-    required: true,
-    default: false
+    required: true
 });
 
 const form = defineModel<RoleForm>("form", {

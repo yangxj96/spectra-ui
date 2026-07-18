@@ -241,7 +241,7 @@ const handleSaveRoleMenu = async () => {
         </el-col>
     </el-row>
     <!-- 角色编辑框 -->
-    <RoleEdit v-show="edit.dialog" :show="edit.dialog" :form="edit.form" @close="handleRoleConditionQuery" />
+    <RoleEdit v-if="edit.dialog" :show="edit.dialog" :form="edit.form" @close="handleRoleConditionQuery" />
 </template>
 
 <style scoped lang="scss">

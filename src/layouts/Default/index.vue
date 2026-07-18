@@ -150,7 +150,8 @@ function handleMenu() {
 
 .box__header {
     flex: 0 0 auto;
-    border-bottom: solid 1px var(--el-border-color);
+    height: auto !important;
+    border-bottom: solid 1px var(--el-border-color) !important;
     padding: 0;
 }
 

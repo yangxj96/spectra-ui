@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Iphone, Lock, Message, Phone } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { onMounted, ref, type Component } from "vue";
+import { computed, onMounted, ref, type Component } from "vue";
 
 import { AccountApi, type AccountVO } from "@/api/account/account-api";
 
@@ -37,6 +37,16 @@ const emailForm = ref({ email: "", code: "" });
 const emailLoading = ref(false);
 const emailCountdown = ref(0);
 let emailCountdownTimer: ReturnType<typeof setInterval> | null = null;
+
+// 检查是否已绑定手机
+const isPhoneBound = computed(() => {
+    return accountBindings.value.some(item => item.type === "SMS");
+});
+
+// 检查是否已绑定邮箱
+const isEmailBound = computed(() => {
+    return accountBindings.value.some(item => item.type === "EMAIL");
+});
 
 // 加载绑定列表
 async function loadBindings() {
@@ -269,11 +279,11 @@ onMounted(() => {
         <div class="binding-section">
             <h4 class="section-title">绑定新账号</h4>
             <div class="bind-actions">
-                <el-button @click="handleBindPhoneClick">
+                <el-button :disabled="isPhoneBound" @click="handleBindPhoneClick">
                     <el-icon><Phone /></el-icon>
                     绑定手机
                 </el-button>
-                <el-button @click="handleBindEmailClick">
+                <el-button :disabled="isEmailBound" @click="handleBindEmailClick">
                     <el-icon><Message /></el-icon>
                     绑定邮箱
                 </el-button>

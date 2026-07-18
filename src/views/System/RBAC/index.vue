@@ -49,12 +49,18 @@ const handleInitData = async () => {
 
 const handleRoleAdd = () => {
     edit.form = roleConverter.createForm();
-    edit.dialog = true;
+    edit.dialog = false;
+    setTimeout(() => {
+        edit.dialog = true;
+    }, 0);
 };
 
 const handleRoleEdit = (row: RolePageVO) => {
     edit.form = roleConverter.toForm(row);
-    edit.dialog = true;
+    edit.dialog = false;
+    setTimeout(() => {
+        edit.dialog = true;
+    }, 0);
 };
 
 // 角色删除

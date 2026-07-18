@@ -221,28 +221,32 @@ const handleSaveRoleMenu = async () => {
             <el-text type="primary">角色权限</el-text>
             <el-divider class="divider-box" />
             <el-button link type="primary" @click="handleSaveRoleAuthority">保存角色权限</el-button>
-            <ElTree
-                ref="powerRef"
-                :data="authority_tree"
-                :props="treeDefaultProps"
-                node-key="id"
-                default-expand-all
-                empty-text="暂无权限"
-                show-checkbox />
+            <div class="tree-wrapper">
+                <ElTree
+                    ref="powerRef"
+                    :data="authority_tree"
+                    :props="treeDefaultProps"
+                    node-key="id"
+                    default-expand-all
+                    empty-text="暂无权限"
+                    show-checkbox />
+            </div>
         </el-col>
         <!-- 菜单 -->
         <el-col :span="4" class="tree-col">
             <el-text type="primary">角色菜单</el-text>
             <el-divider class="divider-box" />
             <el-button link type="primary" @click="handleSaveRoleMenu">保存角色菜单</el-button>
-            <ElTree
-                ref="menuRef"
-                :data="menu_tree"
-                :props="treeDefaultProps"
-                node-key="id"
-                default-expand-all
-                empty-text="暂无菜单"
-                show-checkbox />
+            <div class="tree-wrapper">
+                <ElTree
+                    ref="menuRef"
+                    :data="menu_tree"
+                    :props="treeDefaultProps"
+                    node-key="id"
+                    default-expand-all
+                    empty-text="暂无菜单"
+                    show-checkbox />
+            </div>
         </el-col>
     </el-row>
     <!-- 角色编辑框 -->
@@ -276,12 +280,14 @@ const handleSaveRoleMenu = async () => {
     flex-direction: column;
     padding: 10px;
     min-height: 0;
+    overflow: hidden;
+    height: 94%;
+}
 
-    .el-tree {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 0;
-    }
+.tree-wrapper {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .divider-box {

@@ -36,14 +36,6 @@ const handleDialogClose = () => {
     handlerConditionQuery();
 };
 
-const handleConfiguredAdd = () => {
-    edit.form = configuredConverter.createForm();
-    edit.show = false;
-    setTimeout(() => {
-        edit.show = true;
-    }, 0);
-};
-
 const handleConfiguredEdit = (row: ConfiguredPageVO) => {
     edit.form = configuredConverter.toForm(row);
     edit.show = false;
@@ -92,7 +84,6 @@ const handleRefreshCrypto = async () => {
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery()">查询</el-button>
                 <el-button>重置</el-button>
-                <el-button type="primary" @click="handleConfiguredAdd()">新增</el-button>
                 <el-button v-owner="'ROLE:ROLE_DEV_OPS'" type="danger" plain @click="handleGenerateKeyPair()">
                     生成RSA密钥对
                 </el-button>

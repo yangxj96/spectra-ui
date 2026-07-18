@@ -65,8 +65,8 @@ onMounted(async () => {
 
 // 处理关闭
 const handleClose = () => {
-    dialog.value = false;
     emits("close");
+    dialog.value = false;
 };
 
 // 角色保存

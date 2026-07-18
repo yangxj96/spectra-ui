@@ -1,16 +1,17 @@
 ﻿<script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
-import { onMounted, reactive, useTemplateRef } from "vue";
+import { computed, onMounted, reactive, useTemplateRef } from "vue";
 
 import { RegionApi } from "@/api/system/region-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-const props = defineProps<{
-    row?: Region;
-    tableData: Region[];
-}>();
+const dialog = defineModel<boolean>("show", { required: true, default: false });
+
+const row = defineModel<Region>("row");
+
+const tableData = defineModel<Region[]>("table-data", { required: true });
 
 const emit = defineEmits<{
     /** 关闭事件 */
@@ -19,11 +20,10 @@ const emit = defineEmits<{
 
 const editForm = useTemplateRef<FormInstance>("editForm");
 
-const has_edit = props.row?.id && props.row.id !== "";
+const has_edit = computed(() => !!row.value?.id && row.value.id !== "");
 
 const edit = reactive({
-    visible: true,
-    title: (has_edit ? "编辑" : "新增") + "区域",
+    title: computed(() => (has_edit.value ? "编辑" : "新增") + "区域"),
     rules: {
         name: [
             { required: true, message: "请输入区域名称", trigger: "blur" },
@@ -38,11 +38,13 @@ const edit = reactive({
 });
 
 onMounted(() => {
-    edit.form = has_edit ? JSON.parse(JSON.stringify(props.row || edit.form)) : ({ status: true, sort: 999 } as Region);
+    edit.form = has_edit.value
+        ? JSON.parse(JSON.stringify(row.value || edit.form))
+        : ({ status: true, sort: 999 } as Region);
 });
 
 const handleClose = () => {
-    edit.visible = false;
+    dialog.value = false;
     emit("close");
 };
 
@@ -53,7 +55,7 @@ const handleSave = async () => {
             MessageUtils.error("请检查必填内容");
             return;
         }
-        if (has_edit) {
+        if (has_edit.value) {
             await RegionApi.update(edit.form);
         } else {
             await RegionApi.create(edit.form);
@@ -64,7 +66,7 @@ const handleSave = async () => {
 </script>
 
 <template>
-    <el-drawer v-model="edit.visible" class="loading-box" :modal="true" @close="handleClose">
+    <el-drawer v-model="dialog" class="loading-box" :modal="true" @close="handleClose">
         <template #header>
             <div>
                 <ComponentsIcons name="icon-edit" />
@@ -84,7 +86,6 @@ const handleSave = async () => {
                         default-expand-all
                         :data="tableData"
                         node-key="id"
-                        append-to=".box-content"
                         :props="{ label: 'name', value: 'id' }" />
                 </el-form-item>
                 <el-form-item label="区域名称" prop="name">

@@ -18,7 +18,7 @@ const form = defineModel<UserForm>("form", {
     required: true
 });
 
-const open = defineModel<boolean>("open", { required: true, default: false });
+const dialog = defineModel<boolean>("show", { required: true, default: false });
 
 // 定义响应方法
 const emits = defineEmits<{
@@ -63,7 +63,7 @@ onMounted(async () => {
 
 // 处理关闭
 const handleClose = () => {
-    open.value = false;
+    dialog.value = false;
     emits("close");
 };
 
@@ -121,7 +121,7 @@ const handleEmailSuggestions = (query: string, callback: (results: AutocompleteD
 
 <template>
     <!-- 新增或编辑 -->
-    <el-drawer v-model="open" class="loading-box" :modal="true" @close="handleClose">
+    <el-drawer v-model="dialog" class="loading-box" :modal="true" @close="handleClose">
         <template #header>
             <div>
                 <ComponentsIcons name="icon-edit" />

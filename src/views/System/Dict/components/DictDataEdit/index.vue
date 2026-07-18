@@ -1,16 +1,17 @@
 ﻿<script setup lang="ts">
 import { type FormInstance } from "element-plus";
-import { onMounted, reactive, ref, useTemplateRef } from "vue";
+import { computed, onMounted, reactive, ref, useTemplateRef } from "vue";
 
 import { DictApi } from "@/api/system/dict-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-const props = defineProps<{
-    row?: DictItem;
-    group?: DictGroup;
-}>();
+const dialog = defineModel<boolean>("show", { required: true, default: false });
+
+const row = defineModel<DictItem>("row");
+
+const group = defineModel<DictGroup>("group");
 
 const emit = defineEmits<{
     /** 关闭事件 */
@@ -27,12 +28,11 @@ const treeProps = { children: "children", label: "name", value: "id" };
 const gropus = ref<DictGroup[]>([]);
 
 // 编辑标识,是否为编辑数据
-const has_edit = props.row?.id && props.row.id !== "";
+const has_edit = computed(() => !!row.value?.id && row.value.id !== "");
 
 // 定义字典组编辑对话框的状态和表单数据
 const edit = reactive({
-    visible: true,
-    title: (has_edit ? "编辑" : "新增") + "字典数据",
+    title: computed(() => (has_edit.value ? "编辑" : "新增") + "字典数据"),
     rules: {
         gid: [{ required: true, message: "请选择所属字典组", trigger: "blur" }],
         label: [
@@ -51,9 +51,11 @@ const edit = reactive({
 
 onMounted(() => {
     handleInitData();
-    edit.form = has_edit ? JSON.parse(JSON.stringify(props.row || edit.form)) : ({ state: 0, sort: 999 } as DictItem);
-    if (!has_edit && props.group) {
-        edit.form.gid = props.group.id;
+    edit.form = has_edit.value
+        ? JSON.parse(JSON.stringify(row.value || edit.form))
+        : ({ state: 0, sort: 999 } as DictItem);
+    if (!has_edit.value && group.value) {
+        edit.form.gid = group.value.id;
     }
 });
 
@@ -64,7 +66,7 @@ const handleInitData = async () => {
 
 // 处理关闭
 const handleClose = () => {
-    edit.visible = false;
+    dialog.value = false;
     emit("close");
 };
 
@@ -76,7 +78,7 @@ const handleSaveDictGroup = () => {
             MessageUtils.error("请检查必填内容");
             return;
         }
-        if (has_edit) {
+        if (has_edit.value) {
             await DictApi.updateData(edit.form);
         } else {
             await DictApi.createData(edit.form);
@@ -89,7 +91,7 @@ const handleSaveDictGroup = () => {
 </script>
 
 <template>
-    <el-drawer v-model="edit.visible" class="loading-box" :modal="true" @close="handleClose">
+    <el-drawer v-model="dialog" class="loading-box" :modal="true" @close="handleClose">
         <template #header>
             <div>
                 <ComponentsIcons name="icon-edit" />
@@ -108,7 +110,6 @@ const handleSaveDictGroup = () => {
                         check-strictly
                         :data="gropus"
                         node-key="id"
-                        append-to=".box-content"
                         :props="treeProps" />
                 </el-form-item>
                 <el-form-item label="字典标签" prop="label">

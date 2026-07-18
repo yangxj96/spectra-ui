@@ -124,6 +124,7 @@ const handleEditClose = () => {
     </el-row>
     <MenuEdit
         v-if="editDrawer.visible"
+        :show="editDrawer.visible"
         :row="editDrawer.row"
         :table-data="editDrawer.tableData"
         @close="handleEditClose" />

@@ -8,21 +8,13 @@
 export const roleConverter = {
     createForm(): RoleForm {
         return {
-            // 主键ID
             id: "",
-            // 角色名称
             name: "",
-            // 角色代码
             code: "",
-            // 角色状态
-            state: undefined,
-            // 角色范围
-            scope: undefined,
-            // 自定义范围ID列表
+            state: false,
+            scope: 0,
             target_ids: [],
-            // 是否内置
-            builtin: undefined,
-            // 角色备注
+            builtin: false,
             remark: ""
         };
     },
@@ -31,10 +23,10 @@ export const roleConverter = {
             id: datum.id ?? "",
             name: datum.name ?? "",
             code: datum.code ?? "",
-            state: datum.state ?? undefined,
-            scope: datum.scope ?? undefined,
+            state: datum.state ?? false,
+            scope: datum.scope ?? 0,
             target_ids: datum.target_ids ?? [],
-            builtin: datum.builtin ?? undefined,
+            builtin: datum.builtin ?? false,
             remark: datum.remark ?? ""
         };
     },
@@ -43,10 +35,10 @@ export const roleConverter = {
             id: datum.id ?? "",
             name: datum.name ?? "",
             code: datum.code ?? "",
-            state: datum.state ?? undefined,
-            scope: datum.scope ?? undefined,
+            state: datum.state ?? false,
+            scope: datum.scope ?? 0,
             target_ids: datum.target_ids ?? [],
-            builtin: datum.builtin ?? undefined,
+            builtin: datum.builtin ?? false,
             remark: datum.remark ?? ""
         };
     }

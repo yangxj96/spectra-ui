@@ -1,18 +1,15 @@
 ﻿<script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
-import { onMounted, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 
 import { ConfiguredApi } from "@/api/system/configured-api.ts";
-import { CryptoApi } from "@/api/system/crypto-api.ts";
+import { CryptoApi, initCrypto } from "@/api/system/crypto-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
 import { configuredConverter } from "@/converter/configured-converter.ts";
 import useTable from "@/hooks/use-table.ts";
 import ConfiguredEdit from "@/views/System/Configured/components/ConfiguredEdit/index.vue";
 
-const edit = ref<{
-    show: boolean;
-    form: ConfiguredForm;
-}>({
+const edit = reactive({
     show: false,
     form: configuredConverter.createForm()
 });
@@ -31,24 +28,22 @@ onMounted(() => {});
 
 // 处理dialog框关闭,如果有其他的dialog也在这里处理关闭
 const handleDialogClose = () => {
-    if (edit.value.show) {
-        edit.value = {
-            show: false,
-            form: configuredConverter.createForm()
-        };
+    if (edit.show) {
+        edit.show = false;
+        edit.form = configuredConverter.createForm();
     }
     // 最后重新获取下列表数据
     handlerConditionQuery();
 };
 
 const handleConfiguredAdd = () => {
-    edit.value.form = configuredConverter.createForm();
-    edit.value.show = true;
+    edit.form = configuredConverter.createForm();
+    edit.show = true;
 };
 
 const handleConfiguredEdit = (row: ConfiguredPageVO) => {
-    edit.value.form = configuredConverter.toForm(row);
-    edit.value.show = true;
+    edit.form = configuredConverter.toForm(row);
+    edit.show = true;
 };
 
 const handleGenerateKeyPair = async () => {
@@ -67,6 +62,18 @@ const handleGenerateKeyPair = async () => {
         }
     }
 };
+
+const handleRefreshCrypto = async () => {
+    try {
+        await CryptoApi.refreshKeys();
+        await initCrypto();
+        ElMessage.success("加密状态已刷新");
+    } catch (e: unknown) {
+        if (e !== "cancel") {
+            ElMessage.error(e instanceof Error ? e.message : "刷新失败");
+        }
+    }
+};
 </script>
 
 <template>
@@ -82,6 +89,9 @@ const handleGenerateKeyPair = async () => {
                 <el-button type="primary" @click="handleConfiguredAdd()">新增</el-button>
                 <el-button v-owner="'ROLE:ROLE_DEV_OPS'" type="danger" plain @click="handleGenerateKeyPair()">
                     生成RSA密钥对
+                </el-button>
+                <el-button v-owner="'ROLE:ROLE_DEV_OPS'" type="warning" plain @click="handleRefreshCrypto()">
+                    刷新加密状态
                 </el-button>
             </el-form-item>
         </el-form>
@@ -104,9 +114,15 @@ const handleGenerateKeyPair = async () => {
                         v-model="scope.row.value"
                         :dict_code="scope.row.dict_code" />
                     <!-- TEXT保底 -->
-                    <el-text v-else>
-                        {{ scope.row.value }}
-                    </el-text>
+                    <el-tooltip
+                        v-else
+                        :content="String(scope.row.value ?? '')"
+                        placement="top"
+                        :disabled="!scope.row.value || String(scope.row.value).length <= 50"
+                        :popper-options="{ strategy: 'fixed' }"
+                        popper-class="configured-value-tooltip">
+                        <span class="configured-value-text">{{ scope.row.value }}</span>
+                    </el-tooltip>
                 </template>
             </el-table-column>
             <el-table-column align="center" prop="remarks" label="备注" />
@@ -134,8 +150,17 @@ const handleGenerateKeyPair = async () => {
             @current-change="handleCurrentChange" />
     </el-row>
     <!-- 用户组件区 -->
-    <ConfiguredEdit v-if="edit.show" v-bind:show="edit.show" v-bind:form="edit.form" @close="handleDialogClose" />
+    <ConfiguredEdit v-if="edit.show" :show="edit.show" :form="edit.form" @close="handleDialogClose" />
 </template>
+
+<style lang="scss">
+.configured-value-tooltip {
+    max-width: 400px;
+    max-height: 300px;
+    overflow-y: auto;
+    word-break: break-all;
+}
+</style>
 
 <style scoped lang="scss">
 .box__search {
@@ -147,5 +172,14 @@ const handleGenerateKeyPair = async () => {
 
 .box__body {
     height: 90%;
+}
+
+.configured-value-text {
+    display: inline-block;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
 }
 </style>

@@ -85,6 +85,18 @@ const handleDialogClose = () => {
     }
 };
 
+// 字典数据删除
+const handleDictDataDelete = (row: DictItem) => {
+    MessageUtils.box.confirm(`是否要删除字典项[${row.label}]`, "提示").then(async () => {
+        try {
+            await DictApi.deleteDataById(row.id);
+            MessageUtils.success("删除成功");
+        } finally {
+            await handleGetDictData();
+        }
+    });
+};
+
 initData();
 </script>
 
@@ -171,7 +183,9 @@ initData();
                             @click="handleDialogOpen('DictData', scope.row)">
                             编辑
                         </el-button>
-                        <el-button v-owner="'DICT:DELETE'" link type="primary">删除</el-button>
+                        <el-button v-owner="'DICT:DELETE'" link type="primary" @click="handleDictDataDelete(scope.row)">
+                            删除
+                        </el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -182,6 +196,7 @@ initData();
     <component
         :is="dynamic.component"
         v-if="dynamic.show"
+        :show="dynamic.show"
         :row="dynamic.row"
         :group="dynamic.group"
         @close="handleDialogClose" />

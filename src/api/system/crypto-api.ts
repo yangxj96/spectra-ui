@@ -75,5 +75,12 @@ export const CryptoApi = {
      */
     generateKeyPair(): Promise<Record<string, string>> {
         return post("/api/system/crypto/keypair/generate");
+    },
+    /**
+     * 刷新加解密密钥状态
+     * 需要 ROLE_DEV_OPS 权限
+     */
+    refreshKeys(): Promise<void> {
+        return post("/api/system/crypto/keypair/refresh");
     }
 };

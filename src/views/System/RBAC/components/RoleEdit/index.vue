@@ -10,7 +10,7 @@ import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 // model
-const open = defineModel("open", {
+const dialog = defineModel<boolean>("show", {
     required: true,
     default: false
 });
@@ -65,7 +65,7 @@ onMounted(async () => {
 
 // 处理关闭
 const handleClose = () => {
-    open.value = false;
+    dialog.value = false;
     emits("close");
 };
 
@@ -88,7 +88,7 @@ const handleSave = async () => {
 </script>
 
 <template>
-    <el-drawer v-model="open" class="loading-box" :modal="true" @close="handleClose">
+    <el-drawer v-model="dialog" class="loading-box" :modal="true" @close="handleClose">
         <template #header>
             <div>
                 <ComponentsIcons name="icon-edit" />
@@ -107,7 +107,7 @@ const handleSave = async () => {
                     <el-input v-model="form.name" show-word-limit clearable />
                 </el-form-item>
                 <el-form-item label="数据范围" prop="scope">
-                    <el-select v-model="form.scope" clearable append-to=".box-content">
+                    <el-select v-model="form.scope" clearable>
                         <el-option label="全局" :value="0" />
                         <el-option label="本人" :value="1" />
                         <el-option label="部门" :value="2" />
@@ -127,7 +127,7 @@ const handleSave = async () => {
                         :props="treeDefaultProps" />
                 </el-form-item>
                 <el-form-item label="是否启用" prop="state">
-                    <el-select v-model="form.state" clearable append-to=".box-content">
+                    <el-select v-model="form.state" clearable>
                         <el-option :value="true" label="是" />
                         <el-option :value="false" label="否" />
                     </el-select>

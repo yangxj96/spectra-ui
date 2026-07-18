@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
-import { onMounted, reactive, useTemplateRef } from "vue";
+import { computed, onMounted, reactive, useTemplateRef } from "vue";
 
 import { MenuApi } from "@/api/system/menu-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
@@ -8,10 +8,11 @@ import IconPicker from "@/components/IconPicker/index.vue";
 import JsonEditor from "@/components/JsonEditor/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-const props = defineProps<{
-    row?: Menu;
-    tableData: Menu[];
-}>();
+const dialog = defineModel<boolean>("show", { required: true, default: false });
+
+const row = defineModel<Menu>("row");
+
+const tableData = defineModel<Menu[]>("table-data", { required: true });
 
 const emit = defineEmits<{
     /** 关闭事件 */
@@ -21,12 +22,11 @@ const emit = defineEmits<{
 const menuForm = useTemplateRef<FormInstance>("ruleFormRef");
 
 // 编辑标识,是否为编辑数据
-const has_edit = props.row?.id && props.row.id !== "";
+const has_edit = computed(() => !!row.value?.id && row.value.id !== "");
 
 // 定义菜单编辑对话框的状态和表单数据
 const edit = reactive({
-    visible: true,
-    title: (has_edit ? "编辑" : "新增") + "菜单",
+    title: computed(() => (has_edit.value ? "编辑" : "新增") + "菜单"),
     rules: {
         name: [{ required: true, message: "请输入菜单名称", trigger: "blur" }],
         icon: [{ required: true, message: "请选择菜单图标", trigger: "blur" }],
@@ -38,12 +38,12 @@ const edit = reactive({
 });
 
 onMounted(() => {
-    edit.form = has_edit ? JSON.parse(JSON.stringify(props.row || edit.form)) : ({} as Menu);
+    edit.form = has_edit.value ? JSON.parse(JSON.stringify(row.value || edit.form)) : ({} as Menu);
 });
 
 // 处理关闭
 const handleClose = () => {
-    edit.visible = false;
+    dialog.value = false;
     emit("close");
 };
 
@@ -52,19 +52,19 @@ const handleMenuSave = async () => {
     if (!menuForm.value) return;
     await menuForm.value?.validate(async valid => {
         if (valid) {
-            if (has_edit) {
+            if (has_edit.value) {
                 await MenuApi.update(edit.form);
             } else {
                 await MenuApi.create(edit.form);
             }
-            MessageUtils.success(has_edit ? "修改菜单成功" : "新增菜单成功", handleClose);
+            MessageUtils.success(has_edit.value ? "修改菜单成功" : "新增菜单成功", handleClose);
         }
     });
 };
 </script>
 
 <template>
-    <el-drawer v-model="edit.visible" class="loading-box" :modal="true" @close="handleClose">
+    <el-drawer v-model="dialog" class="loading-box" :modal="true" @close="handleClose">
         <template #header>
             <div>
                 <ComponentsIcons name="icon-edit" />
@@ -90,7 +90,6 @@ const handleMenuSave = async () => {
                         check-strictly
                         default-expand-all
                         node-key="id"
-                        append-to=".box-content"
                         :props="{ label: 'name' }"
                         :render-after-expand="false" />
                 </el-form-item>
@@ -110,7 +109,7 @@ const handleMenuSave = async () => {
                     <el-input v-model="edit.form.component" clearable placeholder="请输入组件路径" />
                 </el-form-item>
                 <el-form-item label="布局" prop="layout">
-                    <el-select v-model="edit.form.layout" clearable placeholder="请输入布局" append-to=".box-content">
+                    <el-select v-model="edit.form.layout" clearable placeholder="请输入布局">
                         <el-option label="默认布局" value="default" />
                         <el-option label="空白布局" value="blank" />
                     </el-select>

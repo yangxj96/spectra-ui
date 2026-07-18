@@ -138,6 +138,7 @@ const handleEditClose = () => {
     <!-- 新增/编辑抽屉 -->
     <RegionEdit
         v-if="editDrawer.visible"
+        :show="editDrawer.visible"
         :row="editDrawer.row"
         :table-data="editDrawer.tableData"
         @close="handleEditClose" />

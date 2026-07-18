@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import { UserApi } from "@/api/user/user-api.ts";
@@ -14,10 +14,7 @@ import { MessageUtils } from "@/utils/message-utils.ts";
 import UserEdit from "./components/UserEdit/index.vue";
 
 // 编辑组件
-const dialog_edit = ref<{
-    form: UserForm;
-    open: boolean;
-}>({
+const dialog_edit = reactive({
     form: userConverter.createForm(),
     open: false
 });
@@ -43,13 +40,13 @@ const handleInitData = async () => {
 };
 
 const handleUserAdd = () => {
-    dialog_edit.value.form = userConverter.createForm();
-    dialog_edit.value.open = true;
+    dialog_edit.form = userConverter.createForm();
+    dialog_edit.open = true;
 };
 
 const handleUserEdit = (row: UserPageVO) => {
-    dialog_edit.value.form = userConverter.toForm(row);
-    dialog_edit.value.open = true;
+    dialog_edit.form = userConverter.toForm(row);
+    dialog_edit.open = true;
 };
 
 // 表行删除按钮被单击
@@ -81,11 +78,9 @@ const handleOrganizationTreeNodeClick = (row: DepartmentTreeVO) => {
 
 // 处理dialog框关闭,如果有其他的dialog也在这里处理关闭
 const handleDialogClose = () => {
-    if (dialog_edit.value.open) {
-        dialog_edit.value = {
-            open: false,
-            form: userConverter.createForm()
-        };
+    if (dialog_edit.open) {
+        dialog_edit.open = false;
+        dialog_edit.form = userConverter.createForm();
     }
     // 最后重新获取下列表数据
     handlerConditionQuery();
@@ -219,11 +214,7 @@ onMounted(async () => {
         </el-col>
     </el-row>
     <!-- 用户组件区 -->
-    <UserEdit
-        v-if="dialog_edit.open"
-        v-model:open="dialog_edit.open"
-        v-model:form="dialog_edit.form"
-        @close="handleDialogClose" />
+    <UserEdit v-if="dialog_edit.open" :show="dialog_edit.open" :form="dialog_edit.form" @close="handleDialogClose" />
 </template>
 
 <style scoped lang="scss">

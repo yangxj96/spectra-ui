@@ -8,6 +8,8 @@ Vue 3 SPA 管理后台（光谱后端管理系统）— `spectra-admin` 的 **We
 - 开发服务器：端口 5173
 - 所有 API 调用指向 `VITE_API_URL`（默认 `https://127.0.0.1:4004/`）
 
+编码规范由 `spectra/spectra-ui-spec` skill 控制（修改前端代码时自动加载）。
+
 ## 常用命令
 
 - `pnpm start` — 开发服务器（**先执行 format + lint:fix + type-check**，通过 `prestart` 钩子）
@@ -23,27 +25,9 @@ Vue 3 SPA 管理后台（光谱后端管理系统）— `spectra-admin` 的 **We
 
 ## 工具链
 
-- Node 24.14.0, pnpm 11.0.9（通过 `mise.toml` 管理）
-- npm 镜像：`registry.npmmirror.com`（淘宝镜像，`.npmrc`）
 - Vite 8, Vue 3.5, TypeScript 5.9, ESLint 9, Prettier 3
 - 测试：Vitest 4 + happy-dom + @vue/test-utils + @pinia/testing
-
-## 代码规范
-
-- **4 空格缩进**，禁用 Tab。双引号。分号。120 字符行宽。
-- `endOfLine: lf`。`arrowParens: avoid`。`trailingComma: none`。
-- 路径别名：`@` → `src/`
-
-## ESLint 规则（强制）
-
-- `no-any` — 零容忍 `any` 类型
-- `consistent-type-imports` — 使用 `import type`（内联风格：`import { type Foo }`）
-- `import/order` — 分组：builtin → external → internal（`@/**`）→ parent → sibling → index → type。组内按字母排序。组间空行分隔。
-- `import/no-cycle` — 禁止循环依赖
-- Vue SFC 块顺序：`<script>` → `<template>` → `<style>`
-- Vue 模板中组件名：**PascalCase**
-- 视图文件（`src/views/**`）：允许单词组件名（如 `Login.vue`）
-- 函数最大行数：200 行。最大参数：4 个。禁止嵌套三元表达式。
+- Node/pnpm 版本及 npm 镜像配置见根 `AGENTS.md`
 
 ## 项目结构
 

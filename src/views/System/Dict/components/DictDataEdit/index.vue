@@ -13,7 +13,7 @@ const row = defineModel<DictItem>("row");
 
 const group = defineModel<DictGroup>("group");
 
-const emit = defineEmits<{
+const emits = defineEmits<{
     /** 关闭事件 */
     close: [];
 }>();
@@ -66,8 +66,8 @@ const handleInitData = async () => {
 
 // 处理关闭
 const handleClose = () => {
+    emits("close");
     dialog.value = false;
-    emit("close");
 };
 
 // 保存
@@ -84,7 +84,7 @@ const handleSaveDictGroup = () => {
             await DictApi.createData(edit.form);
         }
         MessageUtils.success("保存成功", () => {
-            emit("close");
+            emits("close");
         });
     });
 };

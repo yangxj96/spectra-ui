@@ -14,7 +14,7 @@ const row = defineModel<Menu>("row");
 
 const tableData = defineModel<Menu[]>("table-data", { required: true });
 
-const emit = defineEmits<{
+const emits = defineEmits<{
     /** 关闭事件 */
     close: [];
 }>();
@@ -43,8 +43,8 @@ onMounted(() => {
 
 // 处理关闭
 const handleClose = () => {
+    emits("close");
     dialog.value = false;
-    emit("close");
 };
 
 // 保存菜单

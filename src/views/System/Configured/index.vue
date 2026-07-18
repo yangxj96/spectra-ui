@@ -38,12 +38,18 @@ const handleDialogClose = () => {
 
 const handleConfiguredAdd = () => {
     edit.form = configuredConverter.createForm();
-    edit.show = true;
+    edit.show = false;
+    setTimeout(() => {
+        edit.show = true;
+    }, 0);
 };
 
 const handleConfiguredEdit = (row: ConfiguredPageVO) => {
     edit.form = configuredConverter.toForm(row);
-    edit.show = true;
+    edit.show = false;
+    setTimeout(() => {
+        edit.show = true;
+    }, 0);
 };
 
 const handleGenerateKeyPair = async () => {

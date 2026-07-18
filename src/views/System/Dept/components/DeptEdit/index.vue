@@ -46,8 +46,8 @@ const formRef = useTemplateRef<FormInstance>("formRef");
 
 // 处理关闭
 function handleClose() {
-    dialog.value = false;
     emits("close");
+    dialog.value = false;
 }
 
 // 新增或编辑

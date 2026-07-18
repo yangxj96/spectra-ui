@@ -40,7 +40,10 @@ const handleAdd = () => {
     loadTreeData().then(() => {
         editDrawer.row = undefined;
         editDrawer.tableData = treeData.value;
-        editDrawer.visible = true;
+        editDrawer.visible = false;
+        setTimeout(() => {
+            editDrawer.visible = true;
+        }, 0);
     });
 };
 
@@ -49,7 +52,10 @@ const handleEdit = (row: Region) => {
     loadTreeData().then(() => {
         editDrawer.row = JSON.parse(JSON.stringify(row));
         editDrawer.tableData = treeData.value;
-        editDrawer.visible = true;
+        editDrawer.visible = false;
+        setTimeout(() => {
+            editDrawer.visible = true;
+        }, 0);
     });
 };
 

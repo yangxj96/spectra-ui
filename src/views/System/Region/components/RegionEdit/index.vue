@@ -13,7 +13,7 @@ const row = defineModel<Region>("row");
 
 const tableData = defineModel<Region[]>("table-data", { required: true });
 
-const emit = defineEmits<{
+const emits = defineEmits<{
     /** 关闭事件 */
     close: [];
 }>();
@@ -44,8 +44,8 @@ onMounted(() => {
 });
 
 const handleClose = () => {
+    emits("close");
     dialog.value = false;
-    emit("close");
 };
 
 const handleSave = async () => {

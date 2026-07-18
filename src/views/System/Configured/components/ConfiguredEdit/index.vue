@@ -34,8 +34,8 @@ const emits = defineEmits<{
 }>();
 
 const handleClose = () => {
-    dialog.value = false;
     emits("close");
+    dialog.value = false;
 };
 
 const handleConfiguredSave = async () => {

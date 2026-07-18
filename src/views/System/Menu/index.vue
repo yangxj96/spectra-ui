@@ -30,7 +30,10 @@ const handleCriteriaQuery = async () => {
 const handleTableItemModify = (row: Menu) => {
     editDrawer.row = JSON.parse(JSON.stringify(row));
     editDrawer.tableData = table_data.value;
-    editDrawer.visible = true;
+    editDrawer.visible = false;
+    setTimeout(() => {
+        editDrawer.visible = true;
+    }, 0);
 };
 
 // 表行删除按钮被单击
@@ -48,7 +51,10 @@ const handleTableItemDelete = (row: Menu) => {
 const handleMenuAddDialog = () => {
     editDrawer.row = undefined;
     editDrawer.tableData = table_data.value;
-    editDrawer.visible = true;
+    editDrawer.visible = false;
+    setTimeout(() => {
+        editDrawer.visible = true;
+    }, 0);
 };
 
 // 处理编辑抽屉关闭

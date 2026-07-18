@@ -1,20 +1,27 @@
 ﻿<script setup lang="ts">
-import { defineAsyncComponent, markRaw, reactive, ref, watch } from "vue";
+import { reactive, ref, watch } from "vue";
 
 import { DictApi } from "@/api/system/dict-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictTag from "@/components/DictTag/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
+import DictDataEdit from "./components/DictDataEdit/index.vue";
+import DictGroupEdit from "./components/DictGroupEdit/index.vue";
+
 // 树形props配置
 const treeProps = { children: "children", label: "name", value: "id" };
 
-// 动态组件,字典组编辑和字典数据编辑
-const dynamic = reactive({
-    component: undefined as unknown,
-    row: {} as unknown,
-    group: {} as DictGroup | unknown,
-    show: false
+// 字典组编辑状态
+const dictGroup = reactive({
+    visible: false,
+    row: undefined as DictGroup | undefined
+});
+
+// 字典数据编辑状态
+const dictData = reactive({
+    visible: false,
+    row: undefined as DictItem | undefined
 });
 
 // 字典组表单数据
@@ -52,33 +59,33 @@ const handleGetDictData = async () => {
     dictDataTableData.value = await DictApi.getDataByTypeCode(currentGroup.value!.code);
 };
 
-const handleDialogOpen = (type: string, row: DictGroup | DictItem | unknown = {} as unknown) => {
-    let Component;
-    switch (type) {
-        case "DictGroup": {
-            Component = defineAsyncComponent(() => import("./components/DictGroupEdit/index.vue"));
-            break;
-        }
-        case "DictData": {
-            Component = defineAsyncComponent(() => import("./components/DictDataEdit/index.vue"));
-            break;
-        }
-        default: {
-            MessageUtils.error("组件加载失败,请检查");
-            return;
-        }
-    }
-    if (Component) {
-        dynamic.component = markRaw(Component);
-        dynamic.row = row;
-        dynamic.group = currentGroup.value;
-        dynamic.show = true;
-    }
+// 字典组编辑打开
+const handleDictGroupOpen = (row?: DictGroup) => {
+    dictGroup.row = row;
+    dictGroup.visible = false;
+    setTimeout(() => {
+        dictGroup.visible = true;
+    }, 0);
 };
 
-// 弹框关闭后重载数据
-const handleDialogClose = () => {
-    dynamic.show = false;
+// 字典数据编辑打开
+const handleDictDataOpen = (row?: DictItem) => {
+    dictData.row = row;
+    dictData.visible = false;
+    setTimeout(() => {
+        dictData.visible = true;
+    }, 0);
+};
+
+// 字典组编辑关闭
+const handleDictGroupClose = () => {
+    dictGroup.visible = false;
+    initData();
+};
+
+// 字典数据编辑关闭
+const handleDictDataClose = () => {
+    dictData.visible = false;
     initData();
     if (currentGroup.value) {
         handleGetDictData();
@@ -87,7 +94,7 @@ const handleDialogClose = () => {
 
 // 字典数据删除
 const handleDictDataDelete = (row: DictItem) => {
-    MessageUtils.box.confirm(`是否要删除字典项[${row.label}]`, "提示").then(async () => {
+    MessageUtils.box.confirm(`是否要删除[${row.label}]`, "提示").then(async () => {
         try {
             await DictApi.deleteDataById(row.id);
             MessageUtils.success("删除成功");
@@ -105,11 +112,11 @@ initData();
     <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item>
-                <el-button v-owner="'DICT:INSERT'" @click="handleDialogOpen('DictGroup')">
+                <el-button v-owner="'DICT:INSERT'" @click="handleDictGroupOpen()">
                     <ComponentsIcons name="icon-edit" />
                     新增字典组
                 </el-button>
-                <el-button v-owner="'DICT:INSERT'" @click="handleDialogOpen('DictData')">
+                <el-button v-owner="'DICT:INSERT'" @click="handleDictDataOpen()">
                     <ComponentsIcons name="icon-edit" />
                     新增字典数据
                 </el-button>
@@ -140,7 +147,7 @@ initData();
                             class="tree-node__label-btn"
                             link
                             type="primary"
-                            @click="handleDialogOpen('DictGroup', data)">
+                            @click="handleDictGroupOpen(data)">
                             编辑
                         </el-button>
                     </p>
@@ -176,11 +183,7 @@ initData();
                     align="center"
                     label="操作">
                     <template #default="scope">
-                        <el-button
-                            v-owner="'DICT:UPDATE'"
-                            link
-                            type="primary"
-                            @click="handleDialogOpen('DictData', scope.row)">
+                        <el-button v-owner="'DICT:UPDATE'" link type="primary" @click="handleDictDataOpen(scope.row)">
                             编辑
                         </el-button>
                         <el-button v-owner="'DICT:DELETE'" link type="primary" @click="handleDictDataDelete(scope.row)">
@@ -192,14 +195,20 @@ initData();
         </el-col>
     </el-row>
 
-    <!-- 动态组件,字典组或者字典数据的编辑或新增弹框 -->
-    <component
-        :is="dynamic.component"
-        v-if="dynamic.show"
-        :show="dynamic.show"
-        :row="dynamic.row"
-        :group="dynamic.group"
-        @close="handleDialogClose" />
+    <!-- 字典组编辑弹框 -->
+    <DictGroupEdit
+        v-if="dictGroup.visible"
+        :show="dictGroup.visible"
+        :row="dictGroup.row"
+        :group="currentGroup"
+        @close="handleDictGroupClose" />
+    <!-- 字典数据编辑弹框 -->
+    <DictDataEdit
+        v-if="dictData.visible"
+        :show="dictData.visible"
+        :row="dictData.row"
+        :group="currentGroup"
+        @close="handleDictDataClose" />
 </template>
 
 <style scoped lang="scss">

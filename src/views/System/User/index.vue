@@ -41,12 +41,18 @@ const handleInitData = async () => {
 
 const handleUserAdd = () => {
     dialog_edit.form = userConverter.createForm();
-    dialog_edit.open = true;
+    dialog_edit.open = false;
+    setTimeout(() => {
+        dialog_edit.open = true;
+    }, 0);
 };
 
 const handleUserEdit = (row: UserPageVO) => {
     dialog_edit.form = userConverter.toForm(row);
-    dialog_edit.open = true;
+    dialog_edit.open = false;
+    setTimeout(() => {
+        dialog_edit.open = true;
+    }, 0);
 };
 
 // 表行删除按钮被单击

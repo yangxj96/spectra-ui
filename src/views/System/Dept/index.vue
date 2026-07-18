@@ -43,13 +43,19 @@ const handleTableItemDelete = (row: DepartmentTreeVO) => {
 // 部门新增
 const handleDepartmentAdd = () => {
     edit.form = deptConverter.createForm();
-    edit.dialog = true;
+    edit.dialog = false;
+    setTimeout(() => {
+        edit.dialog = true;
+    }, 0);
 };
 
 // 部门编辑
 const handleDepartmentEdit = (row: DepartmentTreeVO) => {
     edit.form = deptConverter.toForm(row);
-    edit.dialog = true;
+    edit.dialog = false;
+    setTimeout(() => {
+        edit.dialog = true;
+    }, 0);
 };
 
 // 关闭弹窗

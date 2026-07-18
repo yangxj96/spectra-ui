@@ -17,7 +17,7 @@ async function handleSaveInfo() {
     loading.value = true;
     try {
         const params: UserProfileFrom = {
-            realName: userInfo.value.realName,
+            real_name: userInfo.value.real_name,
             gender: userInfo.value.gender,
             birthday: userInfo.value.birthday,
             phone: userInfo.value.phone,
@@ -44,7 +44,7 @@ async function handleSaveInfo() {
             <el-input v-model="userInfo.username" disabled />
         </el-form-item>
         <el-form-item label="真实姓名">
-            <el-input v-model="userInfo.realName" placeholder="请输入真实姓名" />
+            <el-input v-model="userInfo.real_name" placeholder="请输入真实姓名" />
         </el-form-item>
         <el-form-item label="性别">
             <DictSelect

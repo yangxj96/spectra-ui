@@ -18,7 +18,7 @@ const activeTab = ref("info");
 const userInfo = ref<UserProfileVO>({
     id: "",
     username: "",
-    realName: "",
+    real_name: "",
     avatar: "",
     status: 1,
     gender: 0,
@@ -29,8 +29,8 @@ const userInfo = ref<UserProfileVO>({
     city: "",
     language: "",
     timezone: "",
-    departmentId: "",
-    departmentName: "",
+    department_id: "",
+    department_name: "",
     roles: []
 });
 
@@ -55,8 +55,8 @@ onMounted(() => {
             <el-card class="avatar-card">
                 <div class="avatar-section">
                     <el-avatar :src="userInfo.avatar || avatar" :size="100" class="avatar-image" />
-                    <h3 class="username">{{ userInfo.realName || userInfo.username }}</h3>
-                    <p class="department">{{ userInfo.departmentName }}</p>
+                    <h3 class="username">{{ userInfo.real_name || userInfo.username }}</h3>
+                    <p class="department">{{ userInfo.department_name }}</p>
                     <div class="role-tags">
                         <el-tag v-for="role in userInfo.roles" :key="role.id" size="small" type="info">
                             {{ role.name }}

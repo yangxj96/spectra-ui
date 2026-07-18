@@ -65,7 +65,7 @@ export interface UserProfileVO {
     /** 用户名 */
     username: string;
     /** 真实姓名 */
-    realName: string;
+    real_name: string;
     /** 头像 */
     avatar: string;
     /** 状态 */
@@ -87,9 +87,9 @@ export interface UserProfileVO {
     /** 时区 */
     timezone: string;
     /** 部门ID */
-    departmentId: string;
+    department_id: string;
     /** 部门名称 */
-    departmentName: string;
+    department_name: string;
     /** 角色列表 */
     roles: RoleInfo[];
 }
@@ -107,7 +107,7 @@ export interface RoleInfo {
 /** 更新用户信息入参 */
 export interface UserProfileFrom {
     /** 真实姓名 */
-    realName: string;
+    real_name: string;
     /** 性别 */
     gender: number;
     /** 生日 */

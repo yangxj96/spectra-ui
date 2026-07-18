@@ -82,9 +82,6 @@ importers:
             sass:
                 specifier: 1.97.3
                 version: 1.97.3
-            suncalc-ts:
-                specifier: 3.0.3
-                version: 3.0.3
             vue:
                 specifier: 3.5.28
                 version: 3.5.28(typescript@5.9.3)
@@ -6400,13 +6397,6 @@ packages:
             }
         engines: { node: ">=8" }
 
-    suncalc-ts@3.0.3:
-        resolution:
-            {
-                integrity: sha512-iD//iLdOeMcNPPECSJ5DPhuQfxOYOTHGmpxL1M/9t93GBW15ULZOwMihvCLFPQ3a0sgGZhxx5AoXUj2KSdBxFQ==
-            }
-        engines: { node: 22.x || 24.x }
-
     superjson@2.2.6:
         resolution:
             {
@@ -11043,8 +11033,6 @@ snapshots:
     strip-bom@3.0.0: {}
 
     strip-json-comments@3.1.1: {}
-
-    suncalc-ts@3.0.3: {}
 
     superjson@2.2.6:
         dependencies:

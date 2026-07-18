@@ -1,16 +1,13 @@
 ﻿<script setup lang="ts">
 import { ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 
 import { AuthApi } from "@/api/auth/auth-api.ts";
 import avatar from "@/assets/images/avatar.png";
 import logo from "@/assets/images/logo.svg";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
-import ChangePassword from "@/components/Props/ChangePassword/index.vue";
-import PersonalDetails from "@/components/Props/PersonalDetails/index.vue";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
-import { usePropsStore } from "@/plugin/store/modules/use-props-store.ts";
 import { GlobalUtils } from "@/utils/global-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -19,6 +16,7 @@ defineOptions({
 });
 
 // 获取路由对象（useRoute 是响应式的）
+const router = useRouter();
 const route = useRoute();
 const appStore = useAppStore();
 const prefixes = ref<Menu[]>(appStore.menus);
@@ -106,12 +104,8 @@ function handleUserLogout() {
     });
 }
 
-function handleModifyPasswordPopup() {
-    usePropsStore().change_password = true;
-}
-
-function handlePersonalPopup() {
-    usePropsStore().personal_details = true;
+function handleGoToProfile() {
+    router.push("/profile");
 }
 </script>
 
@@ -139,13 +133,9 @@ function handlePersonalPopup() {
                     class="el-avatar el-avatar--circle el-tooltip__trigger" />
                 <template #dropdown>
                     <el-dropdown-menu>
-                        <el-dropdown-item @click="handlePersonalPopup">
+                        <el-dropdown-item @click="handleGoToProfile">
                             <ComponentsIcons name="icon-user" class-name="icon-navbar" />
-                            <span>个人信息</span>
-                        </el-dropdown-item>
-                        <el-dropdown-item @click="handleModifyPasswordPopup">
-                            <ComponentsIcons name="icon-change-password" class-name="icon-navbar" />
-                            <span>修改密码</span>
+                            <span>个人中心</span>
                         </el-dropdown-item>
                         <el-dropdown-item @click="handleUserLogout">
                             <ComponentsIcons name="icon-logout" class-name="icon-navbar" />
@@ -156,8 +146,6 @@ function handlePersonalPopup() {
             </el-dropdown>
         </el-col>
     </el-row>
-    <PersonalDetails />
-    <ChangePassword />
 </template>
 
 <style scoped lang="scss">

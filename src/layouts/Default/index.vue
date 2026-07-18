@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDark, useFullscreen, useToggle } from "@vueuse/core";
+import { useFullscreen } from "@vueuse/core";
 import { onMounted, ref, useTemplateRef, watch } from "vue";
 import { type RouteLocationMatched, useRouter } from "vue-router";
 
@@ -22,7 +22,6 @@ const context = useTemplateRef<HTMLElement>("content");
 const breadcrumb = ref<RouteLocationMatched[]>([]);
 const { toggle } = useFullscreen(context);
 const fullscreenToggle = toggle;
-const theme = ref(useDark());
 
 onMounted(() => {
     handlerRouter();
@@ -38,12 +37,6 @@ onMounted(() => {
         }
     );
 });
-
-// 深色模式切换
-function handleDarkSwitch(val: unknown) {
-    theme.value = val as boolean;
-    useToggle(theme);
-}
 
 function handlerRouter(r: RouteLocationMatched[] = []) {
     const current = router.currentRoute.value;
@@ -98,23 +91,6 @@ function handleMenu() {
                     <!-- 右边工具条 -->
                     <el-col :span="3">
                         <el-form inline style="float: right">
-                            <!-- 深色浅色模式切换 -->
-                            <el-form-item class="form-item">
-                                <el-switch
-                                    v-model="theme"
-                                    active-text="浅色"
-                                    inactive-text="深色"
-                                    inline-prompt
-                                    :size="'small'"
-                                    @change="handleDarkSwitch">
-                                    <template #active-action>
-                                        <ComponentsIcons name="icon-moon" />
-                                    </template>
-                                    <template #inactive-action>
-                                        <ComponentsIcons name="icon-sun" />
-                                    </template>
-                                </el-switch>
-                            </el-form-item>
                             <!-- 全屏切换 -->
                             <el-form-item class="form-item form-item--end">
                                 <ComponentsIcons

@@ -1,7 +1,6 @@
 ﻿import formCreate from "@form-create/element-ui";
 import { loadSlim } from "@tsparticles/slim";
 import Particles from "@tsparticles/vue3";
-import { useDark, useToggle } from "@vueuse/core";
 import ElementPlus from "element-plus";
 import { createApp } from "vue";
 
@@ -16,10 +15,6 @@ import App from "./App.vue";
 import "@/plugin/element/index.scss";
 
 CommonUtils.hasReload();
-
-// 启用暗色模式的响应式状态
-const toggleDark = useToggle(useDark());
-toggleDark(CommonUtils.shouldEnableDarkMode());
 
 // 创建APP
 const app = createApp(App);

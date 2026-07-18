@@ -1,4 +1,5 @@
 ﻿<script setup lang="ts">
+import { Bell } from "@element-plus/icons-vue";
 import { ref, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 
@@ -6,6 +7,7 @@ import { AuthApi } from "@/api/auth/auth-api.ts";
 import avatar from "@/assets/images/avatar.png";
 import logo from "@/assets/images/logo.svg";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
+import NotificationBell from "@/components/NotificationBell/index.vue";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { GlobalUtils } from "@/utils/global-utils.ts";
@@ -107,6 +109,10 @@ function handleUserLogout() {
 function handleGoToProfile() {
     router.push("/profile");
 }
+
+function handleGoToNotification() {
+    router.push("/notification");
+}
 </script>
 
 <template>
@@ -115,13 +121,17 @@ function handleGoToProfile() {
             <el-image :src="logo" style="height: 55px; width: 90%" />
         </el-col>
 
-        <el-col :span="20" style="padding-right: 40px">
+        <el-col :span="19" style="padding-right: 40px">
             <el-menu :default-active="active" :router="true" mode="horizontal">
                 <el-menu-item v-for="o in prefixes" :key="o.path" :index="o.path" :route="{ path: o.path }">
                     <ComponentsIcons :name="o.icon" class-name="icon-sidebar" />
                     {{ o.name }}
                 </el-menu-item>
             </el-menu>
+        </el-col>
+
+        <el-col :span="1" style="display: flex; align-items: center; justify-content: center">
+            <NotificationBell />
         </el-col>
 
         <el-col :span="1">
@@ -133,6 +143,10 @@ function handleGoToProfile() {
                     class="el-avatar el-avatar--circle el-tooltip__trigger" />
                 <template #dropdown>
                     <el-dropdown-menu>
+                        <el-dropdown-item @click="handleGoToNotification">
+                            <el-icon :size="16" class-name="icon-navbar"><Bell /></el-icon>
+                            <span>消息中心</span>
+                        </el-dropdown-item>
                         <el-dropdown-item @click="handleGoToProfile">
                             <ComponentsIcons name="icon-user" class-name="icon-navbar" />
                             <span>个人中心</span>

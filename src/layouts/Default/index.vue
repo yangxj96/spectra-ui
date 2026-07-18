@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useFullscreen } from "@vueuse/core";
-import { onMounted, ref, useTemplateRef, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { type RouteLocationMatched, useRouter } from "vue-router";
 
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
@@ -16,12 +15,9 @@ defineOptions({
 
 const appStore = useAppStore();
 const router = useRouter();
-const context = useTemplateRef<HTMLElement>("content");
 
 // 面包屑
 const breadcrumb = ref<RouteLocationMatched[]>([]);
-const { toggle } = useFullscreen(context);
-const fullscreenToggle = toggle;
 
 onMounted(() => {
     handlerRouter();
@@ -76,7 +72,7 @@ function handleMenu() {
             <el-main class="box__main">
                 <!-- 面包屑横条 -->
                 <el-row class="box__breadcrumb">
-                    <el-col :span="21">
+                    <el-col :span="24">
                         <i class="box__unfold-a" @click="handleMenu">
                             <ComponentsIcons v-if="appStore.unfold" name="icon-fold-left" />
                             <ComponentsIcons v-else name="icon-fold-right" />
@@ -88,22 +84,9 @@ function handleMenu() {
                             </el-breadcrumb-item>
                         </el-breadcrumb>
                     </el-col>
-                    <!-- 右边工具条 -->
-                    <el-col :span="3">
-                        <el-form inline style="float: right">
-                            <!-- 全屏切换 -->
-                            <el-form-item class="form-item form-item--end">
-                                <ComponentsIcons
-                                    name="icon-fullScreen"
-                                    class="box__unfold-a"
-                                    style="width: 1.4em; height: 1.4em"
-                                    @click="fullscreenToggle" />
-                            </el-form-item>
-                        </el-form>
-                    </el-col>
                 </el-row>
                 <!-- 内容部分 -->
-                <div ref="content" class="box__content loading-box">
+                <div class="box__content loading-box">
                     <router-view></router-view>
                 </div>
                 <!-- 底部版权 -->
@@ -149,14 +132,6 @@ function handleMenu() {
         padding-left: 2vh;
         padding-right: 2vh;
         background-color: var(--el-bg-color);
-
-        .form-item {
-            margin-bottom: 0;
-        }
-
-        .form-item--end {
-            margin-right: 0;
-        }
     }
 
     .box__content {
@@ -169,16 +144,9 @@ function handleMenu() {
         padding: 10px;
     }
 
-    .box__content:-webkit-full-screen {
-        background-color: var(--el-bg-color);
-    }
-
-    .box__content:fullscreen {
-        background-color: var(--el-bg-color);
-    }
-
     .box__unfold-a {
         margin-right: 8px;
+        cursor: pointer;
     }
 
     .footer {
@@ -193,10 +161,6 @@ function handleMenu() {
         a {
             color: var(--el-text-color-primary);
         }
-    }
-
-    .box__unfold-a:hover {
-        cursor: pointer;
     }
 }
 </style>

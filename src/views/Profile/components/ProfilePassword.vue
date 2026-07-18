@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Lock } from "@element-plus/icons-vue";
-import { ref } from "vue";
+import { CircleCheck, CircleClose, Lock } from "@element-plus/icons-vue";
+import { computed, ref } from "vue";
 
 import { AuthApi } from "@/api/auth/auth-api";
 import { UserApi, type ChangePasswordFrom } from "@/api/user/user-api";
@@ -22,6 +22,15 @@ const passwordForm = ref<ChangePasswordFrom>({
     new_password: "",
     verify_password: ""
 });
+
+// 密码规则实时检查
+const passwordRules = computed(() => [
+    { label: "密码长度 6-20 位", met: passwordForm.value.new_password.length >= 6 },
+    { label: "包含小写字母", met: /[a-z]/.test(passwordForm.value.new_password) },
+    { label: "包含大写字母", met: /[A-Z]/.test(passwordForm.value.new_password) },
+    { label: "包含数字", met: /\d/.test(passwordForm.value.new_password) },
+    { label: "包含特殊字符（@$!%*?&）", met: /[@$!%*?&]/.test(passwordForm.value.new_password) }
+]);
 
 // 密码强度验证
 const validatePassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
@@ -78,36 +87,97 @@ async function handleChangePassword() {
 </script>
 
 <template>
-    <el-form ref="formRef" :model="passwordForm" :rules="rules" label-width="100px" class="info-form">
-        <el-form-item label="旧密码" prop="old_password">
-            <el-input v-model="passwordForm.old_password" type="password" show-password placeholder="请输入旧密码" />
-        </el-form-item>
-        <el-form-item label="新密码" prop="new_password">
-            <el-input
-                v-model="passwordForm.new_password"
-                type="password"
-                show-password
-                placeholder="请输入新密码（6-20位，包含大小写字母、数字、特殊字符）" />
-        </el-form-item>
-        <el-form-item label="确认密码" prop="verify_password">
-            <el-input
-                v-model="passwordForm.verify_password"
-                type="password"
-                show-password
-                placeholder="请再次输入新密码" />
-        </el-form-item>
-        <el-form-item>
-            <el-button type="primary" :loading="loading" @click="handleChangePassword">
-                <el-icon><Lock /></el-icon>
-                修改密码
-            </el-button>
-        </el-form-item>
-    </el-form>
+    <div class="password-container">
+        <el-form ref="formRef" :model="passwordForm" :rules="rules" label-width="100px" class="info-form">
+            <el-form-item label="旧密码" prop="old_password">
+                <el-input
+                    v-model="passwordForm.old_password"
+                    type="password"
+                    show-password
+                    placeholder="请输入旧密码" />
+            </el-form-item>
+            <el-form-item label="新密码" prop="new_password">
+                <el-input
+                    v-model="passwordForm.new_password"
+                    type="password"
+                    show-password
+                    placeholder="请输入新密码" />
+            </el-form-item>
+            <el-form-item label="确认密码" prop="verify_password">
+                <el-input
+                    v-model="passwordForm.verify_password"
+                    type="password"
+                    show-password
+                    placeholder="请再次输入新密码" />
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" :loading="loading" @click="handleChangePassword">
+                    <el-icon><Lock /></el-icon>
+                    修改密码
+                </el-button>
+            </el-form-item>
+        </el-form>
+
+        <!-- 密码规则说明 -->
+        <div class="password-rules">
+            <h4 class="rules-title">密码规则</h4>
+            <ul class="rules-list">
+                <li v-for="rule in passwordRules" :key="rule.label" :class="{ 'is-met': rule.met }">
+                    <el-icon>
+                        <CircleCheck v-if="rule.met" />
+                        <CircleClose v-else />
+                    </el-icon>
+                    {{ rule.label }}
+                </li>
+            </ul>
+        </div>
+    </div>
 </template>
 
 <style scoped lang="scss">
-.info-form {
+.password-container {
     max-width: 480px;
     padding: 8px 0;
+}
+
+.info-form {
+    padding: 0;
+}
+
+.password-rules {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background-color: var(--el-fill-color-lighter);
+    border-radius: 6px;
+
+    .rules-title {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+    }
+
+    .rules-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 0;
+            font-size: 13px;
+            color: var(--el-text-color-secondary);
+
+            &.is-met {
+                color: var(--el-color-success);
+            }
+
+            .el-icon {
+                font-size: 14px;
+            }
+        }
+    }
 }
 </style>

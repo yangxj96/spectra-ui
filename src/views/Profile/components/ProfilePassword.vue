@@ -23,6 +23,36 @@ const passwordForm = ref<ChangePasswordFrom>({
     verify_password: ""
 });
 
+// 密码强度计算
+const passwordStrength = computed(() => {
+    const password = passwordForm.value.new_password;
+
+    if (!password) {
+        return { level: "empty" as const, percent: 0, text: "", color: "" };
+    }
+
+    let score = 0;
+
+    // 长度检查
+    if (password.length >= 6) score++;
+    if (password.length >= 10) score++;
+
+    // 字符类型检查
+    if (/[a-z]/.test(password)) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[@$!%*?&]/.test(password)) score++;
+
+    // 判断强度等级
+    if (score <= 2) {
+        return { level: "weak" as const, percent: 33, text: "弱", color: "var(--el-color-danger)" };
+    } else if (score <= 4) {
+        return { level: "medium" as const, percent: 66, text: "中", color: "var(--el-color-warning)" };
+    } else {
+        return { level: "strong" as const, percent: 100, text: "强", color: "var(--el-color-success)" };
+    }
+});
+
 // 密码规则实时检查
 const passwordRules = computed(() => [
     { label: "密码长度 6-20 位", met: passwordForm.value.new_password.length >= 6 },
@@ -102,6 +132,20 @@ async function handleChangePassword() {
                     type="password"
                     show-password
                     placeholder="请输入新密码" />
+                <!-- 密码强度显示 -->
+                <div v-if="passwordForm.new_password" class="password-strength">
+                    <div class="strength-bar">
+                        <div
+                            class="strength-bar-fill"
+                            :style="{
+                                width: passwordStrength.percent + '%',
+                                backgroundColor: passwordStrength.color
+                            }" />
+                    </div>
+                    <span class="strength-text" :style="{ color: passwordStrength.color }">
+                        密码强度：{{ passwordStrength.text }}
+                    </span>
+                </div>
             </el-form-item>
             <el-form-item label="确认密码" prop="verify_password">
                 <el-input
@@ -142,6 +186,32 @@ async function handleChangePassword() {
 
 .info-form {
     padding: 0;
+}
+
+.password-strength {
+    margin-top: 8px;
+    width: 100%;
+
+    .strength-bar {
+        height: 4px;
+        background-color: var(--el-fill-color-darker);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-bottom: 4px;
+
+        .strength-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition:
+                width 0.3s,
+                background-color 0.3s;
+        }
+    }
+
+    .strength-text {
+        font-size: 12px;
+        font-weight: 500;
+    }
 }
 
 .password-rules {

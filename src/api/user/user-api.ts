@@ -55,6 +55,13 @@ export const UserApi = {
      */
     async updateProfile(params: UserProfileFrom): Promise<void> {
         return put<void>("/api/user/profile", params);
+    },
+    /**
+     * 修改密码
+     * @param params 修改密码参数
+     */
+    async changePassword(params: ChangePasswordFrom): Promise<void> {
+        return put<void>("/api/user/password", params);
     }
 };
 
@@ -124,4 +131,14 @@ export interface UserProfileFrom {
     language: string;
     /** 时区 */
     timezone: string;
+}
+
+/** 修改密码入参 */
+export interface ChangePasswordFrom {
+    /** 旧密码 */
+    old_password: string;
+    /** 新密码 */
+    new_password: string;
+    /** 确认密码 */
+    verify_password: string;
 }

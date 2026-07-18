@@ -23,7 +23,10 @@ const form = defineModel<RoleForm>("form", {
 const department_tree = ref<DepartmentTreeVO[]>();
 
 // 定义响应方法
-const emits = defineEmits(["close"]);
+const emits = defineEmits<{
+    /** 关闭事件 */
+    close: [];
+}>();
 
 // refs
 const formRef = useTemplateRef<FormInstance>("formRef");

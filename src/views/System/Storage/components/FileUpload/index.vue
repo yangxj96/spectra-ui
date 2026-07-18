@@ -7,7 +7,12 @@ import { MessageUtils } from "@/utils/message-utils.ts";
 
 import type { UploadFile, UploadFiles } from "element-plus";
 
-const emit = defineEmits(["close", "success"]);
+const emit = defineEmits<{
+    /** 关闭事件 */
+    close: [];
+    /** 上传成功事件 */
+    success: [];
+}>();
 
 // API 基础地址
 const BASE_URL = import.meta.env.VITE_API_URL;

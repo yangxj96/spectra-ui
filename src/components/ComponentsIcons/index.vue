@@ -5,19 +5,18 @@ defineOptions({
     name: "ComponentsIcons"
 });
 
-const props = defineProps({
-    prefix: {
-        type: String,
-        default: "icon"
-    },
-    name: {
-        type: String,
-        required: true
-    },
-    className: {
-        type: String,
-        default: ""
-    }
+interface Props {
+    /** 图标前缀（默认值 'icon'） */
+    prefix?: string;
+    /** 图标名称（必填） */
+    name: string;
+    /** 自定义类名（默认值 ''） */
+    className?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    prefix: "icon",
+    className: ""
 });
 
 // 计算属性

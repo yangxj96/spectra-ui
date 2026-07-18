@@ -12,7 +12,10 @@ const props = defineProps<{
     tableData: Region[];
 }>();
 
-const emit = defineEmits(["close"]);
+const emit = defineEmits<{
+    /** 关闭事件 */
+    close: [];
+}>();
 
 const editForm = useTemplateRef<FormInstance>("editForm");
 

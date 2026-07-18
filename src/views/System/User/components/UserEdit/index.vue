@@ -21,7 +21,10 @@ const form = defineModel<UserForm>("form", {
 const open = defineModel<boolean>("open", { required: true, default: false });
 
 // 定义响应方法
-const emits = defineEmits(["close"]);
+const emits = defineEmits<{
+    /** 关闭事件 */
+    close: [];
+}>();
 
 // 表单规则
 const rules: FormRules<UserForm> = {

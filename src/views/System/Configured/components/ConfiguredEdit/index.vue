@@ -24,7 +24,10 @@ const form = defineModel<ConfiguredForm>("form", {
 const formRef = useTemplateRef<FormInstance>("formRef");
 
 // 定义响应方法
-const emits = defineEmits(["close"]);
+const emits = defineEmits<{
+    /** 关闭事件 */
+    close: [];
+}>();
 
 const handleClose = () => {
     show.value = false;

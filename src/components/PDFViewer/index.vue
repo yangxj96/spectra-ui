@@ -12,12 +12,12 @@ defineOptions({
     name: "PDFViewer"
 });
 
-const props = defineProps({
-    src: {
-        type: String,
-        required: true
-    }
-});
+interface Props {
+    /** PDF 文件路径（必填） */
+    src: string;
+}
+
+const props = defineProps<Props>();
 
 // 使用 Vue 组合式函数初始化引擎
 const { engine, isLoading } = usePdfiumEngine();

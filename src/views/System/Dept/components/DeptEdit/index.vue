@@ -24,7 +24,10 @@ const tree = defineModel<DepartmentTreeVO[]>("tree", {
 });
 
 // 定义响应方法
-const emits = defineEmits(["close"]);
+const emits = defineEmits<{
+    /** 关闭事件 */
+    close: [];
+}>();
 
 // 获取是否为修改
 const modify = computed(() => {

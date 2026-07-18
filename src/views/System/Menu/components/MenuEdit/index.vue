@@ -13,7 +13,10 @@ const props = defineProps<{
     tableData: Menu[];
 }>();
 
-const emit = defineEmits(["close"]);
+const emit = defineEmits<{
+    /** 关闭事件 */
+    close: [];
+}>();
 
 const menuForm = useTemplateRef<FormInstance>("ruleFormRef");
 

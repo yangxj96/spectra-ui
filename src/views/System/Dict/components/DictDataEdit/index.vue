@@ -12,7 +12,10 @@ const props = defineProps<{
     group?: DictGroup;
 }>();
 
-const emit = defineEmits(["close"]);
+const emit = defineEmits<{
+    /** 关闭事件 */
+    close: [];
+}>();
 
 // 字典组表单数据
 const editForm = useTemplateRef<FormInstance>("editForm");

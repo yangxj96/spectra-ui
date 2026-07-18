@@ -96,8 +96,8 @@ const cleanTreeCheckState = () => {
 const handleRoleTableRowClick = async (row: RolePageVO) => {
     if (currentRow.value && currentRow.value.id && currentRow.value.id === row.id) return;
     try {
-        currentRow.value = row;
         cleanTreeCheckState();
+        currentRow.value = row;
         // 权限部分
         const roleAuthority = await RoleApi.getRoleAuthority(row.id);
         const roleAuthorityIds = roleAuthority.map(i => i.id);

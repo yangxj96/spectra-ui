@@ -42,5 +42,86 @@ export const UserApi = {
      */
     async passwordResetById(id: string): Promise<void> {
         return put<void>(`/api/user/password/reset/${id}`);
+    },
+    /**
+     * 获取当前用户详情
+     */
+    async getProfile(): Promise<UserProfileVO> {
+        return get<UserProfileVO>("/api/user/profile");
+    },
+    /**
+     * 更新当前用户信息
+     * @param params 用户信息
+     */
+    async updateProfile(params: UserProfileFrom): Promise<void> {
+        return put<void>("/api/user/profile", params);
     }
 };
+
+/** 当前用户详情 */
+export interface UserProfileVO {
+    /** 用户ID */
+    id: string;
+    /** 用户名 */
+    username: string;
+    /** 真实姓名 */
+    realName: string;
+    /** 头像 */
+    avatar: string;
+    /** 状态 */
+    status: number;
+    /** 性别 */
+    gender: number;
+    /** 生日 */
+    birthday: string;
+    /** 手机号 */
+    phone: string;
+    /** 邮箱 */
+    email: string;
+    /** 国家 */
+    country: string;
+    /** 城市 */
+    city: string;
+    /** 语言 */
+    language: string;
+    /** 时区 */
+    timezone: string;
+    /** 部门ID */
+    departmentId: string;
+    /** 部门名称 */
+    departmentName: string;
+    /** 角色列表 */
+    roles: RoleInfo[];
+}
+
+/** 角色信息 */
+export interface RoleInfo {
+    /** 角色ID */
+    id: string;
+    /** 角色名称 */
+    name: string;
+    /** 角色编码 */
+    code: string;
+}
+
+/** 更新用户信息入参 */
+export interface UserProfileFrom {
+    /** 真实姓名 */
+    realName: string;
+    /** 性别 */
+    gender: number;
+    /** 生日 */
+    birthday: string;
+    /** 手机号 */
+    phone: string;
+    /** 邮箱 */
+    email: string;
+    /** 国家 */
+    country: string;
+    /** 城市 */
+    city: string;
+    /** 语言 */
+    language: string;
+    /** 时区 */
+    timezone: string;
+}

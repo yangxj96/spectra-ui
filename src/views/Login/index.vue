@@ -9,7 +9,7 @@ import { fetchClientPrivateKey } from "@/api/system/crypto-api";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
-import { loginParticlesDark, loginParticlesLight } from "@/views/Login/config/login-particles.ts";
+import { loginParticlesDark, loginParticlesLight } from "@/views/Login/Config/login-particles.ts";
 
 const isDark = useDark();
 

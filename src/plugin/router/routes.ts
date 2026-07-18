@@ -15,7 +15,7 @@ export default [
     {
         path: "/404",
         name: "no_matching",
-        component: () => import("@/views/Common/404/index.vue"),
+        component: () => import("@/views/Common/NotFound/index.vue"),
         meta: {
             title: "未匹配到页面"
         }
@@ -23,7 +23,7 @@ export default [
     {
         path: "/401",
         name: "no_access",
-        component: () => import("@/views/Common/401/index.vue"),
+        component: () => import("@/views/Common/NoAccess/index.vue"),
         meta: {
             title: "无权访问"
         }

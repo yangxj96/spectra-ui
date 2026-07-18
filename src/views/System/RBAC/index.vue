@@ -143,7 +143,7 @@ const handleSaveRoleMenu = async () => {
 <template>
     <el-row class="rbac-container">
         <!-- 角色 -->
-        <el-col :span="16">
+        <el-col :span="16" class="table-col">
             <!-- 过滤条件 -->
             <el-row>
                 <el-form :inline="true" :model="condition">
@@ -175,7 +175,6 @@ const handleSaveRoleMenu = async () => {
                 :data="table_data"
                 border
                 highlight-current-row
-                height="88%"
                 style="width: 100%"
                 @row-click="handleRoleTableRowClick">
                 <el-table-column align="center" width="060" type="index" label="序号" />
@@ -252,15 +251,31 @@ const handleSaveRoleMenu = async () => {
 
 <style scoped lang="scss">
 .rbac-container {
+    display: flex;
     height: 100%;
     padding: 10px;
     overflow: hidden;
+    min-height: 0;
+}
+
+.table-col {
+    flex: 0 0 66.666%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    .el-table {
+        flex: 1;
+        min-height: 0;
+    }
 }
 
 .tree-col {
+    flex: 0 0 16.666%;
     display: flex;
     flex-direction: column;
     padding: 10px;
+    min-height: 0;
 
     .el-tree {
         flex: 1;

@@ -140,6 +140,8 @@ function handleMenu() {
 <style scoped lang="scss">
 .box {
     height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .box-aside {
@@ -147,19 +149,24 @@ function handleMenu() {
 }
 
 .box__header {
-    height: auto;
+    flex: 0 0 auto;
     border-bottom: solid 1px var(--el-border-color);
     padding: 0;
 }
 
 .box__container {
-    height: calc(100vh - 66px);
+    flex: 1;
+    min-height: 0;
 }
 
 .box__main {
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 
     .box__breadcrumb {
+        flex: 0 0 auto;
         margin-top: 0.5vh;
         margin-bottom: 0.5vh;
         padding-left: 2vh;
@@ -176,13 +183,9 @@ function handleMenu() {
     }
 
     .box__content {
-        width: 100%;
-        // 面包屑3.6vh,有个地方计算错了,改成5vh,头高62px,底部版权20px
-        // 5vh - 面包屑
-        // 62px - 头部固定高度
-        // 20px - 底部版权固定高度
-        height: calc(100vh - 5vh - 62px - 20px);
-        overflow: auto;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
     }
 
     .box__content > div {
@@ -202,6 +205,7 @@ function handleMenu() {
     }
 
     .footer {
+        flex: 0 0 auto;
         text-align: center;
         width: 100%;
         height: 20px;

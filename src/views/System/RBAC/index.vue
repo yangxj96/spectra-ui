@@ -141,7 +141,7 @@ const handleSaveRoleMenu = async () => {
 </script>
 
 <template>
-    <el-row style="height: 100%; padding: 10px">
+    <el-row class="rbac-container">
         <!-- 角色 -->
         <el-col :span="16">
             <!-- 过滤条件 -->
@@ -218,7 +218,7 @@ const handleSaveRoleMenu = async () => {
                 @current-change="handleCurrentChange" />
         </el-col>
         <!-- 权限 -->
-        <el-col :span="4" style="padding: 10px">
+        <el-col :span="4" class="tree-col">
             <el-text type="primary">角色权限</el-text>
             <el-divider class="divider-box" />
             <el-button link type="primary" @click="handleSaveRoleAuthority">保存角色权限</el-button>
@@ -232,7 +232,7 @@ const handleSaveRoleMenu = async () => {
                 show-checkbox />
         </el-col>
         <!-- 菜单 -->
-        <el-col :span="4" style="padding: 10px">
+        <el-col :span="4" class="tree-col">
             <el-text type="primary">角色菜单</el-text>
             <el-divider class="divider-box" />
             <el-button link type="primary" @click="handleSaveRoleMenu">保存角色菜单</el-button>
@@ -251,6 +251,24 @@ const handleSaveRoleMenu = async () => {
 </template>
 
 <style scoped lang="scss">
+.rbac-container {
+    height: 100%;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.tree-col {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+
+    .el-tree {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+    }
+}
+
 .divider-box {
     margin: 18px 0 10px 0;
 }

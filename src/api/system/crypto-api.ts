@@ -1,6 +1,6 @@
 import { post } from "@/plugin/request/api.ts";
 import { request } from "@/plugin/request/http.ts";
-import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
+import { isCryptoEnabled, useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 
 // =================================================
 // 初始化 / 获取密钥

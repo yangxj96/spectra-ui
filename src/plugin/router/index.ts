@@ -1,11 +1,12 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
-import { fetchClientPrivateKey, getClientPrivateKey, isCryptoEnabled } from "@/api/system/crypto-api.ts";
+import { fetchClientPrivateKey } from "@/api/system/crypto-api.ts";
 import { hideLoading, showLoading } from "@/plugin/element/loading";
 import { validateToken } from "@/plugin/request/auth.ts";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
 import routes from "@/plugin/router/routes";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
+import { getClientPrivateKey, isCryptoEnabled } from "@/plugin/store/modules/use-crypto-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { getRouteTitle, loadMenu } from "@/utils/route-utils.ts";
 

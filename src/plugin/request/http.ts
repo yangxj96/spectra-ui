@@ -1,7 +1,7 @@
 ﻿import qs from "qs";
 
-import { isCryptoEnabled, getServerPublicKey, getClientPrivateKey } from "@/api/system/crypto-api";
 import { hideLoading, showLoading } from "@/plugin/element/loading";
+import { isCryptoEnabled, getServerPublicKey, getClientPrivateKey } from "@/plugin/store/modules/use-crypto-store";
 import { decrypt, encrypt, generateIv, sign, verifySignature } from "@/utils/crypto/crypto-utils";
 import { GlobalUtils } from "@/utils/global-utils";
 import { MessageUtils } from "@/utils/message-utils";

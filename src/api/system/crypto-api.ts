@@ -3,22 +3,6 @@ import { request } from "@/plugin/request/http.ts";
 import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 
 // =================================================
-// 状态读取（供 http.ts 加解密使用）
-// =================================================
-
-export function isCryptoEnabled(): boolean {
-    return useCryptoStore().enabled;
-}
-
-export function getServerPublicKey(): string | null {
-    return useCryptoStore().server_public_key;
-}
-
-export function getClientPrivateKey(): string | null {
-    return useCryptoStore().client_private_key;
-}
-
-// =================================================
 // 初始化 / 获取密钥
 // =================================================
 

@@ -71,7 +71,7 @@ const saveVersion = async (ruleJson: string, optionsJson: string, formJson: stri
             form_json: formJson
         });
         ElMessage.success("保存成功");
-        router.push({ path: "/system/workflow" });
+        router.push({ path: "/system/workflow", query: { tab: "form" } });
     } catch (error) {
         console.error("保存失败:", error);
         ElMessage.error("保存失败");
@@ -91,7 +91,7 @@ const createForm = async (name: string, ruleJson: string, optionsJson: string, f
         });
 
         ElMessage.success("创建成功");
-        router.push({ path: "/system/workflow" });
+        router.push({ path: "/system/workflow", query: { tab: "form" } });
     } catch (error) {
         console.error("创建失败:", error);
         ElMessage.error("创建失败");

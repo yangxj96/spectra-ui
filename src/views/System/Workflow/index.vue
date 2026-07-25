@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRoute } from "vue-router";
 
 import FormList from "./components/FormList/index.vue";
 import WorkflowList from "./components/WorkflowList/index.vue";
 
-// 当前激活的标签页
-const activeTab = ref("form");
+const route = useRoute();
+
+// 当前激活的标签页（从路由 query 恢复，默认 form）
+const activeTab = ref((route.query.tab as string) || "form");
 </script>
 
 <template>

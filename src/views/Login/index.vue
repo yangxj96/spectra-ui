@@ -1,7 +1,6 @@
 ﻿<script setup lang="ts">
-import { useDark } from "@vueuse/core";
 import { ElForm, type FormRules } from "element-plus";
-import { computed, reactive, ref, useTemplateRef } from "vue";
+import { reactive, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { AuthApi } from "@/api/auth/auth-api.ts";
@@ -9,11 +8,9 @@ import { fetchClientPrivateKey } from "@/api/system/crypto-api";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
-import { loginParticlesDark, loginParticlesLight } from "@/views/Login/Config/login-particles.ts";
+import { loginParticles } from "@/views/Login/Config/login-particles.ts";
 
-const isDark = useDark();
-
-const particlesOptions = computed(() => (isDark.value ? loginParticlesDark : loginParticlesLight));
+const particlesOptions = loginParticles;
 const route = useRoute();
 const router = useRouter();
 const loginRef = useTemplateRef<InstanceType<typeof ElForm>>("loginForm");

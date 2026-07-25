@@ -1,5 +1,9 @@
 import { defineStore } from "pinia";
 
+/**
+ * 用户状态管理
+ * 存储 Token、登录状态，提供权限检查（支持通配符匹配）
+ */
 export const useUserStore = defineStore("user", {
     state: (): StoreUser => {
         return {

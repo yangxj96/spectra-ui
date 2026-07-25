@@ -7,6 +7,12 @@ import { MessageUtils } from "@/utils/message-utils.ts";
 import type { UploadRequestOptions } from "element-plus/es/components/upload";
 import type { UploadUserFile } from "element-plus/lib/components";
 
+/**
+ * 文件上传组合式函数
+ * 支持秒传（哈希命中）、分片上传、单次上传三种策略
+ * 流程：预处理 → 秒传判断 → 分片/单次上传 → 合并
+ * @returns files 文件列表、handleUpload 上传处理函数（供 el-upload 的 http-request 使用）
+ */
 export function useFileUpload() {
     const files = ref<UploadUserFile[]>();
 

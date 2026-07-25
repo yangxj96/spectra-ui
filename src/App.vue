@@ -6,6 +6,7 @@ import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import type { Language } from "element-plus/es/locale";
 
 const locale = ref(useAppStore().lang as Language);
+/** ElMessage 全局配置：max 同时显示数、duration 时长、plain 朴素样式、appendTo 挂载容器 */
 const message = reactive({
     max: 3,
     duration: 500,

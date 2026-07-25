@@ -112,7 +112,12 @@ async function prompt(message: unknown, title = "输入", options?: Partial<Para
 
 /* ===================== 统一出口 ===================== */
 
-// 具体方法
+/**
+ * 消息工具统一出口
+ * - success/error/warning/info：ElMessage 轻提示
+ * - notify.*：ElNotification 通知
+ * - box.*：ElMessageBox 对话框（confirm/alert/prompt）
+ */
 export const MessageUtils = {
     /* ElMessage */
     success: createMessage("success"),

@@ -18,6 +18,10 @@ export const owner: Directive<HTMLElement, string | string[]> = {
     }
 };
 
+/**
+ * 检查权限并控制元素可见性
+ * 无权限时移除 DOM 元素，有权限时恢复显示
+ */
 function checkPermission(el: HTMLElement, binding: DirectiveBinding<string | string[]>) {
     const { value, modifiers } = binding;
     if (!value) {

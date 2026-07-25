@@ -1,7 +1,9 @@
 import { type RouteRecordRaw } from "vue-router";
 
 /**
- * 通用的路由,所有人都有的
+ * 静态路由表（无需权限）
+ * 包含登录、404、401、重定向等公共页面
+ * 动态路由由菜单 API 返回后在路由守卫中注册
  */
 export default [
     {

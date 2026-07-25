@@ -32,7 +32,10 @@ const loadComponent = (componentPath?: string): ReturnType<typeof defineAsyncCom
     return loader as AsyncComponentLoader;
 };
 
-// 动态加载布局组件
+/**
+ * 动态加载布局组件
+ * @param layoutName 布局名称（default / blank）
+ */
 const loadLayout = (layoutName: string) => {
     const layouts: Record<string, () => Promise<unknown>> = {
         default: () => import("@/layouts/Default/index.vue"),

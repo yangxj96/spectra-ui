@@ -6,6 +6,7 @@
  * @since 2026-04-22 00:00:00
  */
 export const userConverter = {
+    /** 创建空白用户表单（新增时使用） */
     createForm(): UserForm {
         return {
             id: "",
@@ -26,7 +27,7 @@ export const userConverter = {
             target_ids: []
         };
     },
-    // 转到表单回显用
+    /** 列表数据转表单回显 */
     toForm(datum: UserPageVO): UserForm {
         return {
             // 基础字段
@@ -48,7 +49,7 @@ export const userConverter = {
             target_ids: datum.target_ids ?? []
         };
     },
-    // 转成表单请求参数
+    /** 表单数据转接口请求参数 */
     toDTO(form: UserForm): UserDTO {
         return {
             id: form.id,

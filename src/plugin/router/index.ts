@@ -10,6 +10,11 @@ import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { getRouteTitle, loadMenu } from "@/utils/route-utils.ts";
 
+/**
+ * 路由实例
+ * 前置守卫：鉴权、菜单加载、加密初始化、请求取消
+ * 后置守卫：页面标题设置、loading 关闭
+ */
 const router = createRouter({
     history: createWebHashHistory(),
     routes,
@@ -20,6 +25,7 @@ const router = createRouter({
     }
 });
 
+/** 无需登录即可访问的路径白名单 */
 const whiteList = new Set(["/login"]);
 
 // 路由前置守卫

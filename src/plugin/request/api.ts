@@ -1,7 +1,10 @@
 import { request } from "./http";
 
 /**
- * GET
+ * 发起 GET 请求
+ * @param url 请求路径（支持路径参数模板）
+ * @param params 查询参数
+ * @param options 额外请求选项
  */
 export function get<T, U extends string = string>(
     url: U,
@@ -16,7 +19,10 @@ export function get<T, U extends string = string>(
 }
 
 /**
- * POST
+ * 发起 POST 请求
+ * @param url 请求路径
+ * @param data 请求体（自动 JSON 序列化）
+ * @param options 额外请求选项
  */
 export function post<T, U extends string = string>(url: U, data?: unknown, options?: RequestOptions<U>) {
     return request<T, U>(url, {
@@ -27,7 +33,10 @@ export function post<T, U extends string = string>(url: U, data?: unknown, optio
 }
 
 /**
- * PUT
+ * 发起 PUT 请求
+ * @param url 请求路径
+ * @param data 请求体（自动 JSON 序列化）
+ * @param options 额外请求选项
  */
 export function put<T, U extends string = string>(url: U, data?: unknown, options?: RequestOptions<U>) {
     return request<T, U>(url, {
@@ -38,7 +47,10 @@ export function put<T, U extends string = string>(url: U, data?: unknown, option
 }
 
 /**
- * DELETE
+ * 发起 DELETE 请求
+ * @param url 请求路径
+ * @param params 查询参数
+ * @param options 额外请求选项
  */
 export function del<T, U extends string = string>(
     url: U,
@@ -54,9 +66,12 @@ export function del<T, U extends string = string>(
 
 /**
  * 上传文件
+ * FormData 键名自动从 snake_case 转为 camelCase（后端接收 camelCase）
+ * @param url 上传路径
+ * @param form 表单数据
+ * @param options 额外请求选项
  */
 export function upload<T, U extends string = string>(url: U, form: FormData, options?: RequestOptions<U>) {
-    // 参数合规转换
     const newForm = transformFormData(form);
     return request<T, U>(url, {
         method: "POST",
@@ -67,8 +82,10 @@ export function upload<T, U extends string = string>(url: U, form: FormData, opt
 
 /**
  * 下载文件
+ * @param url 下载路径
+ * @param options 额外请求选项
+ * @returns Blob 数据
  */
-
 export async function download<U extends string = string>(url: U, options?: RequestOptions<U>) {
     return await request<Blob, U>(url, {
         method: "GET",
@@ -76,10 +93,17 @@ export async function download<U extends string = string>(url: U, options?: Requ
     });
 }
 
+/**
+ * snake_case 转 camelCase
+ */
 function snakeToCamel(str: string) {
     return str.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
+/**
+ * 转换 FormData 键名为 camelCase
+ * 后端接口统一接收 camelCase 参数名
+ */
 function transformFormData(form: FormData) {
     const newForm = new FormData();
 

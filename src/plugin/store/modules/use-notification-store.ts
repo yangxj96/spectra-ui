@@ -11,15 +11,26 @@ const notificationTypeConfigs: NotificationTypeConfig[] = [
     { type: "approval", label: "待我审批", color: "#f56c6c", icon: "icon-approval" }
 ];
 
+/** 通知 Store 状态 */
 interface NotificationState {
+    /** 当前页消息列表 */
     notifications: Notification[];
+    /** 未读消息总数 */
     unreadCount: number;
+    /** 是否正在加载 */
     loading: boolean;
+    /** 当前筛选的消息类型 */
     currentType: NotificationType | "all";
+    /** 消息类型配置列表 */
     typeConfigs: NotificationTypeConfig[];
+    /** 消息总数 */
     total: number;
 }
 
+/**
+ * 消息通知状态管理
+ * 管理消息列表、未读数、类型筛选、已读/删除操作
+ */
 export const useNotificationStore = defineStore("notification", {
     state: (): NotificationState => ({
         notifications: [],
@@ -57,7 +68,7 @@ export const useNotificationStore = defineStore("notification", {
         async fetchNotifications(params?: NotificationQueryParams): Promise<void> {
             this.loading = true;
             try {
-                const queryParams: Record<string, unknown> = {
+                const queryParams: NotificationQueryParams = {
                     page_num: params?.page_num ?? 1,
                     page_size: params?.page_size ?? 20
                 };
@@ -76,7 +87,7 @@ export const useNotificationStore = defineStore("notification", {
                 if (params?.end_time) {
                     queryParams.end_time = params.end_time;
                 }
-                const result = await NotificationApi.list(queryParams as NotificationQueryParams);
+                const result = await NotificationApi.list(queryParams);
                 this.notifications = result.records ?? [];
                 this.total = result.total ?? 0;
             } catch (error) {

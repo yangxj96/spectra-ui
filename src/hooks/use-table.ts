@@ -1,5 +1,12 @@
 import { onMounted, ref } from "vue";
 
+/**
+ * 分页表格组合式函数
+ * 封装分页状态、数据请求、翻页/切换每页数量逻辑
+ * @param request 分页请求函数，接收分页参数返回分页数据
+ * @param parameters 初始分页参数（page_num、page_size 等）
+ * @returns table_data 表格数据、pagination 分页状态、翻页/查询方法
+ */
 export function useTable<T>(request: (parameters?: BasePageParams) => Promise<Page<T>>, parameters: BasePageParams) {
     // 分页实体
     const pagination = ref<Pagination>({

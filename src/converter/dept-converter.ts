@@ -6,6 +6,7 @@
  * @since 2026-04-22 00:00:00
  */
 export const deptConverter = {
+    /** 创建空白部门表单（新增时使用） */
     createForm(): DepartmentForm {
         return {
             id: "",
@@ -20,6 +21,7 @@ export const deptConverter = {
             remark: ""
         };
     },
+    /** 树形数据转表单回显 */
     toForm(datum: DepartmentTreeVO): DepartmentForm {
         return {
             id: datum.id ?? "",
@@ -34,6 +36,7 @@ export const deptConverter = {
             remark: datum.remark ?? ""
         };
     },
+    /** 表单数据转接口请求参数 */
     toDTO(datum: DepartmentForm): DepartmentDTO {
         return {
             id: datum.id ?? "",

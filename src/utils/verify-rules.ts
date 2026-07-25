@@ -2,7 +2,9 @@ import { useDictStore } from "@/plugin/store/modules/use-dict-store.ts";
 
 import type { FormItemRule } from "element-plus";
 
-// 手机号码验证规则
+/**
+ * 手机号码验证（中国大陆）
+ */
 export const mobile: FormItemRule["validator"] = (_rule, value, callback) => {
     if (!value) {
         return callback(new Error("请输入手机号"));
@@ -16,7 +18,10 @@ export const mobile: FormItemRule["validator"] = (_rule, value, callback) => {
     }
 };
 
-// 邮箱验证规则
+/**
+ * 邮箱验证（含企业邮箱域名白名单校验）
+ * 通过字典 sys_email_suffix 限制允许的邮箱后缀
+ */
 export const email: FormItemRule["validator"] = (_rule, value, callback) => {
     if (!value) {
         return callback(new Error("请输入邮箱地址"));

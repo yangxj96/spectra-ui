@@ -6,6 +6,7 @@
  * @since 2026-04-23 00:00:00
  */
 export const roleConverter = {
+    /** 创建空白角色表单（新增时使用） */
     createForm(): RoleForm {
         return {
             id: "",
@@ -18,6 +19,7 @@ export const roleConverter = {
             remark: ""
         };
     },
+    /** 列表数据转表单回显 */
     toForm(datum: RolePageVO): RoleForm {
         return {
             id: datum.id ?? "",
@@ -30,6 +32,7 @@ export const roleConverter = {
             remark: datum.remark ?? ""
         };
     },
+    /** 表单数据转接口请求参数 */
     toDTO(datum: RoleForm): RoleDTO {
         return {
             id: datum.id ?? "",

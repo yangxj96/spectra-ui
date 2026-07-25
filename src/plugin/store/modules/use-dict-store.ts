@@ -3,9 +3,13 @@ import { defineStore } from "pinia";
 
 import { DictApi } from "@/api/system/dict-api.ts";
 
-// 创建一个串行队列（concurrency=1）
+/** 串行队列，确保同一时刻只有一个字典请求在执行 */
 const serialQueue = new PQueue({ concurrency: 1 });
 
+/**
+ * 字典缓存 Store
+ * 使用串行队列（concurrency=1）防止并发重复请求同一字典组
+ */
 export const useDictStore = defineStore("dict", {
     state: (): StoreDict => ({
         dicts: {}

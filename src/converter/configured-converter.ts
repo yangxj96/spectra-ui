@@ -6,6 +6,7 @@
  * @since 2026-04-22 00:00:00
  */
 export const configuredConverter = {
+    /** 创建空白配置表单（新增时使用） */
     createForm(): ConfiguredForm {
         return {
             id: "",
@@ -17,6 +18,7 @@ export const configuredConverter = {
         };
     },
 
+    /** 列表数据转表单回显 */
     toForm(datum: ConfiguredPageVO): ConfiguredForm {
         return {
             id: datum.id ?? "",
@@ -28,6 +30,7 @@ export const configuredConverter = {
         };
     },
 
+    /** 表单数据转接口请求参数 */
     toDTO(datum: ConfiguredForm): ConfiguredDTO {
         return {
             id: datum.id ?? "",

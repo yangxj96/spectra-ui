@@ -1,21 +1,22 @@
-// ElLoading       : loading组件
-// ILoadingInstance: loading对象类型接口
 import { ElLoading } from "element-plus";
 
 import type { LoadingInstance } from "element-plus/lib/components/loading/src/loading";
 
-// 计数器
+/** 当前活跃的 loading 请求计数 */
 let count: number = 0;
 
-// 开始执行时间
+/** loading 开始显示的时间戳 */
 let startTime: number = 0;
 
-// 最小loading请求事件
+/** 最小 loading 显示时间（毫秒），不足则补足，防止闪烁 */
 const minLoadingTime: number = 300;
 
-// loading对象
+/** ElLoading 实例 */
 let loading: LoadingInstance | undefined;
 
+/**
+ * 打开 loading 遮罩
+ */
 function open(): void {
     startTime = Date.now();
     const els = document.querySelectorAll(".loading-box");
@@ -28,11 +29,12 @@ function open(): void {
     });
 }
 
+/**
+ * 关闭 loading 遮罩（补足最小显示时间后关闭）
+ */
 async function close(): Promise<void> {
-    // 计算是否需要补足最小 loading 时间
     const elapsed = Date.now() - startTime;
     const remaining = Math.max(0, minLoadingTime - elapsed);
-    // 使用 lodash delay 或原生 setTimeout 补足时间
     setTimeout(() => {
         if (loading) {
             loading.close();
@@ -42,7 +44,7 @@ async function close(): Promise<void> {
 }
 
 /**
- * 显示loading层
+ * 显示 loading 层（引用计数 +1）
  */
 export function showLoading(): void {
     if (count === 0 && loading === undefined) {
@@ -52,7 +54,7 @@ export function showLoading(): void {
 }
 
 /**
- * 关闭loading层
+ * 关闭 loading 层（引用计数 -1，归零时关闭）
  */
 export function hideLoading(): void {
     if (count <= 0) {

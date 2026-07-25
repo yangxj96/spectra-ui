@@ -13,7 +13,7 @@ export const NotificationApi = {
      * @param params 查询参数
      */
     list(params: NotificationQueryParams): Promise<Page<Notification>> {
-        return get<Page<Notification>>("/api/notification/list", params);
+        return get<Page<Notification>>("/api/notification/list", { ...params });
     },
     /**
      * 获取未读数量

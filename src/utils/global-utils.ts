@@ -16,6 +16,10 @@ export const GlobalUtils = {
         globalThis.sessionStorage.clear();
         location.reload();
     },
+    /**
+     * 跳转登录页
+     * 清除本地存储并携带当前路径作为 redirect 参数
+     */
     toLogin() {
         let query = {};
         // 安全获取当前路径

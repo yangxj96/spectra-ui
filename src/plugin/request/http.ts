@@ -283,6 +283,75 @@ function resolvePathParams(url: string, pathParams?: Record<string, unknown>) {
 }
 
 /**
+ * 加密请求体（条件判断 + 加密）
+ */
+async function encryptRequestBody(
+    body: BodyInit | null | undefined,
+    isFormData: boolean,
+    method: string
+): Promise<BodyInit | null | undefined> {
+    if (!useCryptoStore().enabled || !useCryptoStore().server_public_key || isFormData || !body || method === "GET") {
+        return body;
+    }
+    if (useCryptoStore().client_private_key) {
+        return JSON.stringify(await encryptRequest(body));
+    }
+    return JSON.stringify(await encryptBodyWithoutSign(body));
+}
+
+/**
+ * 文件下载处理
+ */
+async function handleBlobDownload(res: Response): Promise<Blob | null> {
+    const contentType = res.headers.get("content-type");
+    if (
+        !contentType?.includes("application/octet-stream") &&
+        !contentType?.includes("application/pdf") &&
+        !contentType?.includes("application/vnd") &&
+        !contentType?.includes("image/png") &&
+        !contentType?.includes("image/jpeg")
+    ) {
+        return null;
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("content-disposition");
+    if (disposition) {
+        const filename = getFilename(disposition) || "download";
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+    return blob;
+}
+
+/**
+ * 解密响应体（条件判断 + 解密）
+ */
+async function decryptResult<T>(data: T | undefined): Promise<T | undefined> {
+    if (
+        !useCryptoStore().enabled ||
+        !useCryptoStore().client_private_key ||
+        !data ||
+        typeof data !== "object" ||
+        !("signature" in (data as Record<string, unknown>))
+    ) {
+        return data;
+    }
+    const encrypted = data as unknown as {
+        data: string;
+        key: string;
+        iv: string;
+        nonce: string;
+        signature: string;
+        timestamp: number;
+    };
+    return decryptResponse<T>(encrypted);
+}
+
+/**
  * 核心请求方法
  */
 export async function request<T, U extends string>(url: U, options: RequestOptions<U> = {}): Promise<T> {
@@ -358,20 +427,7 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
         try {
             const isFormData = rest.body instanceof FormData;
 
-            // 加密请求体
-            if (
-                useCryptoStore().enabled &&
-                useCryptoStore().server_public_key &&
-                !isFormData &&
-                rest.body &&
-                method !== "GET"
-            ) {
-                if (useCryptoStore().client_private_key) {
-                    rest.body = JSON.stringify(await encryptRequest(rest.body));
-                } else {
-                    rest.body = JSON.stringify(await encryptBodyWithoutSign(rest.body));
-                }
-            }
+            rest.body = await encryptRequestBody(rest.body, isFormData, method);
 
             // 等待优先级
             await waitPriority(priority);
@@ -413,51 +469,13 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
                 await handleHttpError(res);
             }
 
-            // 文件下载处理
-            const contentType = res.headers.get("content-type");
-            const disposition = res.headers.get("content-disposition");
-
-            if (
-                contentType?.includes("application/octet-stream") ||
-                contentType?.includes("application/pdf") ||
-                contentType?.includes("application/vnd") ||
-                contentType?.includes("image/png") ||
-                contentType?.includes("image/jpeg")
-            ) {
-                const blob = await res.blob();
-                if (disposition) {
-                    const filename = getFilename(disposition) || "download";
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = filename;
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                }
-                return blob as T;
-            }
+            const blob = await handleBlobDownload(res);
+            if (blob) return blob as T;
 
             // JSON 响应
             const result: IResult<T> = await res.json();
 
-            // 解密响应体
-            if (
-                useCryptoStore().enabled &&
-                useCryptoStore().client_private_key &&
-                result.data &&
-                typeof result.data === "object" &&
-                "signature" in (result.data as Record<string, unknown>)
-            ) {
-                const encrypted = result.data as unknown as {
-                    data: string;
-                    key: string;
-                    iv: string;
-                    nonce: string;
-                    signature: string;
-                    timestamp: number;
-                };
-                result.data = await decryptResponse<T>(encrypted);
-            }
+            result.data = await decryptResult<T>(result.data);
 
             // 业务错误处理
             if (result.code !== 200) {

@@ -9,7 +9,6 @@
         "strict": true,
         "jsx": "preserve",
         "jsxImportSource": "vue",
-        "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"]
         },

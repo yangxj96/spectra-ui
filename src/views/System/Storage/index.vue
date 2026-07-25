@@ -5,7 +5,7 @@ import { FileApi } from "@/api/system/file-api.ts";
 import useTable from "@/hooks/use-table.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-import FileUpload from "./components/FileUpload/index.vue";
+import StorageUpload from "./components/StorageUpload/index.vue";
 
 // 查询条件
 const condition = ref<FilePageParams>({
@@ -187,7 +187,7 @@ const handleReset = () => {
             @current-change="handleCurrentChange" />
     </el-row>
     <!-- 上传组件 -->
-    <FileUpload v-if="uploadVisible" @close="uploadVisible = false" @success="handleUploadSuccess" />
+    <StorageUpload v-if="uploadVisible" @close="uploadVisible = false" @success="handleUploadSuccess" />
 </template>
 
 <style scoped lang="scss">

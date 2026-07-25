@@ -4,10 +4,10 @@ import { onMounted, ref } from "vue";
 import { UserApi, type UserProfileVO } from "@/api/user/user-api";
 import avatar from "@/assets/images/avatar.png";
 
-import ProfileBinding from "./components/ProfileBinding.vue";
-import ProfileInfo from "./components/ProfileInfo.vue";
-import ProfilePassword from "./components/ProfilePassword.vue";
-import ProfileSettings from "./components/ProfileSettings.vue";
+import ProfileBinding from "./components/ProfileBinding/index.vue";
+import ProfileInfo from "./components/ProfileInfo/index.vue";
+import ProfilePassword from "./components/ProfilePassword/index.vue";
+import ProfileSettings from "./components/ProfileSettings/index.vue";
 
 defineOptions({
     name: "Profile"

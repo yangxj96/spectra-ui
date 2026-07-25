@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import TaskEdit from "./components/Edit.vue";
+import TaskEdit from "./components/TaskEdit/index.vue";
 
 const tableData = [] as unknown[];
 

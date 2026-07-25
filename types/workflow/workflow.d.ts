@@ -49,4 +49,49 @@ declare global {
     type ProcessDefinitionResourceVO = {
         bpmn_xml: string;
     };
+
+    /** 表单定义保存参数 */
+    type FormDefinitionSaveFrom = {
+        name: string;
+        code?: string;
+        description?: string;
+        rule_json: string;
+        options_json: string;
+        form_json: string;
+    };
+
+    /** 表单版本保存参数 */
+    type FormVersionSaveFrom = {
+        rule_json: string;
+        options_json: string;
+        form_json: string;
+    };
+
+    /** 表单定义VO */
+    type FormDefinitionVO = {
+        id: string;
+        name: string;
+        code: string;
+        current_version: number;
+        active: boolean;
+        description?: string;
+        rule_json?: string;
+        options_json?: string;
+        form_json?: string;
+        created_by?: string;
+        created_at?: string;
+        updated_at?: string;
+    };
+
+    /** 表单版本VO */
+    type FormVersionVO = {
+        id: string;
+        form_definition_id: string;
+        form_version: number;
+        rule_json?: string;
+        options_json?: string;
+        form_json?: string;
+        created_by?: string;
+        created_at?: string;
+    };
 }

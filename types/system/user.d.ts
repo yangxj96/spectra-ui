@@ -137,4 +137,98 @@ declare global {
         // 目标ID列表
         target_ids: string[];
     };
+
+    /** 当前用户详情 */
+    type UserProfileVO = {
+        /** 用户ID */
+        id: string;
+        /** 用户名 */
+        username: string;
+        /** 真实姓名 */
+        real_name: string;
+        /** 头像 */
+        avatar: string;
+        /** 状态 */
+        status: number;
+        /** 性别 */
+        gender: number;
+        /** 生日 */
+        birthday: string;
+        /** 手机号 */
+        phone: string;
+        /** 邮箱 */
+        email: string;
+        /** 国家 */
+        country: string;
+        /** 城市 */
+        city: string;
+        /** 语言 */
+        language: string;
+        /** 时区 */
+        timezone: string;
+        /** 部门ID */
+        department_id: string;
+        /** 部门名称 */
+        department_name: string;
+        /** 角色列表 */
+        roles: RoleInfo[];
+    };
+
+    /** 角色简要信息 */
+    type RoleInfo = {
+        /** 角色ID */
+        id: string;
+        /** 角色名称 */
+        name: string;
+        /** 角色编码 */
+        code: string;
+    };
+
+    /** 更新用户信息入参 */
+    type UserProfileFrom = {
+        /** 真实姓名 */
+        real_name: string;
+        /** 性别 */
+        gender: number;
+        /** 生日 */
+        birthday: string;
+        /** 手机号 */
+        phone: string;
+        /** 邮箱 */
+        email: string;
+        /** 国家 */
+        country: string;
+        /** 城市 */
+        city: string;
+        /** 语言 */
+        language: string;
+        /** 时区 */
+        timezone: string;
+    };
+
+    /** 修改密码入参 */
+    type ChangePasswordFrom = {
+        /** 旧密码 */
+        old_password: string;
+        /** 新密码 */
+        new_password: string;
+        /** 确认密码 */
+        verify_password: string;
+    };
+
+    /** 账号绑定信息 */
+    type AccountVO = {
+        /** 账号ID */
+        id: string;
+        /** 登录类型：PASSWORD/SMS/EMAIL/OTP */
+        type: "PASSWORD" | "SMS" | "EMAIL" | "OTP";
+        /** 登录名称 */
+        loginName: string;
+        /** 状态：1-正常 2-禁用 3-未验证 */
+        status: number;
+        /** 是否已验证：0-未验证 1-已验证 */
+        verified: number;
+        /** 是否为当前登录方式 */
+        current: boolean;
+    };
 }

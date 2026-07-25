@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-import { UserApi, type UserProfileVO } from "@/api/user/user-api";
+import { UserApi } from "@/api/user/user-api";
 import avatar from "@/assets/images/avatar.png";
 
 import ProfileBinding from "./components/ProfileBinding/index.vue";

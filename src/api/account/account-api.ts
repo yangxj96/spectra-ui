@@ -39,19 +39,3 @@ export const AccountApi = {
         return del<void>(`/api/account/unbind/${accountId}`);
     }
 };
-
-/** 账号绑定信息 */
-export interface AccountVO {
-    /** 账号ID */
-    id: string;
-    /** 登录类型：PASSWORD/SMS/EMAIL/OTP */
-    type: "PASSWORD" | "SMS" | "EMAIL" | "OTP";
-    /** 登录名称 */
-    loginName: string;
-    /** 状态：1-正常 2-禁用 3-未验证 */
-    status: number;
-    /** 是否已验证：0-未验证 1-已验证 */
-    verified: number;
-    /** 是否为当前登录方式 */
-    current: boolean;
-}

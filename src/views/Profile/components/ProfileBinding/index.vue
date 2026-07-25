@@ -3,7 +3,7 @@ import { Iphone, Lock, Message, Phone } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, ref, type Component } from "vue";
 
-import { AccountApi, type AccountVO } from "@/api/account/account-api";
+import { AccountApi } from "@/api/account/account-api";
 
 defineOptions({
     name: "ProfileBinding"

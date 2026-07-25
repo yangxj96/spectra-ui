@@ -3,7 +3,7 @@ import { Check } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { ref } from "vue";
 
-import { UserApi, type UserProfileFrom, type UserProfileVO } from "@/api/user/user-api";
+import { UserApi } from "@/api/user/user-api";
 import DictSelect from "@/components/DictSelect/index.vue";
 
 defineOptions({

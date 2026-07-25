@@ -3,7 +3,7 @@ import { CircleCheck, CircleClose, Lock } from "@element-plus/icons-vue";
 import { computed, ref } from "vue";
 
 import { AuthApi } from "@/api/auth/auth-api";
-import { UserApi, type ChangePasswordFrom } from "@/api/user/user-api";
+import { UserApi } from "@/api/user/user-api";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
 import { GlobalUtils } from "@/utils/global-utils";
 import { MessageUtils } from "@/utils/message-utils";

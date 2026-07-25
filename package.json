@@ -74,7 +74,6 @@
         "pinia-plugin-persistedstate": "4.7.1",
         "prismjs": "1.30.0",
         "qs": "6.14.2",
-        "sass": "1.97.3",
         "vue": "3.5.28",
         "vue-echarts": "8.0.1",
         "vue-router": "5.0.2"
@@ -106,6 +105,7 @@
         "lint-staged": "16.2.7",
         "npm-run-all2": "8.0.4",
         "prettier": "3.8.1",
+        "sass": "1.97.3",
         "typescript": "5.9.3",
         "vite": "8.0.11",
         "vite-plugin-compression2": "2.5.0",

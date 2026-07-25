@@ -40,6 +40,11 @@ declare global {
         dedupe?: boolean;
 
         /**
+         * 路由切换时是否保持请求（不被 cancelAllRequests 取消）
+         */
+        persistent?: boolean;
+
+        /**
          * 应用层优先级（控制并发队列）
          */
         priority?: HttpPriority;

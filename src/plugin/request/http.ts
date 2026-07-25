@@ -26,6 +26,12 @@ const TIMEOUT = 60000;
 const pending = new Map<string, AbortController>();
 
 /**
+ * 标记为 persistent 的请求 key
+ * 路由切换时不会被 cancelAllRequests 取消
+ */
+const persistentKeys = new Set<string>();
+
+/**
  * 正在执行的请求 Promise
  * 用于请求共享（防抖）
  */
@@ -100,10 +106,12 @@ function releasePriority(priority: HttpPriority) {
  * 取消所有请求
  */
 export function cancelAllRequests() {
-    for (const controller of pending.values()) {
-        controller.abort();
+    for (const [key, controller] of pending) {
+        if (!persistentKeys.has(key)) {
+            controller.abort();
+            pending.delete(key);
+        }
     }
-    pending.clear();
 }
 
 /**
@@ -287,6 +295,7 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
         retry = 0,
         cache = false,
         dedupe = true,
+        persistent = false,
         headers,
         _retry,
         ...rest
@@ -333,6 +342,10 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
     const controller = new AbortController();
 
     pending.set(key, controller);
+
+    if (persistent) {
+        persistentKeys.add(key);
+    }
 
     // 请求超时
     const timeout = setTimeout(() => controller.abort(), TIMEOUT);
@@ -465,6 +478,7 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
         } finally {
             clearTimeout(timeout);
             pending.delete(key);
+            persistentKeys.delete(key);
             inflightRequests.delete(key);
             releasePriority(priority);
             if (loading) {

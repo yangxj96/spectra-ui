@@ -19,15 +19,3 @@ export const useCryptoStore = defineStore("crypto", {
         pick: ["enabled", "server_public_key"]
     }
 });
-
-export function isCryptoEnabled(): boolean {
-    return useCryptoStore().enabled;
-}
-
-export function getServerPublicKey(): string | null {
-    return useCryptoStore().server_public_key;
-}
-
-export function getClientPrivateKey(): string | null {
-    return useCryptoStore().client_private_key;
-}

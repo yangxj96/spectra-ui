@@ -1,6 +1,6 @@
 import { post } from "@/plugin/request/api.ts";
 import { request } from "@/plugin/request/http.ts";
-import { isCryptoEnabled, useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
+import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 
 // =================================================
 // 初始化 / 获取密钥
@@ -32,7 +32,7 @@ export async function initCrypto(): Promise<void> {
  * 登录后调用，用于解密响应的 AES 密钥
  */
 export async function fetchClientPrivateKey(): Promise<void> {
-    if (!isCryptoEnabled()) return;
+    if (!useCryptoStore().enabled) return;
     try {
         const data = await request<{ private_key: string | null }, "/api/system/crypto/keypair/client-private">(
             "/api/system/crypto/keypair/client-private",

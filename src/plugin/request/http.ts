@@ -1,7 +1,7 @@
 ﻿import qs from "qs";
 
 import { hideLoading, showLoading } from "@/plugin/element/loading";
-import { isCryptoEnabled, getServerPublicKey, getClientPrivateKey } from "@/plugin/store/modules/use-crypto-store";
+import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store";
 import { decrypt, encrypt, generateIv, sign, verifySignature } from "@/utils/crypto/crypto-utils";
 import { GlobalUtils } from "@/utils/global-utils";
 import { MessageUtils } from "@/utils/message-utils";
@@ -179,8 +179,8 @@ async function encryptRequest(body: unknown): Promise<{
     timestamp: number;
     signature: string;
 }> {
-    const pubKey = getServerPublicKey();
-    const privKey = getClientPrivateKey();
+    const pubKey = useCryptoStore().server_public_key;
+    const privKey = useCryptoStore().client_private_key;
     if (!pubKey || !privKey) {
         throw new Error("密钥未就绪，无法加密请求");
     }
@@ -215,7 +215,7 @@ async function encryptBodyWithoutSign(body: unknown): Promise<{
     nonce: string;
     timestamp: number;
 }> {
-    const pubKey = getServerPublicKey();
+    const pubKey = useCryptoStore().server_public_key;
     if (!pubKey) {
         throw new Error("服务端公钥未就绪，无法加密请求");
     }
@@ -247,8 +247,8 @@ async function decryptResponse<T>(encryptedBody: {
     signature: string;
     timestamp: number;
 }): Promise<T> {
-    const pubKey = getServerPublicKey();
-    const privKey = getClientPrivateKey();
+    const pubKey = useCryptoStore().server_public_key;
+    const privKey = useCryptoStore().client_private_key;
     if (!pubKey || !privKey) {
         throw new Error("密钥未就绪，无法解密响应");
     }
@@ -359,8 +359,14 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
             const isFormData = rest.body instanceof FormData;
 
             // 加密请求体
-            if (isCryptoEnabled() && getServerPublicKey() && !isFormData && rest.body && method !== "GET") {
-                if (getClientPrivateKey()) {
+            if (
+                useCryptoStore().enabled &&
+                useCryptoStore().server_public_key &&
+                !isFormData &&
+                rest.body &&
+                method !== "GET"
+            ) {
+                if (useCryptoStore().client_private_key) {
                     rest.body = JSON.stringify(await encryptRequest(rest.body));
                 } else {
                     rest.body = JSON.stringify(await encryptBodyWithoutSign(rest.body));
@@ -436,8 +442,8 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
 
             // 解密响应体
             if (
-                isCryptoEnabled() &&
-                getClientPrivateKey() &&
+                useCryptoStore().enabled &&
+                useCryptoStore().client_private_key &&
                 result.data &&
                 typeof result.data === "object" &&
                 "signature" in (result.data as Record<string, unknown>)

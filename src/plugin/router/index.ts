@@ -6,7 +6,7 @@ import { validateToken } from "@/plugin/request/auth.ts";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
 import routes from "@/plugin/router/routes";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
-import { getClientPrivateKey, isCryptoEnabled } from "@/plugin/store/modules/use-crypto-store.ts";
+import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { getRouteTitle, loadMenu } from "@/utils/route-utils.ts";
 
@@ -64,7 +64,7 @@ router.beforeEach(async (to, _, next) => {
             return next({ path: "/login" });
         }
         // 获取客户端私钥（用于解密后续响应）
-        if (isCryptoEnabled() && !getClientPrivateKey()) {
+        if (useCryptoStore().enabled && !useCryptoStore().client_private_key) {
             await fetchClientPrivateKey();
         }
         return await loadMenu(router, to, next);

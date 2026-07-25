@@ -12,40 +12,40 @@ export const NotificationApi = {
      * 获取消息列表
      * @param params 查询参数
      */
-    list(params: NotificationQueryParams): Promise<IResult<Page<Notification>>> {
-        return get<IResult<Page<Notification>>>("/api/notification/list", params);
+    list(params: NotificationQueryParams): Promise<Page<Notification>> {
+        return get<Page<Notification>>("/api/notification/list", params);
     },
     /**
      * 获取未读数量
      */
-    unreadCount(): Promise<IResult<number>> {
-        return get<IResult<number>>("/api/notification/unread-count");
+    unreadCount(): Promise<number> {
+        return get<number>("/api/notification/unread-count");
     },
     /**
      * 标记单条已读
      * @param id 消息ID
      */
-    markAsRead(id: string): Promise<IResult<void>> {
-        return put<IResult<void>>(`/api/notification/${id}/read`);
+    markAsRead(id: string): Promise<void> {
+        return put<void>(`/api/notification/${id}/read`);
     },
     /**
      * 全部标记已读
      */
-    markAllAsRead(): Promise<IResult<void>> {
-        return put<IResult<void>>("/api/notification/read-all");
+    markAllAsRead(): Promise<void> {
+        return put<void>("/api/notification/read-all");
     },
     /**
      * 删除消息
      * @param id 消息ID
      */
-    delete(id: string): Promise<IResult<void>> {
-        return del<IResult<void>>(`/api/notification/${id}`);
+    delete(id: string): Promise<void> {
+        return del<void>(`/api/notification/${id}`);
     },
     /**
      * 批量删除
      * @param ids 消息ID数组
      */
-    batchDelete(ids: string[]): Promise<IResult<void>> {
-        return post<IResult<void>>("/api/notification/batch-delete", { body: ids });
+    batchDelete(ids: string[]): Promise<void> {
+        return post<void>("/api/notification/batch-delete", { body: ids });
     }
 };

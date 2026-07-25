@@ -12,8 +12,8 @@ export const FormApi = {
      * 分页查询表单列表
      * @param params 查询参数
      */
-    page(params?: Record<string, unknown>): Promise<IPage<FormDefinitionVO>> {
-        return get<IPage<FormDefinitionVO>>("/api/workflow/form-definitions", params);
+    page(params?: Record<string, unknown>): Promise<Page<FormDefinitionVO>> {
+        return get<Page<FormDefinitionVO>>("/api/workflow/form-definitions", params);
     },
 
     /**
@@ -127,14 +127,4 @@ interface FormVersionVO {
     form_json?: string;
     created_by?: string;
     created_at?: string;
-}
-
-/**
- * 分页结果VO
- */
-interface IPage<T> {
-    records: T[];
-    total: number;
-    size: number;
-    current: number;
 }

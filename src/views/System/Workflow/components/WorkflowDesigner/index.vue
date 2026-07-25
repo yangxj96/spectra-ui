@@ -4,7 +4,7 @@ import "@logicflow/core/dist/index.css";
 import { Control, SelectionSelect } from "@logicflow/extension";
 import "@logicflow/extension/dist/index.css";
 import Flowable from "@yangxj96/logicflow-plugin-flowable";
-import "@yangxj96/logicflow-plugin-flowable/dist/index.css";
+import "@yangxj96/logicflow-plugin-flowable/style.css";
 import { ElMessage } from "element-plus";
 import { computed, onMounted, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";

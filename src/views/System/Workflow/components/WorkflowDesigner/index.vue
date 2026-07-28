@@ -3,13 +3,19 @@ import LogicFlow from "@logicflow/core";
 import "@logicflow/core/dist/index.css";
 import { Control, SelectionSelect } from "@logicflow/extension";
 import "@logicflow/extension/dist/index.css";
-import Flowable from "@yangxj96/logicflow-plugin-flowable";
+import Flowable, { type PickerRequestPayload, type PickerType } from "@yangxj96/logicflow-plugin-flowable";
 import "@yangxj96/logicflow-plugin-flowable/style.css";
 import { ElMessage } from "element-plus";
-import { computed, onMounted, ref, useTemplateRef } from "vue";
+import { computed, onMounted, reactive, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
+
+import FormPickerDialog from "../pickers/FormPickerDialog.vue";
+import GroupPickerDialog from "../pickers/GroupPickerDialog.vue";
+import JavaClassPickerDialog from "../pickers/JavaClassPickerDialog.vue";
+import ProcessPickerDialog from "../pickers/ProcessPickerDialog.vue";
+import UserPickerDialog from "../pickers/UserPickerDialog.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -29,6 +35,19 @@ const isEditMode = computed(() => !!definitionId.value);
 
 const pageTitle = computed(() => (isEditMode.value ? "编辑流程" : "新增流程"));
 
+const picker = reactive({
+    visible: false,
+    type: "" as PickerType | "",
+    multiple: false,
+    value: "",
+    resolve: null as ((v: string) => void) | null
+});
+
+const handlePickerConfirm = (value: string, label?: string) => {
+    picker.resolve?.(value, label);
+    picker.visible = false;
+};
+
 /**
  * 初始化 LogicFlow 实例
  */
@@ -47,7 +66,8 @@ const initLogicFlow = () => {
                 panel: {
                     dnd: graph.value!,
                     property: panel.value!
-                }
+                },
+                pickers: ["form", "user", "group", "javaClass", "process"]
             }
         }
     });
@@ -65,6 +85,15 @@ const initLogicFlow = () => {
     });
 
     logicFlow.value.render({});
+
+    logicFlow.value.on("property:picker", (payload: PickerRequestPayload) => {
+        console.log("[WorkflowDesigner] property:picker:", payload);
+        picker.type = payload.pickerType;
+        picker.multiple = payload.multiple;
+        picker.value = payload.currentValue;
+        picker.resolve = payload.resolve;
+        picker.visible = true;
+    });
 };
 
 /**
@@ -157,6 +186,36 @@ onMounted(() => {
                 </el-col>
             </el-row>
         </div>
+
+        <!-- Picker 弹框 -->
+        <FormPickerDialog
+            v-if="picker.type === 'form'"
+            v-model:visible="picker.visible"
+            :multiple="picker.multiple"
+            :model-value="picker.value"
+            @confirm="handlePickerConfirm" />
+        <UserPickerDialog
+            v-else-if="picker.type === 'user'"
+            v-model:visible="picker.visible"
+            :multiple="picker.multiple"
+            :model-value="picker.value"
+            @confirm="handlePickerConfirm" />
+        <GroupPickerDialog
+            v-else-if="picker.type === 'group'"
+            v-model:visible="picker.visible"
+            :multiple="picker.multiple"
+            :model-value="picker.value"
+            @confirm="handlePickerConfirm" />
+        <JavaClassPickerDialog
+            v-else-if="picker.type === 'javaClass'"
+            v-model:visible="picker.visible"
+            :model-value="picker.value"
+            @confirm="handlePickerConfirm" />
+        <ProcessPickerDialog
+            v-else-if="picker.type === 'process'"
+            v-model:visible="picker.visible"
+            :model-value="picker.value"
+            @confirm="handlePickerConfirm" />
     </div>
 </template>
 

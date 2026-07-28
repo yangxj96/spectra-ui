@@ -28,7 +28,12 @@ export default defineConfig(({ mode }) => {
         ].filter(Boolean),
         resolve: {
             alias: {
-                "@": srcPath
+                "@": srcPath,
+                "@yangxj96/logicflow-plugin-flowable/style.css": resolve(
+                    __dirname,
+                    "../logicflow-plugin-flowable/dist/index.css"
+                ),
+                "@yangxj96/logicflow-plugin-flowable": resolve(__dirname, "../logicflow-plugin-flowable/src")
             }
         },
         css: {

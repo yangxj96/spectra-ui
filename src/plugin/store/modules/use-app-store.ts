@@ -13,10 +13,12 @@ export const useAppStore = defineStore("app", {
         menus: [],
         /** 当前激活的侧边栏菜单 */
         currentMenus: [],
-        /** 当前菜单路由前缀 */
-        currentMenusPrefix: "",
+        /** 当前用户可访问的命名路由 */
+        authorizedRouteNames: new Set<string>(),
         /** 是否正在请求菜单 */
         isFetchingMenus: false,
+        /** 当前用户菜单是否已加载 */
+        menusLoaded: false,
         /** 侧边栏是否展开 */
         unfold: true,
         /** 是否显示水印 */

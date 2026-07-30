@@ -9,12 +9,14 @@ declare global {
         menus: Menu[];
         // 当前菜单子级.
         currentMenus: Menu[];
-        // 当前菜单前缀
-        currentMenusPrefix: string;
+        // 当前用户可访问的命名路由
+        authorizedRouteNames: Set<string>;
         // 是否展开菜单
         unfold: boolean;
         // 防止重复请求
         isFetchingMenus: boolean;
+        // 当前用户菜单是否已加载
+        menusLoaded: boolean;
         // 水印
         watermark: boolean;
     };

@@ -34,15 +34,15 @@ onMounted(async () => {
 const waitForMenuLoad = () => {
     return new Promise<void>(resolve => {
         // 如果菜单已加载，直接返回
-        if (useAppStore().menus.length > 0 && !useAppStore().isFetchingMenus) {
+        if (useAppStore().menusLoaded && !useAppStore().isFetchingMenus) {
             return resolve();
         }
 
         // 否则监听变化
         const unwatch = watch(
-            () => [useAppStore().menus.length, useAppStore().isFetchingMenus] as const,
-            ([length, isFetching]) => {
-                if (length > 0 && !isFetching) {
+            () => [useAppStore().menusLoaded, useAppStore().isFetchingMenus] as const,
+            ([menusLoaded, isFetching]) => {
+                if (menusLoaded && !isFetching) {
                     unwatch(); // 停止监听
                     resolve();
                 }

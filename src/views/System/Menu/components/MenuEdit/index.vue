@@ -1,11 +1,12 @@
 ﻿<script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
-import { computed, onMounted, reactive, useTemplateRef } from "vue";
+import { computed, onMounted, reactive, useTemplateRef, watch } from "vue";
+import { useRouter } from "vue-router";
 
 import { MenuApi } from "@/api/system/menu-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import IconPicker from "@/components/IconPicker/index.vue";
-import JsonEditor from "@/components/JsonEditor/index.vue";
+import { filterDirectoryTree } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 const dialog = defineModel<boolean>("show", { required: true, default: false });
@@ -20,6 +21,7 @@ const emits = defineEmits<{
 }>();
 
 const menuForm = useTemplateRef<FormInstance>("ruleFormRef");
+const router = useRouter();
 
 // 编辑标识,是否为编辑数据
 const has_edit = computed(() => !!row.value?.id && row.value.id !== "");
@@ -30,16 +32,45 @@ const edit = reactive({
     rules: {
         name: [{ required: true, message: "请输入菜单名称", trigger: "blur" }],
         icon: [{ required: true, message: "请选择菜单图标", trigger: "blur" }],
-        path: [{ required: true, message: "请输入菜单路径", trigger: "blur" }],
-        component: [{ required: true, message: "请输入组件路径", trigger: "blur" }],
+        menuType: [{ required: true, message: "请选择菜单类型", trigger: "change" }],
         sort: [{ required: true, message: "请输入排序", trigger: "blur" }]
     } as FormRules,
-    form: {} as Menu
+    form: {
+        icon: "",
+        menuType: "DIRECTORY",
+        routeName: null,
+        name: "",
+        sort: 0
+    } as MenuSaveForm
 });
 
+const parentOptions = computed(() => filterDirectoryTree(tableData.value, row.value?.id));
+const routeOptions = router
+    .getRoutes()
+    .filter(route => typeof route.name === "string" && route.meta.requiredMenu === route.name)
+    .map(route => ({ label: String(route.meta.title ?? route.name), value: String(route.name) }))
+    .sort((a, b) => a.label.localeCompare(b.label, "zh-CN"));
+
 onMounted(() => {
-    edit.form = has_edit.value ? JSON.parse(JSON.stringify(row.value || edit.form)) : ({} as Menu);
+    if (has_edit.value && row.value) {
+        edit.form = {
+            id: row.value.id,
+            pid: row.value.pid,
+            icon: row.value.icon,
+            menuType: row.value.menuType,
+            routeName: row.value.routeName,
+            name: row.value.name,
+            sort: row.value.sort
+        };
+    }
 });
+
+watch(
+    () => edit.form.menuType,
+    menuType => {
+        if (menuType === "DIRECTORY") edit.form.routeName = null;
+    }
+);
 
 // 处理关闭
 const handleClose = () => {
@@ -85,7 +116,7 @@ const handleMenuSave = async () => {
                 <el-form-item label="上级菜单" prop="pid">
                     <el-tree-select
                         v-model="edit.form.pid"
-                        :data="tableData"
+                        :data="parentOptions"
                         placeholder="请选择菜单父级"
                         check-strictly
                         default-expand-all
@@ -99,23 +130,24 @@ const handleMenuSave = async () => {
                 <el-form-item label="图标" prop="icon">
                     <IconPicker v-model="edit.form.icon" />
                 </el-form-item>
-                <el-form-item label="是否隐藏" prop="hide">
-                    <el-switch v-model="edit.form.hide" />
-                </el-form-item>
-                <el-form-item label="路径" prop="path">
-                    <el-input v-model="edit.form.path" clearable placeholder="请输入路径" />
-                </el-form-item>
-                <el-form-item label="组件" prop="component">
-                    <el-input v-model="edit.form.component" clearable placeholder="请输入组件路径" />
-                </el-form-item>
-                <el-form-item label="布局" prop="layout">
-                    <el-select v-model="edit.form.layout" clearable placeholder="请输入布局">
-                        <el-option label="默认布局" value="default" />
-                        <el-option label="空白布局" value="blank" />
+                <el-form-item label="类型" prop="menuType">
+                    <el-select v-model="edit.form.menuType" placeholder="请选择菜单类型">
+                        <el-option label="目录" value="DIRECTORY" />
+                        <el-option label="菜单" value="MENU" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="元数据" prop="metadata">
-                    <JsonEditor :read-only="false" :model-value="edit.form.metadata ?? {}" style="width: 100%" />
+                <el-form-item
+                    v-if="edit.form.menuType === 'MENU'"
+                    label="路由名称"
+                    prop="routeName"
+                    :rules="[{ required: true, message: '请选择路由名称', trigger: 'change' }]">
+                    <el-select v-model="edit.form.routeName" filterable placeholder="请选择静态路由">
+                        <el-option
+                            v-for="option in routeOptions"
+                            :key="option.value"
+                            :label="`${option.label} (${option.value})`"
+                            :value="option.value" />
+                    </el-select>
                 </el-form-item>
                 <el-form-item label="排序" prop="sort">
                     <el-input-number

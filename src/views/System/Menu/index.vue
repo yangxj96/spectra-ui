@@ -4,6 +4,7 @@ import { onMounted, reactive, ref } from "vue";
 
 import { MenuApi } from "@/api/system/menu-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
+import { filterMenuModelTree } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 import MenuEdit from "./components/MenuEdit/index.vue";
@@ -23,7 +24,7 @@ onMounted(() => {
 
 // 初始化数据
 const handleCriteriaQuery = async () => {
-    table_data.value = await MenuApi.tree();
+    table_data.value = filterMenuModelTree(await MenuApi.tree());
 };
 
 // 表行修改按钮被单击
@@ -95,16 +96,14 @@ const handleEditClose = () => {
                     <ComponentsIcons :name="scope.row.icon" />
                 </template>
             </el-table-column>
-            <el-table-column align="center" prop="path" label="请求路径" />
-            <el-table-column align="center" prop="component" label="组件路径" :show-overflow-tooltip="true" />
-            <el-table-column align="center" prop="layout" label="布局" />
-            <el-table-column align="center" prop="hide" label="隐藏">
+            <el-table-column align="center" prop="menuType" label="类型">
                 <template v-slot:default="scope">
-                    <el-text :type="scope.row.hide ? 'success' : 'danger'">
-                        {{ scope.row.hide ? "是" : "否" }}
-                    </el-text>
+                    <el-tag :type="scope.row.menuType === 'MENU' ? 'primary' : 'info'">
+                        {{ scope.row.menuType === "MENU" ? "菜单" : "目录" }}
+                    </el-tag>
                 </template>
             </el-table-column>
+            <el-table-column align="center" prop="routeName" label="路由名称" :show-overflow-tooltip="true" />
             <el-table-column align="center" prop="sort" label="排序" />
             <el-table-column align="center" label="操作" v-owner.or="['MENU:UPDATE', 'MENU:DELETE']">
                 <template #default="scope">

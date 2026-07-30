@@ -8,7 +8,7 @@ import routes from "@/plugin/router/routes";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
-import { getRouteTitle, loadMenu } from "@/utils/route-utils.ts";
+import { getRouteTitle, loadMenu, resolveRouteAccess } from "@/utils/route-utils.ts";
 
 /**
  * 路由实例
@@ -36,12 +36,11 @@ router.beforeEach(async (to, _, next) => {
     const userStore = useUserStore();
     const appStore = useAppStore();
     const token = userStore.token;
-    const menus = appStore.menus;
 
     console.debug(`[路由守卫] 开始 | token: ${!!token.access_token}, 目标: ${to.path}`);
 
     // 1. 白名单：直接放行
-    if (whiteList.has(to.path)) {
+    if (whiteList.has(to.path) && !token.access_token) {
         console.debug("[守卫] 白名单通过");
         showLoading();
         return next();
@@ -61,7 +60,7 @@ router.beforeEach(async (to, _, next) => {
     }
 
     // 4. 需要加载菜单（首次进入或刷新）
-    if (menus.length === 0 || sessionStorage.getItem("reloaded")) {
+    if (!appStore.menusLoaded || sessionStorage.getItem("reloaded")) {
         console.debug("[守卫] 需要验证token并加载菜单");
         const valid = await validateToken();
         if (!valid) {
@@ -73,15 +72,16 @@ router.beforeEach(async (to, _, next) => {
         if (useCryptoStore().enabled && !useCryptoStore().client_private_key) {
             await fetchClientPrivateKey();
         }
-        return await loadMenu(router, to, next);
+        if (!(await loadMenu())) return next(false);
+        return next({ ...to, replace: true });
     }
 
-    // 5. 路由未匹配（404）
-    if (to.matched.length === 0) {
-        console.debug("[守卫] 路由未匹配，跳转 404");
-        hideLoading();
-        return next({ path: "/404" });
-    }
+    // 5. 校验静态路由声明的菜单权限
+    const accessTarget = resolveRouteAccess(
+        typeof to.meta.requiredMenu === "string" ? to.meta.requiredMenu : undefined,
+        appStore.authorizedRouteNames
+    );
+    if (accessTarget) return next({ path: accessTarget, replace: true });
 
     // 6. 正常放行
     console.debug("[守卫] 正常跳转");

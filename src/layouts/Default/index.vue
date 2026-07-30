@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
-import { type RouteLocationMatched, useRouter } from "vue-router";
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import Footer from "@/layouts/components/Footer/index.vue";
 import Navbar from "@/layouts/components/Navbar/index.vue";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
+import { findMenuPath } from "@/utils/menu-utils.ts";
 
 import Sidebar from "./components/Sidebar/index.vue";
 
@@ -14,44 +15,18 @@ defineOptions({
 });
 
 const appStore = useAppStore();
-const router = useRouter();
-
-// 面包屑
-const breadcrumb = ref<RouteLocationMatched[]>([]);
-
-onMounted(() => {
-    handlerRouter();
-
-    watch(
-        () => router.currentRoute.value.matched,
-        value => {
-            handlerRouter([...value]);
-        },
-        {
-            immediate: true,
-            deep: true
-        }
-    );
+const route = useRoute();
+const breadcrumb = computed(() => {
+    const menuName = route.meta.activeMenu ?? route.meta.requiredMenu ?? route.name;
+    const items =
+        typeof menuName === "string"
+            ? findMenuPath(appStore.menus, menuName).map(menu => ({ title: menu.name, routeName: menu.routeName }))
+            : [];
+    if (route.meta.activeMenu && route.name !== route.meta.activeMenu && typeof route.meta.title === "string") {
+        items.push({ title: route.meta.title, routeName: null });
+    }
+    return items;
 });
-
-function handlerRouter(r: RouteLocationMatched[] = []) {
-    const current = router.currentRoute.value;
-    // ① 优先使用 meta.crumbs
-    const crumbs = current.meta?.crumbs;
-    if (Array.isArray(crumbs) && crumbs.length > 0) {
-        breadcrumb.value = crumbs.map(c => ({
-            path: c.path ?? current.path,
-            meta: { title: c.title }
-        })) as RouteLocationMatched[];
-        return;
-    }
-
-    // ② fallback：使用路由 matched
-    if (r.length <= 0) {
-        r = [...router.currentRoute.value.matched];
-    }
-    breadcrumb.value = r;
-}
 
 function handleMenu() {
     appStore.unfold = !appStore.unfold;
@@ -79,8 +54,11 @@ function handleMenu() {
                         </i>
                         <!-- 面包屑 -->
                         <el-breadcrumb style="display: inline-block">
-                            <el-breadcrumb-item v-for="(item, idx) in breadcrumb" :key="idx" :to="{ path: item.path }">
-                                {{ item.meta.title }}
+                            <el-breadcrumb-item
+                                v-for="(item, idx) in breadcrumb"
+                                :key="idx"
+                                :to="item.routeName ? { name: item.routeName } : undefined">
+                                {{ item.title }}
                             </el-breadcrumb-item>
                         </el-breadcrumb>
                     </el-col>

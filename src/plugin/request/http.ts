@@ -446,7 +446,7 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
             });
             // Token 过期自动刷新
             if (res.status === 401 && !_retry) {
-                console.log("自动刷新token");
+                console.debug(`[HTTP] ${method} ${finalUrl} 返回 401，尝试刷新 token`);
                 const newToken = await refreshToken();
 
                 if (newToken) {

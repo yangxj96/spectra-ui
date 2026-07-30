@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import { Bell } from "@element-plus/icons-vue";
-import { ref, watch } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import { AuthApi } from "@/api/auth/auth-api.ts";
 import avatar from "@/assets/images/avatar.png";
@@ -11,6 +11,7 @@ import NotificationBell from "@/components/NotificationBell/index.vue";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { GlobalUtils } from "@/utils/global-utils.ts";
+import { findFirstRoutableMenu, findMenuPath } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 defineOptions({
@@ -21,81 +22,29 @@ defineOptions({
 const router = useRouter();
 const route = useRoute();
 const appStore = useAppStore();
-const prefixes = ref<Menu[]>(appStore.menus);
-// 定义菜单前缀映射
-const menuPrefixes = ref(["/"]);
-const active = ref("/");
-
-for (const menu of appStore.menus) {
-    menuPrefixes.value.push(menu.path);
-}
+const prefixes = computed(() => appStore.menus);
+const active = ref("");
 
 // 监听路由变化
 watch(
-    () => route.path,
-    path => {
-        resolveSideMenus(path);
-        resolveTopActive(path);
+    [() => route.fullPath, () => appStore.menus],
+    () => {
+        resolveNavigation();
     },
-    { immediate: true, flush: "pre" }
+    { immediate: true, flush: "pre", deep: true }
 );
 
-// 解析顶部菜单
-function resolveTopActive(path: string) {
-    const prefixes = ["/", ...appStore.menus.map(m => m.path)].filter(Boolean);
-
-    // 按长度降序（最长优先）
-    const sortedPrefixes = prefixes.sort((a, b) => b.length - a.length);
-
-    for (const prefix of sortedPrefixes) {
-        // 首页
-        if (prefix === "/" && path === "/") {
-            active.value = "/";
-            return;
-        }
-
-        // 其他页
-        if (prefix !== "/" && (path === prefix || path.startsWith(prefix + "/"))) {
-            active.value = prefix;
-            return;
-        }
-    }
-
-    active.value = "/";
+function resolveNavigation() {
+    const routeName = route.meta.activeMenu ?? route.meta.requiredMenu ?? route.name;
+    const menuPath = typeof routeName === "string" ? findMenuPath(appStore.menus, routeName) : [];
+    const root = menuPath[0];
+    active.value = root?.id ?? "";
+    appStore.currentMenus = root?.menuType === "DIRECTORY" ? (root.children ?? []) : [];
 }
 
-// 解析侧边栏
-function resolveSideMenus(path: string) {
-    // 首页单独处理
-    if (path === "/") {
-        appStore.currentMenus = [];
-        return;
-    }
-
-    let matchedMenu: Menu | null = null;
-    let maxMatchLength = -1;
-
-    for (const menu of appStore.menus) {
-        if (!menu.path || !Array.isArray(menu.children) || menu.children.length === 0) {
-            continue;
-        }
-
-        const isMatch = path === menu.path || path.startsWith(menu.path + "/");
-
-        if (!isMatch) continue;
-
-        if (menu.path.length > maxMatchLength) {
-            matchedMenu = menu;
-            maxMatchLength = menu.path.length;
-        }
-    }
-
-    if (matchedMenu) {
-        appStore.currentMenus = matchedMenu.children ?? [];
-        appStore.currentMenusPrefix = matchedMenu.path;
-    } else {
-        appStore.currentMenus = [];
-    }
+function handleTopMenu(menu: Menu) {
+    const target = findFirstRoutableMenu(menu);
+    if (target?.routeName) router.push({ name: target.routeName });
 }
 
 function handleUserLogout() {
@@ -122,8 +71,8 @@ function handleGoToNotification() {
         </el-col>
 
         <el-col :span="19" style="padding-right: 40px">
-            <el-menu :default-active="active" :router="true" mode="horizontal">
-                <el-menu-item v-for="o in prefixes" :key="o.path" :index="o.path" :route="{ path: o.path }">
+            <el-menu :default-active="active" mode="horizontal">
+                <el-menu-item v-for="o in prefixes" :key="o.id" :index="o.id" @click="handleTopMenu(o)">
                     <ComponentsIcons :name="o.icon" class-name="icon-sidebar" />
                     {{ o.name }}
                 </el-menu-item>

@@ -8,6 +8,7 @@ import { MenuApi } from "@/api/system/menu-api.ts";
 import { roleConverter } from "@/converter/role-converter.ts";
 import useTable from "@/hooks/use-table.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
+import { collectMenuIds, filterMenuModelTree } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 import RoleEdit from "./components/RoleEdit/index.vue";
@@ -43,7 +44,7 @@ onMounted(() => {
 
 // 初始化数据
 const handleInitData = async () => {
-    menu_tree.value = await MenuApi.tree();
+    menu_tree.value = filterMenuModelTree(await MenuApi.tree());
     authority_tree.value = await AuthorityApi.tree();
 };
 
@@ -81,15 +82,8 @@ const handleRoleConditionQuery = () => {
 // 清理右边两棵树的选中状态
 const cleanTreeCheckState = () => {
     currentRow.value = undefined;
-    if (authority_tree.value)
-        for (const item of authority_tree.value) {
-            powerRef.value?.setChecked(item.id, false, true);
-        }
-
-    if (menu_tree.value)
-        for (const item of menu_tree.value) {
-            menuRef.value?.setChecked(item.id, false, true);
-        }
+    powerRef.value?.setCheckedKeys([]);
+    menuRef.value?.setCheckedKeys([]);
 };
 
 // 角色列表行被单机
@@ -133,7 +127,7 @@ const handleSaveRoleMenu = async () => {
     }
     const params = {
         role_id: currentRow.value.id,
-        menu_ids: menuRef.value?.getCheckedKeys()
+        menu_ids: collectMenuIds(menu_tree.value ?? [], menuRef.value?.getCheckedKeys() ?? [])
     };
     await RoleApi.saveRoleMenu(params);
     MessageUtils.success("保存成功");

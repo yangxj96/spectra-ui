@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Web 管理后台 · Vite（mise）",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "mise.exe exec -- pnpm start",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Web 管理后台 · Vite（mise · 快速）",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "mise.exe exec -- pnpm exec vite",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

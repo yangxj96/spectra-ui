@@ -6,16 +6,16 @@ import "@logicflow/extension/dist/index.css";
 import Flowable, { type PickerRequestPayload, type PickerType } from "@yangxj96/logicflow-plugin-flowable";
 import "@yangxj96/logicflow-plugin-flowable/style.css";
 import { ElMessage } from "element-plus";
-import { computed, onMounted, reactive, ref, useTemplateRef } from "vue";
+import { computed, onMounted, reactive, ref, shallowRef, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
 
-import FormPickerDialog from "../pickers/FormPickerDialog.vue";
-import GroupPickerDialog from "../pickers/GroupPickerDialog.vue";
-import JavaClassPickerDialog from "../pickers/JavaClassPickerDialog.vue";
-import ProcessPickerDialog from "../pickers/ProcessPickerDialog.vue";
-import UserPickerDialog from "../pickers/UserPickerDialog.vue";
+import FormPickerDialog from "./components/pickers/FormPickerDialog.vue";
+import GroupPickerDialog from "./components/pickers/GroupPickerDialog.vue";
+import JavaClassPickerDialog from "./components/pickers/JavaClassPickerDialog.vue";
+import ProcessPickerDialog from "./components/pickers/ProcessPickerDialog.vue";
+import UserPickerDialog from "./components/pickers/UserPickerDialog.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -24,7 +24,7 @@ const container = useTemplateRef<HTMLDivElement>("container");
 const graph = useTemplateRef<HTMLDivElement>("graph");
 const panel = useTemplateRef<HTMLDivElement>("panel");
 
-const logicFlow = ref<LogicFlow | null>(null);
+const logicFlow = shallowRef<LogicFlow | null>(null);
 const loading = ref(false);
 const deploying = ref(false);
 
@@ -40,7 +40,7 @@ const picker = reactive({
     type: "" as PickerType | "",
     multiple: false,
     value: "",
-    resolve: null as ((v: string) => void) | null
+    resolve: null as ((value: string, label?: string) => void) | null
 });
 
 const handlePickerConfirm = (value: string, label?: string) => {
@@ -167,7 +167,7 @@ onMounted(() => {
             <span class="title">{{ pageTitle }}</span>
             <div class="actions">
                 <el-button type="primary" :loading="deploying" :disabled="loading" @click="handleDeploy">
-                    {{ isEditMode.value ? "更新部署" : "部署" }}
+                    {{ isEditMode ? "更新部署" : "部署" }}
                 </el-button>
             </div>
         </div>

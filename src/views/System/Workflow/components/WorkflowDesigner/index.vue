@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import LogicFlow from "@logicflow/core";
-import "@logicflow/core/dist/index.css";
 import { Control, SelectionSelect } from "@logicflow/extension";
 import "@logicflow/extension/dist/index.css";
 import Flowable, { type PickerRequestPayload, type PickerType } from "@yangxj96/logicflow-plugin-flowable";
@@ -33,8 +32,6 @@ const definitionId = computed(() => route.query.id as string | undefined);
 const definitionKey = computed(() => route.query.key as string | undefined);
 const isEditMode = computed(() => !!definitionId.value);
 
-const pageTitle = computed(() => (isEditMode.value ? "编辑流程" : "新增流程"));
-
 const picker = reactive({
     visible: false,
     type: "" as PickerType | "",
@@ -57,6 +54,10 @@ const initLogicFlow = () => {
     logicFlow.value = new LogicFlow({
         container: container.value!,
         grid: true,
+        idGenerator: type => {
+            const prefix = type === "bpmn:sequenceFlow" ? "edge" : "node";
+            return `${prefix}-${crypto.randomUUID()}`;
+        },
         plugins: [Control, SelectionSelect, Flowable.Plugin],
         pluginsOptions: {
             selectionSelect: {
@@ -72,15 +73,23 @@ const initLogicFlow = () => {
         }
     });
 
-    // 添加导出按钮（调试用）
-    (logicFlow.value.extension.control as Control)?.addItem({
-        key: "export",
-        title: "",
-        text: "导出",
-        iconClass: "export",
-        onClick: lf => {
-            const xml = Flowable.toBpmnXml(lf);
-            console.log("[WorkflowDesigner] BPMN XML:", xml);
+    const control = logicFlow.value.extension.control as Control | undefined;
+    control?.addItem({
+        key: "back",
+        title: "返回流程列表",
+        text: "返回",
+        iconClass: "lf-control-back",
+        onClick: () => {
+            handleBack();
+        }
+    });
+    control?.addItem({
+        key: "deploy",
+        title: isEditMode.value ? "更新部署流程" : "部署流程",
+        text: isEditMode.value ? "更新部署" : "部署",
+        iconClass: "lf-control-deploy",
+        onClick: () => {
+            void handleDeploy();
         }
     });
 
@@ -122,7 +131,7 @@ const loadBpmnXml = async (id: string) => {
  * 部署流程
  */
 const handleDeploy = async () => {
-    if (!logicFlow.value || deploying.value) return;
+    if (!logicFlow.value || loading.value || deploying.value) return;
 
     deploying.value = true;
     try {
@@ -161,21 +170,10 @@ onMounted(() => {
 
 <template>
     <div class="workflow-designer">
-        <!-- 顶部工具栏 -->
-        <div class="toolbar">
-            <el-button @click="handleBack">← 返回</el-button>
-            <span class="title">{{ pageTitle }}</span>
-            <div class="actions">
-                <el-button type="primary" :loading="deploying" :disabled="loading" @click="handleDeploy">
-                    {{ isEditMode ? "更新部署" : "部署" }}
-                </el-button>
-            </div>
-        </div>
-
         <!-- 设计器主体 -->
         <div v-loading="loading" class="designer-body">
             <el-row style="height: 100%">
-                <el-col :span="4" class="col">
+                <el-col :span="4" class="col" style="height: 100%">
                     <div ref="graph" style="height: 100%; width: 100%" />
                 </el-col>
                 <el-col :span="14" style="height: 100%">
@@ -226,28 +224,24 @@ onMounted(() => {
     height: 100%;
 }
 
-.toolbar {
-    display: flex;
-    align-items: center;
-    padding: 8px 16px;
-    border-bottom: 1px solid #e4e7ed;
-    background-color: #fff;
-    gap: 16px;
+:deep(.lf-control-back),
+:deep(.lf-control-deploy) {
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 22px 22px;
+}
 
-    .title {
-        font-size: 16px;
-        font-weight: 600;
-        flex: 1;
-    }
+:deep(.lf-control-back) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23606666' d='M22 10H7.83l5.59-5.59L12 3l-9 9 9 9 1.41-1.41L7.83 14H22v-4z'/%3E%3C/svg%3E");
+}
 
-    .actions {
-        display: flex;
-        gap: 8px;
-    }
+:deep(.lf-control-deploy) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23606666' d='M3 21h18v-3H3v3zM11 3v9H7l5 5 5-5h-4V3h-2z'/%3E%3C/svg%3E");
 }
 
 .designer-body {
     flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 </style>

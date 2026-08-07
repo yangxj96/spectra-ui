@@ -135,6 +135,112 @@ declare global {
         payment_remark?: string;
     };
 
+    type PurchaseItemVO = {
+        id: string;
+        item_type: string;
+        item_name: string;
+        specification?: string;
+        quantity: number;
+        estimated_unit_price: number;
+        estimated_amount: number;
+        purpose?: string;
+        received_quantity: number;
+    };
+
+    type PurchaseReceiptItemVO = {
+        id: string;
+        purchase_item_id: string;
+        quantity: number;
+        accepted: boolean;
+        difference_reason?: string;
+    };
+
+    type PurchaseReceiptVO = {
+        id: string;
+        receipt_no: string;
+        received_date: string;
+        receiver_id?: string;
+        status: string;
+        remark?: string;
+        items: PurchaseReceiptItemVO[];
+    };
+
+    type PurchaseVO = {
+        id: string;
+        application_id: string;
+        application_no: string;
+        title: string;
+        status: string;
+        applicant_id: string;
+        department_id?: string;
+        purpose: string;
+        expected_date: string;
+        budget_amount: number;
+        currency: string;
+        suggested_supplier?: string;
+        execution_status: string;
+        purchaser_id?: string;
+        order_no?: string;
+        ordered_at?: string;
+        completed_at?: string;
+        execution_remark?: string;
+        process_instance_id?: string;
+        reject_reason?: string;
+        items: PurchaseItemVO[];
+        receipts: PurchaseReceiptVO[];
+        created_at: string;
+    };
+
+    type PurchaseItemParams = {
+        item_type: string;
+        item_name: string;
+        specification?: string;
+        quantity: number;
+        estimated_unit_price: number;
+        purpose?: string;
+    };
+
+    type PurchaseSaveParams = {
+        purpose: string;
+        expected_date: string;
+        budget_amount: number;
+        currency?: string;
+        suggested_supplier?: string;
+        items: PurchaseItemParams[];
+    };
+
+    type PurchasePageParams = BasePageParams & {
+        keyword?: string;
+        status?: string;
+        execution_status?: string;
+    };
+
+    type PurchaseSubmitParams = {
+        approver_username?: string;
+    };
+
+    type PurchaseExecuteParams = {
+        purchaser_id?: string;
+        order_no?: string;
+        execution_status?: string;
+        execution_remark?: string;
+    };
+
+    type PurchaseReceiptItemParams = {
+        purchase_item_id: string;
+        quantity: number;
+        accepted?: boolean;
+        difference_reason?: string;
+    };
+
+    type PurchaseReceiptParams = {
+        receipt_no?: string;
+        received_date: string;
+        receiver_id?: string;
+        remark?: string;
+        items: PurchaseReceiptItemParams[];
+    };
+
     type WorkbenchSummary = {
         todo_count: number;
         unread_notification_count: number;

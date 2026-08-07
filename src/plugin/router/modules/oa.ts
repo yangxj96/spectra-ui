@@ -30,6 +30,12 @@ export default [
                 meta: { title: "费用报销", requiresAuth: true, requiredMenu: "OAReimbursement" }
             },
             {
+                path: "purchase",
+                name: "OAPurchase",
+                component: () => import("@/views/OA/Purchase/index.vue"),
+                meta: { title: "采购申请", requiresAuth: true, requiredMenu: "OAPurchase" }
+            },
+            {
                 path: "calendar",
                 name: "OACalendar",
                 component: () => import("@/views/OA/Calendar/index.vue"),

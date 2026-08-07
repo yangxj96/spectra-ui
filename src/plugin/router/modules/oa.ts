@@ -18,6 +18,12 @@ export default [
                 meta: { title: "考勤管理", requiresAuth: true, requiredMenu: "OAAttendance" }
             },
             {
+                path: "leave",
+                name: "OALeave",
+                component: () => import("@/views/OA/Leave/index.vue"),
+                meta: { title: "请假申请", requiresAuth: true, requiredMenu: "OALeave" }
+            },
+            {
                 path: "calendar",
                 name: "OACalendar",
                 component: () => import("@/views/OA/Calendar/index.vue"),

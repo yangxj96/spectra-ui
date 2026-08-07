@@ -3,6 +3,8 @@ import { Bell, Calendar, List } from "@element-plus/icons-vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
+import { WorkbenchApi } from "@/api/oa/workbench-api.ts";
+
 const router = useRouter();
 
 // ===== 问候 =====
@@ -23,6 +25,7 @@ const initTime = () => {
 
 // ===== 快捷入口 =====
 const shortcuts = [
+    { name: "请假申请", path: "/oa/leave" },
     { name: "用户管理", path: "/system/user" },
     { name: "角色管理", path: "/system/role" },
     { name: "菜单管理", path: "/system/menu" },
@@ -55,7 +58,25 @@ const notices = ref([
     { id: 4, title: "请完善资料" }
 ]);
 
-onMounted(initTime);
+const summary = ref<WorkbenchSummary | null>(null);
+
+onMounted(async () => {
+    initTime();
+    try {
+        summary.value = await WorkbenchApi.summary();
+        todos.value = [
+            { id: 1, title: "待处理审批", date: selectedDateStr.value, done: summary.value.todo_count === 0 },
+            {
+                id: 2,
+                title: "未读消息",
+                date: selectedDateStr.value,
+                done: summary.value.unread_notification_count === 0
+            }
+        ];
+    } catch {
+        // 工作台摘要失败时保留静态兜底，首页仍可用。
+    }
+});
 </script>
 
 <template>

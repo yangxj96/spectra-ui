@@ -351,6 +351,79 @@ declare global {
         category_id?: string;
     };
 
+    type SupplyOperationVO = {
+        id: string;
+        supply_id: string;
+        operation_type: string;
+        quantity: number;
+        before_stock: number;
+        after_stock: number;
+        department_id?: string;
+        user_id?: string;
+        location?: string;
+        operation_date: string;
+        reason?: string;
+        source_purchase_id?: string;
+        source_receipt_id?: string;
+        source_purchase_item_id?: string;
+        status: string;
+        created_at?: string;
+    };
+
+    type SupplyItemVO = {
+        id: string;
+        category?: string;
+        sku: string;
+        name: string;
+        specification?: string;
+        unit: string;
+        current_stock: number;
+        min_stock: number;
+        low_stock: boolean;
+        status: string;
+        supplier?: string;
+        location?: string;
+        department_id?: string;
+        remark?: string;
+        operations: SupplyOperationVO[];
+        created_at: string;
+        updated_at?: string;
+    };
+
+    type SupplyPageParams = BasePageParams & {
+        keyword?: string;
+        category?: string;
+        status?: string;
+        low_stock?: boolean;
+    };
+
+    type SupplySaveParams = {
+        category?: string;
+        sku: string;
+        name: string;
+        specification?: string;
+        unit: string;
+        min_stock: number;
+        status?: string;
+        supplier?: string;
+        location?: string;
+        department_id?: string;
+        remark?: string;
+    };
+
+    type SupplyOperationParams = {
+        quantity?: number;
+        target_stock?: number;
+        department_id?: string;
+        user_id?: string;
+        location?: string;
+        operation_date?: string;
+        reason?: string;
+        source_purchase_id?: string;
+        source_receipt_id?: string;
+        source_purchase_item_id?: string;
+    };
+
     type WorkbenchSummary = {
         todo_count: number;
         unread_notification_count: number;

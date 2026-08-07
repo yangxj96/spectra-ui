@@ -12,6 +12,12 @@ export default [
                 meta: { title: "资产管理", requiresAuth: true, requiredMenu: "OAAsset" }
             },
             {
+                path: "supply",
+                name: "OASupply",
+                component: () => import("@/views/OA/Supply/index.vue"),
+                meta: { title: "办公用品", requiresAuth: true, requiredMenu: "OASupply" }
+            },
+            {
                 path: "attendance",
                 name: "OAAttendance",
                 component: () => import("@/views/OA/Attendance/index.vue"),

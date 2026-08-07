@@ -531,4 +531,50 @@ declare global {
         content?: string;
         participants?: Array<{ user_id: string; role?: string }>;
     };
+    type DocumentVersionVO = {
+        id: string;
+        version_no: number;
+        file_id: string;
+        file_name?: string;
+        file_size?: number;
+        content_type?: string;
+        version_note?: string;
+        current: boolean;
+        created_at?: string;
+    };
+
+    type DocumentVO = {
+        id: string;
+        folder_id?: string;
+        department_id?: string;
+        title: string;
+        summary?: string;
+        status: "DRAFT" | "PUBLISHED" | string;
+        visibility: "PUBLIC" | "DEPARTMENT" | "PRIVATE" | string;
+        owner_id?: string;
+        published_at?: string;
+        created_at?: string;
+        updated_at?: string;
+        current_version?: DocumentVersionVO;
+    };
+
+    type DocumentFolderVO = {
+        id: string;
+        pid?: string;
+        name: string;
+        department_id?: string;
+        visibility: string;
+        sort: number;
+    };
+
+    type DocumentPageParams = BasePageParams & { keyword?: string; status?: string; folder_id?: string };
+    type DocumentSaveParams = { folder_id?: string; title: string; summary?: string; visibility?: string };
+    type DocumentVersionParams = {
+        file_id: string;
+        file_name?: string;
+        file_size?: number;
+        content_type?: string;
+        version_note?: string;
+    };
+    type DocumentFolderSaveParams = { pid?: string; name: string; visibility?: string; sort?: number };
 }

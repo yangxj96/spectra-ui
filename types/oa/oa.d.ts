@@ -241,6 +241,116 @@ declare global {
         items: PurchaseReceiptItemParams[];
     };
 
+    type AssetCategoryVO = {
+        id: string;
+        pid?: string;
+        code: string;
+        name: string;
+        asset_type: string;
+        sort: number;
+        enabled: boolean;
+        description?: string;
+    };
+
+    type AssetOperationVO = {
+        id: string;
+        operation_type: string;
+        from_department_id?: string;
+        to_department_id?: string;
+        from_user_id?: string;
+        to_user_id?: string;
+        from_location?: string;
+        to_location?: string;
+        operation_date: string;
+        reason?: string;
+        maintenance_content?: string;
+        maintenance_cost?: number;
+        status: string;
+    };
+
+    type AssetVO = {
+        id: string;
+        category_id?: string;
+        category_name?: string;
+        asset_no?: string;
+        name: string;
+        specification?: string;
+        serial_no?: string;
+        asset_type: string;
+        status: string;
+        quantity: number;
+        acquisition_date?: string;
+        acquisition_amount: number;
+        currency: string;
+        supplier?: string;
+        location?: string;
+        department_id?: string;
+        custodian_id?: string;
+        warranty_until?: string;
+        source_purchase_id?: string;
+        source_receipt_id?: string;
+        source_purchase_item_id?: string;
+        remark?: string;
+        operations: AssetOperationVO[];
+        created_at: string;
+        updated_at?: string;
+    };
+
+    type AssetPageParams = BasePageParams & {
+        keyword?: string;
+        status?: string;
+        category_id?: string;
+        department_id?: string;
+        custodian_id?: string;
+    };
+
+    type AssetSaveParams = {
+        category_id?: string;
+        asset_no?: string;
+        name: string;
+        specification?: string;
+        serial_no?: string;
+        asset_type?: string;
+        status?: string;
+        quantity: number;
+        acquisition_date?: string;
+        acquisition_amount?: number;
+        currency?: string;
+        supplier?: string;
+        location?: string;
+        department_id?: string;
+        custodian_id?: string;
+        warranty_until?: string;
+        remark?: string;
+    };
+
+    type AssetCategorySaveParams = {
+        pid?: string;
+        code: string;
+        name: string;
+        asset_type?: string;
+        sort?: number;
+        enabled?: boolean;
+        description?: string;
+    };
+
+    type AssetOperationParams = {
+        to_department_id?: string;
+        to_user_id?: string;
+        to_location?: string;
+        operation_date?: string;
+        reason?: string;
+        maintenance_content?: string;
+        maintenance_cost?: number;
+        status?: string;
+    };
+
+    type AssetPurchaseDraftParams = {
+        purchase_id: string;
+        receipt_id: string;
+        category_id?: string;
+    };
+
     type WorkbenchSummary = {
         todo_count: number;
         unread_notification_count: number;

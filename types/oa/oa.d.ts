@@ -424,6 +424,25 @@ declare global {
         source_purchase_item_id?: string;
     };
 
+    type DepartmentStatsParams = {
+        department_id?: string;
+    };
+
+    type DepartmentStatsVO = {
+        department_id: string;
+        department_name: string;
+        asset_count: number;
+        asset_quantity: number;
+        asset_value: number;
+        supply_sku_count: number;
+        supply_stock: number;
+        supply_min_stock: number;
+        reimbursement_count: number;
+        reimbursement_amount: number;
+        purchase_count: number;
+        purchase_budget: number;
+    };
+
     type WorkbenchSummary = {
         todo_count: number;
         unread_notification_count: number;

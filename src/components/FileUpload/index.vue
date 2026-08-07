@@ -11,6 +11,10 @@ defineOptions({
 
 const modelValue = defineModel<string>();
 
+const emit = defineEmits<{
+    uploaded: [result: FileUploadResult];
+}>();
+
 /**
  * 透传 props
  */
@@ -22,7 +26,7 @@ const props = defineProps<UploadProps>();
 const handleUpload = async (options: UploadRequestOptions) => {
     const hash = CommonUtils.UUIDUpper();
     // 先进行预处理
-    const { exists, url, multipart, upload_id, chunk_size } = await FileUploadApi.pre({
+    const { exists, url, file_id, multipart, upload_id, chunk_size } = await FileUploadApi.pre({
         filename: options.file.name,
         hash: hash,
         size: options.file.size
@@ -32,6 +36,9 @@ const handleUpload = async (options: UploadRequestOptions) => {
     // 存在则秒传,提示成功
     if (exists) {
         modelValue.value = url;
+        if (file_id) {
+            emit("uploaded", { url, file_id });
+        }
         MessageUtils.success("上传成功");
         return;
     }
@@ -45,13 +52,17 @@ const handleUpload = async (options: UploadRequestOptions) => {
             upload_id: upload_id,
             chunk_size: chunk_size
         });
-        finalUrl = await FileUploadApi.merge(upload_id);
+        const result = await FileUploadApi.merge(upload_id);
+        finalUrl = result.url;
+        emit("uploaded", result);
     } else {
-        finalUrl = await uploadSingle({
+        const result = await uploadSingle({
             file: options.file,
             hash: hash,
             upload_id: upload_id
         });
+        finalUrl = result.url;
+        emit("uploaded", result);
     }
 
     modelValue.value = finalUrl;
@@ -67,9 +78,8 @@ const uploadSingle = async ({ file, hash, upload_id }: SingleParams) => {
     const params = new FormData();
     params.append("file", file);
     params.append("hash", hash);
-    params.append("upload_id", upload_id);
-    await FileUploadApi.uploadSingle(params);
-    return "";
+    params.append("uploadId", upload_id);
+    return FileUploadApi.uploadSingle(params);
 };
 
 /**
@@ -80,8 +90,8 @@ const uploadChunk = async ({ file, filename, hash, upload_id, chunk_size }: Chun
     const tasks = chunks.map((chunk, index) => {
         const params = new FormData();
         params.append("file", chunk!);
-        params.append("upload_id", upload_id);
-        params.append("file_name", filename);
+        params.append("uploadId", upload_id);
+        params.append("fileName", filename);
         params.append("hash", hash);
         params.append("count", chunks.length.toString());
         params.append("index", (index + 1).toString());
@@ -116,9 +126,6 @@ const createChunks = (file: File, size: number): Blob[] => {
         </template>
         <template #tip>
             <slot name="tip" />
-        </template>
-        <template #trigger>
-            <slot name="trigger" />
         </template>
         <template #file>
             <slot name="file" />

@@ -16,6 +16,15 @@ function normalizeMenu(menu: MenuResponse): Menu {
     };
 }
 
+function toMenuSavePayload(params: MenuSaveForm) {
+    const { menuType, routeName, ...rest } = params;
+    return {
+        ...rest,
+        menu_type: menuType,
+        route_name: routeName
+    };
+}
+
 /**
  * 菜单相关接口
  *
@@ -39,14 +48,14 @@ export const MenuApi = {
      * @param params 菜单入参
      */
     create(params: MenuSaveForm): Promise<void> {
-        return post<void>("/api/menu/created", params);
+        return post<void>("/api/menu/created", toMenuSavePayload(params));
     },
     /**
      * 修改菜单
      * @param params 菜单入参
      */
     update(params: MenuSaveForm): Promise<void> {
-        return put<void>("/api/menu/modify", params);
+        return put<void>("/api/menu/modify", toMenuSavePayload(params));
     },
     /**
      * 删除菜单

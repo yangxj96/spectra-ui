@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
-import { ref } from "vue";
+import { ElMessage } from "element-plus";
+import { reactive, ref } from "vue";
 
 import { MeetingApi } from "@/api/oa/meeting-api.ts";
 import useTable from "@/hooks/use-table.ts";
@@ -40,6 +41,33 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     condition.value
 );
 
+const dialogVisible = ref(false);
+const form = reactive<MeetingCreateParams>({ title: "", start_time: "", end_time: "", location: "", content: "" });
+
+const openCreate = () => {
+    Object.assign(form, { title: "", start_time: "", end_time: "", location: "", content: "" });
+    dialogVisible.value = true;
+};
+
+const toIso = (value: string) => (value ? new Date(value).toISOString() : value);
+
+const create = async () => {
+    await MeetingApi.create({ ...form, start_time: toIso(form.start_time), end_time: toIso(form.end_time) });
+    ElMessage.success("会议已创建");
+    dialogVisible.value = false;
+    handlerConditionQuery();
+};
+
+const respond = async (row: MeetingVO, status: string) => {
+    await MeetingApi.respond(row.id, status);
+    ElMessage.success("会议响应已更新");
+};
+
+const checkIn = async (row: MeetingVO) => {
+    await MeetingApi.checkIn(row.id);
+    ElMessage.success("签到成功");
+};
+
 // 重置查询条件
 const handleReset = () => {
     condition.value.title = undefined;
@@ -67,6 +95,7 @@ const handleReset = () => {
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                 <el-button @click="handleReset">重置</el-button>
+                <el-button @click="openCreate">新建会议</el-button>
             </el-form-item>
         </el-form>
     </el-row>
@@ -94,6 +123,13 @@ const handleReset = () => {
                 </template>
             </el-table-column>
             <el-table-column align="center" width="170" show-overflow-tooltip label="创建时间" prop="created_at" />
+            <el-table-column align="center" width="180" label="操作" fixed="right">
+                <template #default="scope">
+                    <el-button link type="primary" @click="respond(scope.row, 'accepted')">接受</el-button>
+                    <el-button link type="warning" @click="respond(scope.row, 'declined')">拒绝</el-button>
+                    <el-button link type="success" @click="checkIn(scope.row)">签到</el-button>
+                </template>
+            </el-table-column>
         </el-table>
         <!-- 分页 -->
         <el-pagination
@@ -105,6 +141,23 @@ const handleReset = () => {
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
     </el-row>
+    <el-dialog v-model="dialogVisible" title="新建会议" width="560px">
+        <el-form label-width="90px">
+            <el-form-item label="标题" required><el-input v-model="form.title" /></el-form-item>
+            <el-form-item label="开始" required>
+                <el-date-picker v-model="form.start_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
+            </el-form-item>
+            <el-form-item label="结束" required>
+                <el-date-picker v-model="form.end_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
+            </el-form-item>
+            <el-form-item label="地点"><el-input v-model="form.location" /></el-form-item>
+            <el-form-item label="议题"><el-input v-model="form.content" type="textarea" /></el-form-item>
+        </el-form>
+        <template #footer>
+            <el-button @click="dialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="create">创建</el-button>
+        </template>
+    </el-dialog>
 </template>
 
 <style scoped lang="scss">

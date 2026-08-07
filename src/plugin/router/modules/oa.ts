@@ -24,6 +24,12 @@ export default [
                 meta: { title: "请假申请", requiresAuth: true, requiredMenu: "OALeave" }
             },
             {
+                path: "reimbursement",
+                name: "OAReimbursement",
+                component: () => import("@/views/OA/Reimbursement/index.vue"),
+                meta: { title: "费用报销", requiresAuth: true, requiredMenu: "OAReimbursement" }
+            },
+            {
                 path: "calendar",
                 name: "OACalendar",
                 component: () => import("@/views/OA/Calendar/index.vue"),

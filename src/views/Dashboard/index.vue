@@ -26,6 +26,10 @@ const initTime = () => {
 // ===== 快捷入口 =====
 const shortcuts = [
     { name: "请假申请", path: "/oa/leave" },
+    { name: "费用报销", path: "/oa/reimbursement" },
+    { name: "公告中心", path: "/oa/notice" },
+    { name: "我的日程", path: "/oa/calendar" },
+    { name: "会议管理", path: "/oa/meeting" },
     { name: "用户管理", path: "/system/user" },
     { name: "角色管理", path: "/system/role" },
     { name: "菜单管理", path: "/system/menu" },
@@ -51,12 +55,7 @@ const selectedDateStr = computed(() => selectedDate.value.toISOString().slice(0,
 const filteredTodos = computed(() => todos.value.filter(t => t.date === selectedDateStr.value));
 
 // ===== 公告 =====
-const notices = ref([
-    { id: 1, title: "系统升级通知" },
-    { id: 2, title: "权限模块上线" },
-    { id: 3, title: "流程优化完成" },
-    { id: 4, title: "请完善资料" }
-]);
+const notices = ref<Array<{ id: string | number; title: string }>>([{ id: "fallback-1", title: "暂无公告数据" }]);
 
 const summary = ref<WorkbenchSummary | null>(null);
 
@@ -73,6 +72,17 @@ onMounted(async () => {
                 done: summary.value.unread_notification_count === 0
             }
         ];
+        notices.value = summary.value.notices.map(notice => ({ id: notice.id, title: notice.title }));
+        if (summary.value.calendar_items.length > 0) {
+            todos.value.push(
+                ...summary.value.calendar_items.slice(0, 4).map((item, index) => ({
+                    id: index + 10,
+                    title: `日程：${item.title}`,
+                    date: item.start_time.slice(0, 10),
+                    done: false
+                }))
+            );
+        }
     } catch {
         // 工作台摘要失败时保留静态兜底，首页仍可用。
     }

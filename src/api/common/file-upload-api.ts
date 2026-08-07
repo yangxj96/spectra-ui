@@ -19,8 +19,8 @@ export const FileUploadApi = {
      * 文件上传(小文件)
      * @param params 上传文件入参
      */
-    async uploadSingle(params: FormData): Promise<void> {
-        return upload<void>("/api/file/upload/uploadSingle", params, { loading: false });
+    async uploadSingle(params: FormData): Promise<FileUploadResult> {
+        return upload<FileUploadResult>("/api/file/upload/uploadSingle", params, { loading: false });
     },
     /**
      * 上传文件(切片)
@@ -33,8 +33,10 @@ export const FileUploadApi = {
      * 等待文件合并
      * @param upload_id 上传ID
      */
-    async merge(upload_id: string): Promise<string> {
-        await post<void>(`/api/file/upload/merge/${upload_id}`, undefined, { loading: false, dedupe: false });
-        return "";
+    async merge(upload_id: string): Promise<FileUploadResult> {
+        return post<FileUploadResult>(`/api/file/upload/merge/${upload_id}`, undefined, {
+            loading: false,
+            dedupe: false
+        });
     }
 };

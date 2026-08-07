@@ -20,6 +20,12 @@ declare global {
         upload_id: string;
         // 分片大小
         chunk_size: number;
+        file_id?: string;
+    };
+
+    type FileUploadResult = {
+        url: string;
+        file_id: string;
     };
 
     type SingleParams = {

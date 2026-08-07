@@ -44,7 +44,7 @@ export function useFileUpload() {
                 upload_id: upload_id,
                 chunk_size: chunk_size
             });
-            finalUrl = await FileUploadApi.merge(upload_id);
+            finalUrl = (await FileUploadApi.merge(upload_id)).url;
         } else {
             finalUrl = await uploadSingle({
                 file: options.file,
@@ -66,9 +66,8 @@ export function useFileUpload() {
         const params = new FormData();
         params.append("file", file);
         params.append("hash", hash);
-        params.append("upload_id", upload_id);
-        await FileUploadApi.uploadSingle(params);
-        return "";
+        params.append("uploadId", upload_id);
+        return (await FileUploadApi.uploadSingle(params)).url;
     };
 
     /**
@@ -79,8 +78,8 @@ export function useFileUpload() {
         const tasks = chunks.map((chunk, index) => {
             const params = new FormData();
             params.append("file", chunk!);
-            params.append("upload_id", upload_id);
-            params.append("file_name", filename);
+            params.append("uploadId", upload_id);
+            params.append("fileName", filename);
             params.append("hash", hash);
             params.append("count", chunks.length.toString());
             params.append("index", (index + 1).toString());

@@ -577,4 +577,97 @@ declare global {
         version_note?: string;
     };
     type DocumentFolderSaveParams = { pid?: string; name: string; visibility?: string; sort?: number };
+
+    type ContractVersionVO = {
+        id: string;
+        version_no: number;
+        file_id: string;
+        file_name?: string;
+        file_size?: number;
+        content_type?: string;
+        version_note?: string;
+        current: boolean;
+        created_at?: string;
+    };
+
+    type ContractMilestoneVO = {
+        id: string;
+        contract_id: string;
+        name: string;
+        milestone_type: string;
+        due_date: string;
+        status: "PENDING" | "DONE" | "SKIPPED" | string;
+        assignee_id?: string;
+        completed_at?: string;
+        reminder_sent_at?: string;
+        remark?: string;
+        created_at?: string;
+    };
+
+    type ContractVO = {
+        id: string;
+        contract_no: string;
+        title: string;
+        contract_type: string;
+        counterparty_name: string;
+        counterparty_contact?: string;
+        owner_id?: string;
+        department_id?: string;
+        amount: number;
+        currency: string;
+        start_date?: string;
+        end_date?: string;
+        status: "DRAFT" | "ACTIVE" | "EXPIRED" | "TERMINATED" | string;
+        signing_status: "UNSIGNED" | "SIGNED" | string;
+        signed_at?: string;
+        visibility: "PUBLIC" | "DEPARTMENT" | "PRIVATE" | string;
+        summary?: string;
+        created_at?: string;
+        updated_at?: string;
+        current_version?: ContractVersionVO;
+        versions?: ContractVersionVO[];
+        milestones?: ContractMilestoneVO[];
+    };
+
+    type ContractPageParams = BasePageParams & {
+        keyword?: string;
+        status?: string;
+        contract_type?: string;
+        signing_status?: string;
+    };
+
+    type ContractSaveParams = {
+        title: string;
+        contract_type: string;
+        counterparty_name: string;
+        counterparty_contact?: string;
+        amount: number;
+        currency?: string;
+        start_date?: string;
+        end_date?: string;
+        visibility?: string;
+        summary?: string;
+    };
+
+    type ContractVersionParams = {
+        file_id: string;
+        file_name?: string;
+        file_size?: number;
+        content_type?: string;
+        version_note?: string;
+    };
+
+    type ContractMilestoneSaveParams = {
+        name: string;
+        milestone_type?: string;
+        due_date: string;
+        assignee_id?: string;
+        remark?: string;
+    };
+
+    type ContractMilestoneUpdateParams = {
+        status: string;
+        completed_at?: string;
+        remark?: string;
+    };
 }

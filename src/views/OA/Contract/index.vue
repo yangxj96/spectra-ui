@@ -52,7 +52,8 @@ const statusLabels: Record<string, string> = {
     DRAFT: "草稿",
     ACTIVE: "生效中",
     EXPIRED: "已到期",
-    TERMINATED: "已终止"
+    TERMINATED: "已终止",
+    ARCHIVED: "已归档"
 };
 const signingLabels: Record<string, string> = { UNSIGNED: "未签署", SIGNED: "已签署" };
 
@@ -196,6 +197,15 @@ async function terminate(row: ContractVO) {
     MessageUtils.success("合同已终止");
     await load();
 }
+async function archive(row: ContractVO) {
+    await ContractApi.archive(row.id);
+    MessageUtils.success("合同已归档");
+    await load();
+}
+async function runReminders() {
+    const count = await ContractApi.runReminders();
+    MessageUtils.success(`本次已发送 ${count || 0} 条履约提醒`);
+}
 
 async function remove(row: ContractVO) {
     await ContractApi.delete(row.id);
@@ -235,6 +245,7 @@ onMounted(load);
                         <el-option label="生效中" value="ACTIVE" />
                         <el-option label="已到期" value="EXPIRED" />
                         <el-option label="已终止" value="TERMINATED" />
+                        <el-option label="已归档" value="ARCHIVED" />
                     </el-select>
                 </el-form-item>
                 <el-form-item label="签署">
@@ -246,6 +257,7 @@ onMounted(load);
                 <el-form-item>
                     <el-button type="primary" @click="load">查询</el-button>
                     <el-button v-owner="'OA_CONTRACT:INSERT'" @click="openCreate">新建合同</el-button>
+                    <el-button v-owner="'OA_CONTRACT:UPDATE'" @click="runReminders">执行履约提醒</el-button>
                 </el-form-item>
             </el-form>
         </el-card>
@@ -308,6 +320,14 @@ onMounted(load);
                             type="danger"
                             @click="terminate(scope.row)">
                             终止
+                        </el-button>
+                        <el-button
+                            v-if="['ACTIVE', 'EXPIRED', 'TERMINATED'].includes(scope.row.status)"
+                            v-owner="'OA_CONTRACT:UPDATE'"
+                            link
+                            type="warning"
+                            @click="archive(scope.row)">
+                            归档
                         </el-button>
                         <el-button
                             v-if="scope.row.status === 'DRAFT'"

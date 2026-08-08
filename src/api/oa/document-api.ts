@@ -22,6 +22,12 @@ export const DocumentApi = {
     publish(id: string): Promise<void> {
         return post<void>(`/api/oa/document/${id}/publish`);
     },
+    archive(id: string): Promise<void> {
+        return post<void>(`/api/oa/document/${id}/archive`);
+    },
+    restoreVersion(id: string, versionId: string): Promise<void> {
+        return put<void>(`/api/oa/document/${id}/versions/${versionId}/current`);
+    },
     folders(): Promise<DocumentFolderVO[]> {
         return get<DocumentFolderVO[]>("/api/oa/document/folders");
     },

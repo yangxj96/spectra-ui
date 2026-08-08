@@ -54,6 +54,42 @@ declare global {
         leave_type_code?: string;
     };
 
+    type ApplicationTypeVO = {
+        id: string;
+        code: string;
+        name: string;
+        form_definition_id?: string;
+        process_definition_key?: string;
+        enabled: boolean;
+        sort_order: number;
+        description?: string;
+    };
+
+    type ApplicationTypeSaveParams = {
+        code: string;
+        name: string;
+        form_definition_id?: string;
+        process_definition_key?: string;
+        enabled?: boolean;
+        sort_order?: number;
+        description?: string;
+    };
+
+    type ApplicationVO = {
+        id: string;
+        application_no: string;
+        type_code: string;
+        biz_id?: string;
+        applicant_id: string;
+        department_id: string;
+        title: string;
+        status: string;
+        process_instance_id?: string;
+        submitted_at?: string;
+        completed_at?: string;
+        reject_reason?: string;
+    };
+
     type ReimbursementItemVO = {
         id: string;
         expense_date: string;
@@ -549,7 +585,7 @@ declare global {
         department_id?: string;
         title: string;
         summary?: string;
-        status: "DRAFT" | "PUBLISHED" | string;
+        status: "DRAFT" | "PUBLISHED" | "ARCHIVED" | string;
         visibility: "PUBLIC" | "DEPARTMENT" | "PRIVATE" | string;
         owner_id?: string;
         published_at?: string;
@@ -617,7 +653,7 @@ declare global {
         currency: string;
         start_date?: string;
         end_date?: string;
-        status: "DRAFT" | "ACTIVE" | "EXPIRED" | "TERMINATED" | string;
+        status: "DRAFT" | "ACTIVE" | "EXPIRED" | "TERMINATED" | "ARCHIVED" | string;
         signing_status: "UNSIGNED" | "SIGNED" | string;
         signed_at?: string;
         visibility: "PUBLIC" | "DEPARTMENT" | "PRIVATE" | string;

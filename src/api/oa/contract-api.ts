@@ -42,5 +42,11 @@ export const ContractApi = {
     },
     terminate(id: string): Promise<void> {
         return post<void>(`/api/oa/contract/${id}/terminate`);
+    },
+    archive(id: string): Promise<void> {
+        return post<void>(`/api/oa/contract/${id}/archive`);
+    },
+    runReminders(): Promise<number> {
+        return post<number>("/api/oa/contract/reminders/run");
     }
 };

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
 
 import { DocumentApi } from "@/api/oa/document-api.ts";
@@ -19,6 +20,8 @@ const versionDialog = reactive({
     version_note: ""
 });
 const folderDialog = reactive({ visible: false, name: "", sort: 0 });
+const historyDialog = reactive({ visible: false, document: undefined as DocumentVO | undefined, loading: false });
+const versionHistory = ref<DocumentVersionVO[]>([]);
 
 async function loadFolders() {
     folders.value = (await DocumentApi.folders()) || [];
@@ -69,6 +72,24 @@ async function saveDocument() {
 function openVersion(row: DocumentVO) {
     Object.assign(versionDialog, { visible: true, document: row, file_id: "", file_url: "", version_note: "" });
 }
+async function openHistory(row: DocumentVO) {
+    historyDialog.visible = true;
+    historyDialog.document = row;
+    historyDialog.loading = true;
+    try {
+        versionHistory.value = (await DocumentApi.versions(row.id)) || [];
+    } finally {
+        historyDialog.loading = false;
+    }
+}
+async function restoreVersion(version: DocumentVersionVO) {
+    if (!historyDialog.document || version.current) return;
+    await ElMessageBox.confirm(`确认将文档恢复到 V${version.version_no} 吗？`, "版本恢复确认", { type: "warning" });
+    await DocumentApi.restoreVersion(historyDialog.document.id, version.id);
+    ElMessage.success("已恢复为当前版本");
+    await openHistory(historyDialog.document);
+    await load();
+}
 async function saveVersion() {
     if (!versionDialog.document || !versionDialog.file_id) return MessageUtils.warning("请先上传文件");
     await DocumentApi.addVersion(versionDialog.document.id, {
@@ -82,6 +103,11 @@ async function saveVersion() {
 async function publish(row: DocumentVO) {
     await DocumentApi.publish(row.id);
     MessageUtils.success("文档已发布");
+    await load();
+}
+async function archive(row: DocumentVO) {
+    await DocumentApi.archive(row.id);
+    MessageUtils.success("文档已归档");
     await load();
 }
 async function createFolder() {
@@ -117,6 +143,7 @@ onMounted(async () => {
                     <el-select v-model="query.status" clearable placeholder="全部状态" @change="load">
                         <el-option label="草稿" value="DRAFT" />
                         <el-option label="已发布" value="PUBLISHED" />
+                        <el-option label="已归档" value="ARCHIVED" />
                     </el-select>
                 </el-form-item>
                 <el-form-item>
@@ -132,7 +159,13 @@ onMounted(async () => {
                 <el-table-column prop="status" label="状态" width="100">
                     <template #default="scope">
                         <el-tag :type="scope.row.status === 'PUBLISHED' ? 'success' : 'info'">
-                            {{ scope.row.status === "PUBLISHED" ? "已发布" : "草稿" }}
+                            {{
+                                scope.row.status === "PUBLISHED"
+                                    ? "已发布"
+                                    : scope.row.status === "ARCHIVED"
+                                      ? "已归档"
+                                      : "草稿"
+                            }}
                         </el-tag>
                     </template>
                 </el-table-column>
@@ -151,6 +184,9 @@ onMounted(async () => {
                         <el-button v-owner="'OA_DOCUMENT:UPDATE'" link type="primary" @click="openVersion(scope.row)">
                             上传版本
                         </el-button>
+                        <el-button v-owner="'OA_DOCUMENT:QUERY'" link type="primary" @click="openHistory(scope.row)">
+                            版本历史
+                        </el-button>
                         <el-button
                             v-if="scope.row.status !== 'PUBLISHED'"
                             v-owner="'OA_DOCUMENT:UPDATE'"
@@ -158,6 +194,14 @@ onMounted(async () => {
                             type="success"
                             @click="publish(scope.row)">
                             发布
+                        </el-button>
+                        <el-button
+                            v-if="scope.row.status === 'PUBLISHED'"
+                            v-owner="'OA_DOCUMENT:UPDATE'"
+                            link
+                            type="warning"
+                            @click="archive(scope.row)">
+                            归档
                         </el-button>
                     </template>
                 </el-table-column>
@@ -218,6 +262,29 @@ onMounted(async () => {
             <el-button @click="folderDialog.visible = false">取消</el-button>
             <el-button type="primary" @click="createFolder">保存</el-button>
         </template>
+    </el-dialog>
+    <el-dialog v-model="historyDialog.visible" title="版本历史" width="720px">
+        <el-table v-loading="historyDialog.loading" :data="versionHistory" border stripe>
+            <el-table-column prop="version_no" label="版本" width="90">
+                <template #default="scope">V{{ scope.row.version_no }}</template>
+            </el-table-column>
+            <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="version_note" label="版本说明" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="created_at" label="上传时间" width="190" />
+            <el-table-column label="状态/操作" width="150" fixed="right">
+                <template #default="scope">
+                    <el-tag v-if="scope.row.current" type="success">当前版本</el-tag>
+                    <el-button
+                        v-else
+                        v-owner="'OA_DOCUMENT:UPDATE'"
+                        link
+                        type="warning"
+                        @click="restoreVersion(scope.row)">
+                        恢复为当前
+                    </el-button>
+                </template>
+            </el-table-column>
+        </el-table>
     </el-dialog>
 </template>
 

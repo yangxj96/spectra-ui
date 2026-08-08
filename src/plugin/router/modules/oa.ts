@@ -30,6 +30,12 @@ export default [
                 meta: { title: "请假申请", requiresAuth: true, requiredMenu: "OALeave" }
             },
             {
+                path: "application-types",
+                name: "OAApplicationTypes",
+                component: () => import("@/views/OA/ApplicationType/index.vue"),
+                meta: { title: "申请类型", requiresAuth: true, requiredMenu: "OAApplicationTypes" }
+            },
+            {
                 path: "reimbursement",
                 name: "OAReimbursement",
                 component: () => import("@/views/OA/Reimbursement/index.vue"),

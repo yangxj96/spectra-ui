@@ -10,6 +10,23 @@ Vue 3 SPA 管理后台（光谱后端管理系统）— `spectra-admin` 的 **We
 
 编码规范由 `spectra/spectra-ui-spec` skill 控制（修改前端代码时自动加载）。
 
+## mise 与开发启动
+
+本项目的 `mise.toml` 固定 Node 24.14.0 和 pnpm 11.0.9。正常开发终端已经在 PowerShell profile 中执行：
+
+```powershell
+(&mise activate pwsh) | Out-String | Invoke-Expression
+```
+
+进入本目录后直接启动 Web 开发服务器；不需要每次重复安装或手动选择 Node/pnpm 版本：
+
+```powershell
+Set-Location D:\Develop\Projects\spectra\spectra-ui
+pnpm start
+```
+
+启动前应先让 `spectra-admin` 完成打包并运行。`pnpm start` 的 `prestart` 已自动执行 format、lint 和 type-check，不要在启动命令中再次串联这些检查。
+
 ## 常用命令
 
 - `pnpm start` — 开发服务器（**先执行 format + lint:fix + type-check**，通过 `prestart` 钩子）

@@ -8,11 +8,11 @@ import { get, post } from "@/plugin/request/api.ts";
  * @since 2026-07-17
  */
 export const WorkflowApi = {
-    getTodoTasks(params?: BasePageParams): Promise<Page<TaskVO>> {
+    getTodoTasks(params?: BasePageParams & { process_definition_key?: string }): Promise<Page<TaskVO>> {
         return get<Page<TaskVO>>("/api/workflow/tasks/todo", params);
     },
 
-    getDoneTasks(params?: BasePageParams): Promise<Page<TaskVO>> {
+    getDoneTasks(params?: BasePageParams & { process_definition_key?: string }): Promise<Page<TaskVO>> {
         return get<Page<TaskVO>>("/api/workflow/tasks/done", params);
     },
 

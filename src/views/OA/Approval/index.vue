@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 
 import { ApplicationApi } from "@/api/oa/application-api.ts";
 import { LeaveApi } from "@/api/oa/leave-api.ts";
@@ -9,6 +10,9 @@ import { ReimbursementApi } from "@/api/oa/reimbursement-api.ts";
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
 
 const activeTab = ref<"todo" | "done">("todo");
+const route = useRoute();
+const processDefinitionKey = computed(() => route.meta.approvalProcessKey || "");
+const pageTitle = computed(() => (processDefinitionKey.value ? processNames[processDefinitionKey.value] : "审批中心"));
 const loading = ref(false);
 const rows = ref<TaskVO[]>([]);
 const pageNum = ref(1);
@@ -64,7 +68,11 @@ const detailItems = computed<Array<Record<string, unknown>>>(() => {
 async function load(): Promise<void> {
     loading.value = true;
     try {
-        const params = { page_num: pageNum.value, page_size: pageSize.value };
+        const params = {
+            page_num: pageNum.value,
+            page_size: pageSize.value,
+            ...(processDefinitionKey.value ? { process_definition_key: processDefinitionKey.value } : {})
+        };
         const result =
             activeTab.value === "todo"
                 ? await WorkflowApi.getTodoTasks(params)
@@ -129,11 +137,21 @@ async function reject(task: TaskVO): Promise<void> {
 }
 
 onMounted(load);
+watch(processDefinitionKey, async () => {
+    pageNum.value = 1;
+    await load();
+});
 </script>
 
 <template>
     <div class="approval-page">
         <el-card class="approval-card">
+            <template #header>
+                <div class="approval-header">
+                    <span>{{ pageTitle }}</span>
+                    <el-tag v-if="processDefinitionKey" type="info">按流程类型筛选</el-tag>
+                </div>
+            </template>
             <el-tabs v-model="activeTab" @tab-change="changeTab">
                 <el-tab-pane label="待我审批" name="todo" />
                 <el-tab-pane label="我已审批" name="done" />

@@ -36,6 +36,39 @@ export default [
                 meta: { title: "审批中心", requiresAuth: true, requiredMenu: "OAApproval" }
             },
             {
+                path: "approval/finance/reimbursement",
+                name: "OAApprovalReimbursement",
+                component: () => import("@/views/OA/Approval/index.vue"),
+                meta: {
+                    title: "费用报销审批",
+                    requiresAuth: true,
+                    requiredMenu: "OAApprovalReimbursement",
+                    approvalProcessKey: "oa_reimbursement_approval"
+                }
+            },
+            {
+                path: "approval/asset/purchase",
+                name: "OAApprovalPurchase",
+                component: () => import("@/views/OA/Approval/index.vue"),
+                meta: {
+                    title: "采购申请审批",
+                    requiresAuth: true,
+                    requiredMenu: "OAApprovalPurchase",
+                    approvalProcessKey: "oa_purchase_approval"
+                }
+            },
+            {
+                path: "approval/hr/leave",
+                name: "OAApprovalLeave",
+                component: () => import("@/views/OA/Approval/index.vue"),
+                meta: {
+                    title: "请假审批",
+                    requiresAuth: true,
+                    requiredMenu: "OAApprovalLeave",
+                    approvalProcessKey: "oa_leave_approval"
+                }
+            },
+            {
                 path: "reimbursement",
                 name: "OAReimbursement",
                 component: () => import("@/views/OA/Reimbursement/index.vue"),

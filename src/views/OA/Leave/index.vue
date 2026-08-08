@@ -5,6 +5,7 @@ import { ref } from "vue";
 import { LeaveApi } from "@/api/oa/leave-api.ts";
 import OAApproverSelect from "@/components/OAApproverSelect/index.vue";
 import useTable from "@/hooks/use-table.ts";
+import { toIsoDateTime } from "@/utils/date-utils.ts";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
     DRAFT: ["草稿", "info"],
@@ -60,8 +61,13 @@ function openEdit(row: LeaveVO): void {
 }
 
 async function submitCreate(): Promise<void> {
-    if (editingId.value) await LeaveApi.update(editingId.value, form.value);
-    else await LeaveApi.create(form.value);
+    const params = {
+        ...form.value,
+        start_time: toIsoDateTime(form.value.start_time),
+        end_time: toIsoDateTime(form.value.end_time)
+    };
+    if (editingId.value) await LeaveApi.update(editingId.value, params);
+    else await LeaveApi.create(params);
     dialogVisible.value = false;
     ElMessage.success(editingId.value ? "请假申请已更新" : "已保存为草稿");
     handlerConditionQuery();
@@ -181,10 +187,10 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" {
                 </el-select>
             </el-form-item>
             <el-form-item label="开始时间">
-                <el-date-picker v-model="form.start_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss[Z]" />
+                <el-date-picker v-model="form.start_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
             </el-form-item>
             <el-form-item label="结束时间">
-                <el-date-picker v-model="form.end_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss[Z]" />
+                <el-date-picker v-model="form.end_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
             </el-form-item>
             <el-form-item label="请假事由"><el-input v-model="form.reason" type="textarea" :rows="3" /></el-form-item>
             <el-form-item label="联系地址"><el-input v-model="form.contact_address" /></el-form-item>

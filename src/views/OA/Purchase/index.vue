@@ -5,6 +5,7 @@ import { computed, reactive, ref } from "vue";
 import { PurchaseApi } from "@/api/oa/purchase-api.ts";
 import OAApproverSelect from "@/components/OAApproverSelect/index.vue";
 import useTable from "@/hooks/use-table.ts";
+import { toLocalDateString } from "@/utils/date-utils.ts";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
     DRAFT: ["草稿", "info"],
@@ -32,7 +33,7 @@ const approverUsername = ref("");
 const editingId = ref("");
 const receiveVisible = ref(false);
 const form = reactive<PurchaseSaveParams>(emptyForm());
-const receivedDate = ref(new Date().toISOString().slice(0, 10));
+const receivedDate = ref(toLocalDateString());
 const receiveItems = ref<Array<PurchaseReceiptItemParams & { item_name: string; max: number }>>([]);
 const receivePurchaseId = ref("");
 
@@ -151,7 +152,7 @@ async function execute(row: PurchaseVO): Promise<void> {
 
 function openReceive(row: PurchaseVO): void {
     receivePurchaseId.value = row.id;
-    receivedDate.value = new Date().toISOString().slice(0, 10);
+    receivedDate.value = toLocalDateString();
     receiveItems.value = row.items
         .map(item => ({
             purchase_item_id: item.id,

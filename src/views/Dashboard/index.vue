@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { WorkbenchApi } from "@/api/oa/workbench-api.ts";
+import { toLocalDateString } from "@/utils/date-utils.ts";
 
 const router = useRouter();
 
@@ -46,7 +47,7 @@ const selectedDate = ref(new Date());
 
 const todos = ref<Array<{ id: number; title: string; date: string; done: boolean; path?: string }>>([]);
 
-const selectedDateStr = computed(() => selectedDate.value.toISOString().slice(0, 10));
+const selectedDateStr = computed(() => toLocalDateString(selectedDate.value));
 
 const filteredTodos = computed(() => todos.value.filter(t => t.date === selectedDateStr.value));
 

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 
 import { useNotificationStore } from "@/plugin/store/modules/use-notification-store.ts";
+import { toIsoDateRange } from "@/utils/date-utils";
 
 import NotificationDetail from "./components/NotificationDetail/index.vue";
 
@@ -61,9 +62,10 @@ function handleSearch(): void {
     if (searchForm.value.is_read !== "") {
         queryParams.value.is_read = searchForm.value.is_read === "true";
     }
-    if (searchForm.value.dateRange && searchForm.value.dateRange.length === 2) {
-        queryParams.value.start_time = searchForm.value.dateRange[0];
-        queryParams.value.end_time = searchForm.value.dateRange[1];
+    const dateRange = toIsoDateRange(searchForm.value.dateRange);
+    if (dateRange) {
+        queryParams.value.start_time = dateRange.start;
+        queryParams.value.end_time = dateRange.end;
     }
 
     loadData();

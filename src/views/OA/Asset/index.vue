@@ -4,6 +4,7 @@ import { onMounted, reactive, ref } from "vue";
 
 import { AssetApi } from "@/api/oa/asset-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { toLocalDateString } from "@/utils/date-utils.ts";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info" | "primary"]> = {
     DRAFT: ["草稿", "info"],
@@ -30,7 +31,7 @@ function emptyForm(): AssetSaveParams {
         serial_no: "",
         asset_type: "FIXED",
         quantity: 1,
-        acquisition_date: new Date().toISOString().slice(0, 10),
+        acquisition_date: toLocalDateString(),
         acquisition_amount: 0,
         currency: "CNY",
         supplier: "",

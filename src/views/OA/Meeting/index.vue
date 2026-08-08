@@ -4,6 +4,7 @@ import { reactive, ref } from "vue";
 
 import { MeetingApi } from "@/api/oa/meeting-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { toIsoDateTime } from "@/utils/date-utils.ts";
 
 // 会议状态下拉选项（查询用：业务状态）
 const statusOptions = [
@@ -49,10 +50,12 @@ const openCreate = () => {
     dialogVisible.value = true;
 };
 
-const toIso = (value: string) => (value ? new Date(value).toISOString() : value);
-
 const create = async () => {
-    await MeetingApi.create({ ...form, start_time: toIso(form.start_time), end_time: toIso(form.end_time) });
+    await MeetingApi.create({
+        ...form,
+        start_time: toIsoDateTime(form.start_time),
+        end_time: toIsoDateTime(form.end_time)
+    });
     ElMessage.success("会议已创建");
     dialogVisible.value = false;
     handlerConditionQuery();

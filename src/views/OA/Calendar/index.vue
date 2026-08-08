@@ -4,6 +4,7 @@ import { reactive, ref } from "vue";
 
 import { CalendarApi } from "@/api/oa/calendar-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { toIsoDateTime } from "@/utils/date-utils.ts";
 
 const condition = ref<CalendarPageParams>({ page_num: 1, page_size: 15 });
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<CalendarVO>(
@@ -31,10 +32,12 @@ const openCreate = () => {
     dialogVisible.value = true;
 };
 
-const toIso = (value: string) => (value ? new Date(value).toISOString() : value);
-
 const create = async () => {
-    await CalendarApi.create({ ...form, start_time: toIso(form.start_time), end_time: toIso(form.end_time) });
+    await CalendarApi.create({
+        ...form,
+        start_time: toIsoDateTime(form.start_time),
+        end_time: toIsoDateTime(form.end_time)
+    });
     ElMessage.success("日程已创建");
     dialogVisible.value = false;
     handlerConditionQuery();

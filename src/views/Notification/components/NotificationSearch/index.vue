@@ -2,6 +2,7 @@
 import { reactive } from "vue";
 
 import { useNotificationStore } from "@/plugin/store/modules/use-notification-store.ts";
+import { toIsoDateRange } from "@/utils/date-utils";
 
 defineOptions({
     name: "NotificationSearch"
@@ -37,9 +38,10 @@ function handleSearch(): void {
     if (searchForm.is_read !== "") {
         params.is_read = searchForm.is_read === "true";
     }
-    if (searchForm.dateRange && searchForm.dateRange.length === 2) {
-        params.start_time = searchForm.dateRange[0];
-        params.end_time = searchForm.dateRange[1];
+    const dateRange = toIsoDateRange(searchForm.dateRange);
+    if (dateRange) {
+        params.start_time = dateRange.start;
+        params.end_time = dateRange.end;
     }
 
     emit("search", params);

@@ -3,6 +3,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, reactive, ref } from "vue";
 
 import { PurchaseApi } from "@/api/oa/purchase-api.ts";
+import OAApproverSelect from "@/components/OAApproverSelect/index.vue";
 import useTable from "@/hooks/use-table.ts";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
@@ -27,6 +28,8 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     condition.value
 );
 const dialogVisible = ref(false);
+const approverUsername = ref("");
+const editingId = ref("");
 const receiveVisible = ref(false);
 const form = reactive<PurchaseSaveParams>(emptyForm());
 const receivedDate = ref(new Date().toISOString().slice(0, 10));
@@ -59,7 +62,28 @@ function executionLabel(status: string): string {
 }
 
 function openCreate(): void {
+    editingId.value = "";
     Object.assign(form, emptyForm());
+    dialogVisible.value = true;
+}
+
+function openEdit(row: PurchaseVO): void {
+    editingId.value = row.id;
+    Object.assign(form, {
+        purpose: row.purpose,
+        expected_date: row.expected_date,
+        budget_amount: row.budget_amount,
+        currency: row.currency,
+        suggested_supplier: row.suggested_supplier,
+        items: row.items.map(item => ({
+            item_type: item.item_type,
+            item_name: item.item_name,
+            specification: item.specification,
+            quantity: item.quantity,
+            estimated_unit_price: item.estimated_unit_price,
+            purpose: item.purpose
+        }))
+    });
     dialogVisible.value = true;
 }
 
@@ -82,14 +106,20 @@ async function saveDraft(): Promise<void> {
         ElMessage.warning("采购明细估价合计不能超过采购预算");
         return;
     }
-    await PurchaseApi.create({ ...form, budget_amount: Number(form.budget_amount) });
+    const params = { ...form, budget_amount: Number(form.budget_amount) };
+    if (editingId.value) await PurchaseApi.update(editingId.value, params);
+    else await PurchaseApi.create(params);
     dialogVisible.value = false;
-    ElMessage.success("采购申请草稿已保存");
+    ElMessage.success(editingId.value ? "采购申请草稿已更新" : "采购申请草稿已保存");
     handlerConditionQuery();
 }
 
 async function submit(row: PurchaseVO): Promise<void> {
-    await PurchaseApi.submit(row.id);
+    if (!approverUsername.value) {
+        ElMessage.warning("请先选择审批人");
+        return;
+    }
+    await PurchaseApi.submit(row.id, { approver_username: approverUsername.value });
     ElMessage.success("已提交审批");
     handlerConditionQuery();
 }
@@ -98,6 +128,13 @@ async function withdraw(row: PurchaseVO): Promise<void> {
     await ElMessageBox.confirm("确认撤回这条采购申请吗？", "提示", { type: "warning" });
     await PurchaseApi.withdraw(row.id);
     ElMessage.success("已撤回");
+    handlerConditionQuery();
+}
+
+async function cancel(row: PurchaseVO): Promise<void> {
+    await ElMessageBox.confirm("确认取消这条采购申请吗？取消后不可再提交。", "提示", { type: "warning" });
+    await PurchaseApi.cancel(row.id);
+    ElMessage.success("申请已取消");
     handlerConditionQuery();
 }
 
@@ -164,6 +201,7 @@ async function saveReceipt(): Promise<void> {
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                 <el-button @click="openCreate">新建采购申请</el-button>
             </el-form-item>
+            <el-form-item label="审批人"><OAApproverSelect v-model="approverUsername" /></el-form-item>
         </el-form>
     </el-row>
 
@@ -182,8 +220,15 @@ async function saveReceipt(): Promise<void> {
             <el-table-column label="执行状态" prop="execution_status" width="120">
                 <template #default="scope">{{ executionLabel(scope.row.execution_status) }}</template>
             </el-table-column>
-            <el-table-column label="操作" fixed="right" width="300">
+            <el-table-column label="操作" fixed="right" width="360">
                 <template #default="scope">
+                    <el-button
+                        v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
+                        link
+                        type="primary"
+                        @click="openEdit(scope.row)">
+                        编辑
+                    </el-button>
                     <el-button
                         v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
                         link
@@ -193,6 +238,13 @@ async function saveReceipt(): Promise<void> {
                     </el-button>
                     <el-button v-if="scope.row.status === 'IN_REVIEW'" link type="warning" @click="withdraw(scope.row)">
                         撤回
+                    </el-button>
+                    <el-button
+                        v-if="['DRAFT', 'REJECTED', 'WITHDRAWN'].includes(scope.row.status)"
+                        link
+                        type="danger"
+                        @click="cancel(scope.row)">
+                        取消
                     </el-button>
                     <el-button
                         v-if="scope.row.status === 'APPROVED' && scope.row.execution_status === 'NOT_STARTED'"
@@ -221,7 +273,7 @@ async function saveReceipt(): Promise<void> {
             @current-change="handleCurrentChange" />
     </el-row>
 
-    <el-dialog v-model="dialogVisible" title="新建采购申请" width="820px">
+    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑采购申请' : '新建采购申请'" width="820px">
         <el-form label-width="110px">
             <el-form-item label="采购事由" required><el-input v-model="form.purpose" /></el-form-item>
             <el-form-item label="期望到货" required>

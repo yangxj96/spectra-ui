@@ -54,6 +54,10 @@ declare global {
         leave_type_code?: string;
     };
 
+    type LeaveSubmitParams = {
+        approver_username?: string;
+    };
+
     type ApplicationTypeVO = {
         id: string;
         code: string;
@@ -492,6 +496,21 @@ declare global {
         notices: NoticeVO[];
         calendar_items: CalendarVO[];
         meetings: MeetingVO[];
+    };
+
+    type ContactVO = {
+        id: string;
+        username: string;
+        real_name?: string;
+        avatar?: string;
+        phone?: string;
+        email?: string;
+        department_id?: string;
+        department_name?: string;
+    };
+
+    type ContactPageParams = BasePageParams & {
+        keyword?: string;
     };
 
     type NoticeVO = {

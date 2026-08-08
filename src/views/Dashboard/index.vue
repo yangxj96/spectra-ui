@@ -25,17 +25,18 @@ const initTime = () => {
 
 // ===== 快捷入口 =====
 const shortcuts = [
+    { name: "审批中心", path: "/oa/approval" },
     { name: "请假申请", path: "/oa/leave" },
     { name: "费用报销", path: "/oa/reimbursement" },
+    { name: "采购申请", path: "/oa/purchase" },
     { name: "公告中心", path: "/oa/notice" },
     { name: "我的日程", path: "/oa/calendar" },
     { name: "会议管理", path: "/oa/meeting" },
+    { name: "通讯录", path: "/oa/contact" },
+    { name: "资产管理", path: "/oa/asset" },
+    { name: "办公用品", path: "/oa/supply" },
     { name: "用户管理", path: "/system/user" },
-    { name: "角色管理", path: "/system/role" },
-    { name: "菜单管理", path: "/system/menu" },
-    { name: "流程设计", path: "/flow/design" },
-    { name: "审批中心", path: "/flow/task" },
-    { name: "系统配置", path: "/system/config" }
+    { name: "流程管理", path: "/system/workflow" }
 ];
 
 const go = (path: string) => router.push(path);
@@ -43,12 +44,7 @@ const go = (path: string) => router.push(path);
 // ===== 日历 / 待办 =====
 const selectedDate = ref(new Date());
 
-const todos = ref([
-    { id: 1, title: "审核新用户注册", date: "2026-03-28", done: false },
-    { id: 2, title: "更新权限配置", date: "2026-03-28", done: false },
-    { id: 3, title: "发布系统公告", date: "2026-03-27", done: true },
-    { id: 4, title: "流程审批处理", date: "2026-03-29", done: false }
-]);
+const todos = ref<Array<{ id: number; title: string; date: string; done: boolean; path?: string }>>([]);
 
 const selectedDateStr = computed(() => selectedDate.value.toISOString().slice(0, 10));
 
@@ -64,7 +60,13 @@ onMounted(async () => {
     try {
         summary.value = await WorkbenchApi.summary();
         todos.value = [
-            { id: 1, title: "待处理审批", date: selectedDateStr.value, done: summary.value.todo_count === 0 },
+            {
+                id: 1,
+                title: `待处理审批（${summary.value.todo_count}）`,
+                date: selectedDateStr.value,
+                done: summary.value.todo_count === 0,
+                path: "/oa/approval"
+            },
             {
                 id: 2,
                 title: "未读消息",
@@ -134,7 +136,12 @@ onMounted(async () => {
                 </div>
 
                 <div class="scroll">
-                    <div v-for="item in filteredTodos" :key="item.id" class="list__item">
+                    <div
+                        v-for="item in filteredTodos"
+                        :key="item.id"
+                        class="list__item"
+                        :class="{ clickable: item.path }"
+                        @click="item.path && go(item.path)">
                         <span>{{ item.title }}</span>
                         <el-tag size="small" :type="item.done ? 'success' : 'danger'">
                             {{ item.done ? "已完成" : "待处理" }}
@@ -241,6 +248,9 @@ onMounted(async () => {
     justify-content: space-between;
     padding: 6px 0;
     border-bottom: 1px solid #eee;
+}
+.clickable {
+    cursor: pointer;
 }
 
 .empty {

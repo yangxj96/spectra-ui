@@ -18,12 +18,6 @@ export default [
                 meta: { title: "办公用品", requiresAuth: true, requiredMenu: "OASupply" }
             },
             {
-                path: "attendance",
-                name: "OAAttendance",
-                component: () => import("@/views/OA/Attendance/index.vue"),
-                meta: { title: "考勤管理", requiresAuth: true, requiredMenu: "OAAttendance" }
-            },
-            {
                 path: "leave",
                 name: "OALeave",
                 component: () => import("@/views/OA/Leave/index.vue"),
@@ -34,6 +28,12 @@ export default [
                 name: "OAApplicationTypes",
                 component: () => import("@/views/OA/ApplicationType/index.vue"),
                 meta: { title: "申请类型", requiresAuth: true, requiredMenu: "OAApplicationTypes" }
+            },
+            {
+                path: "approval",
+                name: "OAApproval",
+                component: () => import("@/views/OA/Approval/index.vue"),
+                meta: { title: "审批中心", requiresAuth: true, requiredMenu: "OAApproval" }
             },
             {
                 path: "reimbursement",

@@ -4,7 +4,9 @@ import { del, get, post, put } from "@/plugin/request/api.ts";
  * OA 通用申请与申请类型配置接口。
  */
 export const ApplicationApi = {
-    page(params?: BasePageParams & { type_code?: string; status?: string; keyword?: string }): Promise<Page<ApplicationVO>> {
+    page(
+        params?: BasePageParams & { type_code?: string; status?: string; keyword?: string }
+    ): Promise<Page<ApplicationVO>> {
         return get<Page<ApplicationVO>>("/api/oa/applications/page", params);
     },
     get(id: string): Promise<ApplicationVO> {

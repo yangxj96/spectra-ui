@@ -39,10 +39,12 @@ declare global {
         id: string;
         name: string;
         assignee: string;
-        processInstanceId: string;
-        processDefinitionId: string;
-        createTime: string;
-        description: string;
+        process_instance_id: string;
+        process_definition_id: string;
+        process_definition_key: string;
+        business_key: string;
+        create_time: string;
+        description?: string;
     };
 
     // 流程定义资源VO（BPMN XML）

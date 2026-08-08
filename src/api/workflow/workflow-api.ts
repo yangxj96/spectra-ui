@@ -8,6 +8,22 @@ import { get, post } from "@/plugin/request/api.ts";
  * @since 2026-07-17
  */
 export const WorkflowApi = {
+    getTodoTasks(params?: BasePageParams): Promise<Page<TaskVO>> {
+        return get<Page<TaskVO>>("/api/workflow/tasks/todo", params);
+    },
+
+    getDoneTasks(params?: BasePageParams): Promise<Page<TaskVO>> {
+        return get<Page<TaskVO>>("/api/workflow/tasks/done", params);
+    },
+
+    completeTask(id: string, comment?: string): Promise<void> {
+        return post<void>(`/api/workflow/tasks/${id}/complete`, { comment });
+    },
+
+    rejectTask(id: string, comment: string): Promise<void> {
+        return post<void>(`/api/workflow/tasks/${id}/reject`, { comment });
+    },
+
     /**
      * 获取流程定义列表
      */

@@ -3,6 +3,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { ref } from "vue";
 
 import { LeaveApi } from "@/api/oa/leave-api.ts";
+import OAApproverSelect from "@/components/OAApproverSelect/index.vue";
 import useTable from "@/hooks/use-table.ts";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
@@ -21,6 +22,8 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
 );
 
 const dialogVisible = ref(false);
+const approverUsername = ref("");
+const editingId = ref("");
 const form = ref<LeaveCreateParams>({
     leave_type_code: "annual",
     start_time: "",
@@ -31,6 +34,7 @@ const form = ref<LeaveCreateParams>({
 });
 
 function openCreate(): void {
+    editingId.value = "";
     form.value = {
         leave_type_code: "annual",
         start_time: "",
@@ -42,15 +46,33 @@ function openCreate(): void {
     dialogVisible.value = true;
 }
 
+function openEdit(row: LeaveVO): void {
+    editingId.value = row.id;
+    form.value = {
+        leave_type_code: row.leave_type_code,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        reason: row.reason,
+        contact_address: row.contact_address,
+        calculate_duration: true
+    };
+    dialogVisible.value = true;
+}
+
 async function submitCreate(): Promise<void> {
-    await LeaveApi.create(form.value);
+    if (editingId.value) await LeaveApi.update(editingId.value, form.value);
+    else await LeaveApi.create(form.value);
     dialogVisible.value = false;
-    ElMessage.success("已保存为草稿");
+    ElMessage.success(editingId.value ? "请假申请已更新" : "已保存为草稿");
     handlerConditionQuery();
 }
 
 async function submit(row: LeaveVO): Promise<void> {
-    await LeaveApi.submit(row.id);
+    if (!approverUsername.value) {
+        ElMessage.warning("请先选择审批人");
+        return;
+    }
+    await LeaveApi.submit(row.id, { approver_username: approverUsername.value });
     ElMessage.success("已提交审批");
     handlerConditionQuery();
 }
@@ -59,6 +81,13 @@ async function withdraw(row: LeaveVO): Promise<void> {
     await ElMessageBox.confirm("确认撤回这条请假申请吗？", "提示", { type: "warning" });
     await LeaveApi.withdraw(row.id);
     ElMessage.success("已撤回");
+    handlerConditionQuery();
+}
+
+async function cancel(row: LeaveVO): Promise<void> {
+    await ElMessageBox.confirm("确认取消这条请假申请吗？取消后不可再提交。", "提示", { type: "warning" });
+    await LeaveApi.cancel(row.id);
+    ElMessage.success("申请已取消");
     handlerConditionQuery();
 }
 
@@ -86,6 +115,7 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" {
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                 <el-button @click="openCreate">新建请假</el-button>
             </el-form-item>
+            <el-form-item label="审批人"><OAApproverSelect v-model="approverUsername" /></el-form-item>
         </el-form>
     </el-row>
 
@@ -102,8 +132,15 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" {
                     <el-tag :type="statusType(scope.row.status)">{{ statusLabel(scope.row.status) }}</el-tag>
                 </template>
             </el-table-column>
-            <el-table-column label="操作" fixed="right" width="180">
+            <el-table-column label="操作" fixed="right" width="240">
                 <template #default="scope">
+                    <el-button
+                        v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
+                        link
+                        type="primary"
+                        @click="openEdit(scope.row)">
+                        编辑
+                    </el-button>
                     <el-button
                         v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
                         link
@@ -113,6 +150,13 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" {
                     </el-button>
                     <el-button v-if="scope.row.status === 'IN_REVIEW'" link type="warning" @click="withdraw(scope.row)">
                         撤回
+                    </el-button>
+                    <el-button
+                        v-if="['DRAFT', 'REJECTED', 'WITHDRAWN'].includes(scope.row.status)"
+                        link
+                        type="danger"
+                        @click="cancel(scope.row)">
+                        取消
                     </el-button>
                 </template>
             </el-table-column>
@@ -127,7 +171,7 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" {
             @current-change="handleCurrentChange" />
     </el-row>
 
-    <el-dialog v-model="dialogVisible" title="新建请假申请" width="520px">
+    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑请假申请' : '新建请假申请'" width="520px">
         <el-form label-width="100px">
             <el-form-item label="请假类型">
                 <el-select v-model="form.leave_type_code">

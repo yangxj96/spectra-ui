@@ -4,6 +4,7 @@ import { reactive, ref } from "vue";
 
 import { ReimbursementApi } from "@/api/oa/reimbursement-api.ts";
 import FileUpload from "@/components/FileUpload/index.vue";
+import OAApproverSelect from "@/components/OAApproverSelect/index.vue";
 import useTable from "@/hooks/use-table.ts";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
@@ -20,6 +21,8 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     useTable<ReimbursementVO>(ReimbursementApi.page, condition.value);
 const dialogVisible = ref(false);
 const uploadUrl = ref("");
+const approverUsername = ref("");
+const editingId = ref("");
 const form = reactive<ReimbursementSaveParams>(emptyForm());
 
 function emptyForm(): ReimbursementSaveParams {
@@ -45,7 +48,32 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" {
 }
 
 function openCreate(): void {
+    editingId.value = "";
     Object.assign(form, emptyForm());
+    uploadUrl.value = "";
+    dialogVisible.value = true;
+}
+
+function openEdit(row: ReimbursementVO): void {
+    editingId.value = row.id;
+    Object.assign(form, {
+        purpose: row.purpose,
+        expense_start: row.expense_start,
+        expense_end: row.expense_end,
+        total_amount: row.total_amount,
+        currency: row.currency,
+        payee_name: row.payee_name,
+        payee_account: "",
+        items: row.items.map(item => ({
+            expense_date: item.expense_date,
+            category: item.category,
+            description: item.description,
+            amount: item.amount,
+            tax_amount: item.tax_amount,
+            invoice_no: item.invoice_no
+        })),
+        attachments: row.attachments.map(item => ({ file_id: item.file_id, file_name: item.file_name }))
+    });
     uploadUrl.value = "";
     dialogVisible.value = true;
 }
@@ -68,14 +96,20 @@ function handleUploaded(result: FileUploadResult): void {
 }
 
 async function saveDraft(): Promise<void> {
-    await ReimbursementApi.create({ ...form, total_amount: Number(form.total_amount) });
+    const params = { ...form, total_amount: Number(form.total_amount) };
+    if (editingId.value) await ReimbursementApi.update(editingId.value, params);
+    else await ReimbursementApi.create(params);
     dialogVisible.value = false;
-    ElMessage.success("报销草稿已保存");
+    ElMessage.success(editingId.value ? "报销草稿已更新" : "报销草稿已保存");
     handlerConditionQuery();
 }
 
 async function submit(row: ReimbursementVO): Promise<void> {
-    await ReimbursementApi.submit(row.id);
+    if (!approverUsername.value) {
+        ElMessage.warning("请先选择审批人");
+        return;
+    }
+    await ReimbursementApi.submit(row.id, { approver_username: approverUsername.value });
     ElMessage.success("已提交审批");
     handlerConditionQuery();
 }
@@ -84,6 +118,13 @@ async function withdraw(row: ReimbursementVO): Promise<void> {
     await ElMessageBox.confirm("确认撤回这条报销申请吗？", "提示", { type: "warning" });
     await ReimbursementApi.withdraw(row.id);
     ElMessage.success("已撤回");
+    handlerConditionQuery();
+}
+
+async function cancel(row: ReimbursementVO): Promise<void> {
+    await ElMessageBox.confirm("确认取消这条报销申请吗？取消后不可再提交。", "提示", { type: "warning" });
+    await ReimbursementApi.cancel(row.id);
+    ElMessage.success("申请已取消");
     handlerConditionQuery();
 }
 
@@ -117,6 +158,7 @@ async function markPaid(row: ReimbursementVO): Promise<void> {
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                 <el-button @click="openCreate">新建报销</el-button>
             </el-form-item>
+            <el-form-item label="审批人"><OAApproverSelect v-model="approverUsername" /></el-form-item>
         </el-form>
     </el-row>
 
@@ -139,8 +181,15 @@ async function markPaid(row: ReimbursementVO): Promise<void> {
                     </el-tag>
                 </template>
             </el-table-column>
-            <el-table-column label="操作" fixed="right" width="220">
+            <el-table-column label="操作" fixed="right" width="290">
                 <template #default="scope">
+                    <el-button
+                        v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
+                        link
+                        type="primary"
+                        @click="openEdit(scope.row)">
+                        编辑
+                    </el-button>
                     <el-button
                         v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
                         link
@@ -150,6 +199,13 @@ async function markPaid(row: ReimbursementVO): Promise<void> {
                     </el-button>
                     <el-button v-if="scope.row.status === 'IN_REVIEW'" link type="warning" @click="withdraw(scope.row)">
                         撤回
+                    </el-button>
+                    <el-button
+                        v-if="['DRAFT', 'REJECTED', 'WITHDRAWN'].includes(scope.row.status)"
+                        link
+                        type="danger"
+                        @click="cancel(scope.row)">
+                        取消
                     </el-button>
                     <el-button
                         v-if="scope.row.status === 'APPROVED' && scope.row.payment_status === 'PENDING'"
@@ -171,7 +227,7 @@ async function markPaid(row: ReimbursementVO): Promise<void> {
             @current-change="handleCurrentChange" />
     </el-row>
 
-    <el-dialog v-model="dialogVisible" title="新建费用报销" width="760px">
+    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑费用报销' : '新建费用报销'" width="760px">
         <el-form label-width="100px">
             <el-form-item label="报销用途" required><el-input v-model="form.purpose" /></el-form-item>
             <el-form-item label="费用开始" required>
@@ -181,7 +237,11 @@ async function markPaid(row: ReimbursementVO): Promise<void> {
                 <el-date-picker v-model="form.expense_end" type="date" value-format="YYYY-MM-DD" />
             </el-form-item>
             <el-form-item label="收款人" required><el-input v-model="form.payee_name" /></el-form-item>
-            <el-form-item label="收款账号" required><el-input v-model="form.payee_account" /></el-form-item>
+            <el-form-item label="收款账号" required>
+                <el-input
+                    v-model="form.payee_account"
+                    :placeholder="editingId ? '为安全起见，编辑时请重新填写收款账号' : ''" />
+            </el-form-item>
             <el-form-item label="费用明细" required>
                 <div class="items">
                     <div v-for="(item, index) in form.items" :key="index" class="item-row">

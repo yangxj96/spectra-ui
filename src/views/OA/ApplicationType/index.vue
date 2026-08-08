@@ -115,7 +115,11 @@ onMounted(load);
                 </el-table-column>
                 <el-table-column label="操作" width="170" fixed="right">
                     <template #default="scope">
-                        <el-button v-owner="'OA_APPLICATION_TYPE:UPDATE'" link type="primary" @click="openEdit(scope.row)">
+                        <el-button
+                            v-owner="'OA_APPLICATION_TYPE:UPDATE'"
+                            link
+                            type="primary"
+                            @click="openEdit(scope.row)">
                             编辑
                         </el-button>
                         <el-button v-owner="'OA_APPLICATION_TYPE:DELETE'" link type="danger" @click="remove(scope.row)">
@@ -137,7 +141,9 @@ onMounted(load);
             <el-form-item label="流程定义 Key"><el-input v-model="dialog.process_definition_key" /></el-form-item>
             <el-form-item label="排序"><el-input-number v-model="dialog.sort_order" :min="0" /></el-form-item>
             <el-form-item label="启用"><el-switch v-model="dialog.enabled" /></el-form-item>
-            <el-form-item label="说明"><el-input v-model="dialog.description" type="textarea" :rows="3" /></el-form-item>
+            <el-form-item label="说明">
+                <el-input v-model="dialog.description" type="textarea" :rows="3" />
+            </el-form-item>
         </el-form>
         <template #footer>
             <el-button @click="dialog.visible = false">取消</el-button>

@@ -12,7 +12,6 @@ import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
 const activeTab = ref<"todo" | "done">("todo");
 const route = useRoute();
 const processDefinitionKey = computed(() => route.meta.approvalProcessKey || "");
-const pageTitle = computed(() => (processDefinitionKey.value ? processNames[processDefinitionKey.value] : "审批中心"));
 const loading = ref(false);
 const rows = ref<TaskVO[]>([]);
 const pageNum = ref(1);
@@ -145,17 +144,14 @@ watch(processDefinitionKey, async () => {
 
 <template>
     <div class="approval-page">
-        <el-card class="approval-card">
-            <template #header>
-                <div class="approval-header">
-                    <span>{{ pageTitle }}</span>
-                    <el-tag v-if="processDefinitionKey" type="info">按流程类型筛选</el-tag>
-                </div>
-            </template>
+        <el-row class="box__search">
             <el-tabs v-model="activeTab" @tab-change="changeTab">
                 <el-tab-pane label="待我审批" name="todo" />
                 <el-tab-pane label="我已审批" name="done" />
             </el-tabs>
+        </el-row>
+
+        <el-row class="box__body">
             <el-table v-loading="loading" :data="rows" height="calc(100% - 88px)" stripe>
                 <el-table-column label="任务" prop="name" min-width="160" />
                 <el-table-column label="业务类型" min-width="160">
@@ -184,7 +180,7 @@ watch(processDefinitionKey, async () => {
                 layout="total, sizes, prev, pager, next"
                 :total="total"
                 @change="load" />
-        </el-card>
+        </el-row>
 
         <el-drawer v-model="detailVisible" title="申请详情" size="520px">
             <div v-loading="detailLoading">
@@ -216,11 +212,45 @@ watch(processDefinitionKey, async () => {
 <style scoped lang="scss">
 .approval-page {
     height: 100%;
-    padding: 20px;
 }
-.approval-card {
+
+.box__search {
+    height: 10%;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 0 20px;
+}
+
+.box__search :deep(.el-tabs) {
+    flex: 1;
+    min-width: 0;
     height: 100%;
 }
+
+.box__search :deep(.el-tabs__header) {
+    height: 100%;
+    margin-bottom: 0;
+}
+
+.box__search :deep(.el-tabs__nav-wrap) {
+    height: 100%;
+}
+
+.box__search :deep(.el-tabs__nav-scroll),
+.box__search :deep(.el-tabs__nav) {
+    height: 100%;
+}
+
+.box__search :deep(.el-tabs__item) {
+    height: 100%;
+    line-height: 1;
+}
+
+.box__body {
+    height: 90%;
+}
+
 .detail-items {
     margin-top: 16px;
 }

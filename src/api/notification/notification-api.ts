@@ -46,6 +46,6 @@ export const NotificationApi = {
      * @param ids 消息ID数组
      */
     batchDelete(ids: string[]): Promise<void> {
-        return post<void>("/api/notification/batch-delete", { body: ids });
+        return post<void>("/api/notification/batch-delete", { body: { ids } });
     }
 };

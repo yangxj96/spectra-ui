@@ -1,0 +1,14 @@
+{
+    "name": "@form-create/component-wangeditor",
+    "version": "0.0.0-security-disabled",
+    "private": true,
+    "type": "module",
+    "main": "./index.js",
+    "module": "./index.js",
+    "exports": {
+        ".": "./index.js"
+    },
+    "peerDependencies": {
+        "vue": ">=3.5.0"
+    }
+}

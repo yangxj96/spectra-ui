@@ -5,6 +5,7 @@ import { defineAsyncComponent, onMounted, ref, useTemplateRef, watch } from "vue
 import { useRoute, useRouter } from "vue-router";
 
 import { FormApi } from "@/api/workflow/form-api.ts";
+import { parseSafeFormRuleJson } from "@/utils/form-security.ts";
 
 const FcDesigner = defineAsyncComponent({
     loader: () => import("@form-create/designer"),
@@ -14,7 +15,10 @@ const FcDesigner = defineAsyncComponent({
 
 const route = useRoute();
 const router = useRouter();
-const designer = useTemplateRef<InstanceType<typeof FcDesigner>>("designer");
+type SecureDesignerInstance = InstanceType<typeof FcDesigner> & {
+    removeMenuItem: (name: string) => void;
+};
+const designer = useTemplateRef<SecureDesignerInstance>("designer");
 
 // 表单定义ID
 const definitionId = ref<string | undefined>(undefined);
@@ -26,7 +30,8 @@ const config: Config = {
     showPreviewBtn: false,
     showDevice: false,
     showJsonPreview: false,
-    showLanguage: false
+    showLanguage: false,
+    checkDrag: ({ menu }) => menu.name !== "fcEditor"
 };
 
 /**
@@ -47,9 +52,16 @@ const handleSave = (data: { rule: string; options: string }) => {
         return;
     }
 
-    const ruleJson = data.rule;
+    let ruleJson: string;
+    try {
+        parseSafeFormRuleJson(data.rule);
+        ruleJson = data.rule;
+    } catch (error) {
+        ElMessage.error(error instanceof Error ? error.message : "表单规则安全校验失败");
+        return;
+    }
     const optionsJson = data.options;
-    const formJson = JSON.stringify(designer.value?.getJson());
+    const formJson = designer.value?.getJson() ?? "[]";
 
     if (definitionId.value) {
         // 编辑模式：保存新版本
@@ -106,7 +118,7 @@ const loadFormData = async (id: string) => {
         const detail = await FormApi.getById(id);
         if (detail && designer.value) {
             if (detail.rule_json) {
-                designer.value.setRule(JSON.parse(detail.rule_json));
+                designer.value.setRule(parseSafeFormRuleJson(detail.rule_json));
             }
             if (detail.options_json) {
                 designer.value.setOptions(JSON.parse(detail.options_json));
@@ -129,8 +141,11 @@ onMounted(() => {
 watch(
     designer,
     newDesigner => {
-        if (newDesigner && definitionId.value) {
-            loadFormData(definitionId.value);
+        if (newDesigner) {
+            newDesigner.removeMenuItem("fcEditor");
+            if (definitionId.value) {
+                loadFormData(definitionId.value);
+            }
         }
     },
     { once: true }

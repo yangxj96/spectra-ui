@@ -13,6 +13,7 @@
         "build": "vite build",
         "preview": "vite preview --host",
         "format": "prettier . --write --config ./.prettierrc.yml --log-level warn",
+        "format:check": "prettier . --check --config ./.prettierrc.yml --log-level warn",
         "lint": "eslint . --cache",
         "lint:fix": "eslint . --fix --cache",
         "type-check": "vue-tsc --noEmit --composite false",
@@ -63,8 +64,9 @@
         "@form-create/element-ui": "3.2.38",
         "@logicflow/core": "2.2.0",
         "@logicflow/extension": "2.2.0",
-        "@tsparticles/slim": "3.9.1",
-        "@tsparticles/vue3": "3.0.1",
+        "@tsparticles/engine": "4.3.2",
+        "@tsparticles/slim": "4.3.2",
+        "@tsparticles/vue3": "4.3.2",
         "@yangxj96/logicflow-plugin-flowable": "file:../logicflow-plugin-flowable",
         "echarts": "6.0.0",
         "element-plus": "2.13.2",
@@ -109,7 +111,6 @@
         "typescript": "5.9.3",
         "vite": "8.0.11",
         "vite-plugin-compression2": "2.5.0",
-        "vite-plugin-vue-devtools": "8.1.2",
         "vitest": "4.0.18",
         "vue-tsc": "3.2.4"
     },
@@ -117,12 +118,5 @@
         "> 1%",
         "last 2 versions",
         "not dead"
-    ],
-    "pnpm": {
-        "overrides": {
-            "codemirror": "^6.0.2",
-            "glob": "^13.0.6",
-            "ini": "^7.0.0"
-        }
-    }
+    ]
 }

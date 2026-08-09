@@ -4,7 +4,6 @@ import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
 import { defineConfig, loadEnv } from "vite";
 import viteCompression from "vite-plugin-compression2";
-import vueDevTools from "vite-plugin-vue-devtools";
 
 export default defineConfig(({ mode }) => {
     const root = process.cwd();
@@ -23,8 +22,7 @@ export default defineConfig(({ mode }) => {
                 viteCompression({
                     threshold: 10240,
                     algorithms: ["gzip", "brotliCompress"]
-                }),
-            vueDevTools()
+                })
         ].filter(Boolean),
         resolve: {
             alias: {

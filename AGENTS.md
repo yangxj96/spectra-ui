@@ -34,11 +34,12 @@ pnpm start
 - `pnpm run lint` — ESLint（带缓存）
 - `pnpm run lint:fix` — ESLint + 自动修复
 - `pnpm run format` — Prettier
+- `pnpm run format:check` — Prettier 只检查不改写
 - `pnpm run type-check` — vue-tsc（composite: false）
 - `pnpm run test` — Vitest 单次运行
 - `pnpm run test:watch` — Vitest 监视模式
 
-验证顺序：`format → lint:fix → type-check → test`
+验证顺序：`format:check → lint → type-check → test → build`
 
 ## 工具链
 

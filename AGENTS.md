@@ -6,7 +6,7 @@ Vue 3 SPA 管理后台（光谱后端管理系统）— `spectra-admin` 的 **We
 
 - 后端 API：`spectra-admin`（Spring Boot，端口 4004）
 - 开发服务器：端口 5173
-- 所有 API 调用指向 `VITE_API_URL`（默认 `https://127.0.0.1:4004/`）
+- 所有 API 调用指向 `VITE_API_URL`（新克隆模板默认 `http://127.0.0.1:4004/`；本机启用后端证书时可覆盖为 HTTPS）
 
 编码规范由 `spectra/spectra-ui-spec` skill 控制（修改前端代码时自动加载）。
 
@@ -21,7 +21,7 @@ Vue 3 SPA 管理后台（光谱后端管理系统）— `spectra-admin` 的 **We
 进入本目录后直接启动 Web 开发服务器；不需要每次重复安装或手动选择 Node/pnpm 版本：
 
 ```powershell
-Set-Location D:\Develop\Projects\spectra\spectra-ui
+Set-Location .\spectra-ui
 pnpm start
 ```
 
@@ -92,7 +92,7 @@ API 辅助函数：`get()`, `post()`, `put()`, `del()`, `upload()`, `download()`
 
 - `VITE_API_URL` — 后端 API 基础 URL（指向 `spectra-admin`）
 - `VITE_WEB_TITLE` — 页面标题
-- 开发默认值在 `.env`（https://127.0.0.1:4004/），生产覆盖在 `.env.production`
+- 仓库只提交 `.env.example`；新克隆复制为被忽略的 `.env.development`，生产值由部署环境注入，不假设仓库存在 `.env.production`
 
 ## 注意事项
 

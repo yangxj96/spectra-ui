@@ -58,13 +58,17 @@ src/
 - 流程设计器（LogicFlow）
 - 表单设计器（form-create）
 
-## 配置
+## 首次配置与启动
 
-创建 `.env` 文件，设置 API 地址：
+仓库只提交环境模板。新克隆后从 `spectra-ui/` 执行：
 
+```powershell
+Copy-Item .env.example .env.development
+pnpm install
+pnpm start
 ```
-VITE_API_URL=https://127.0.0.1:4004/
-```
+
+模板默认连接 `http://127.0.0.1:4004/`。后端启用 HTTPS、修改端口或位于其他主机时，只修改本机 `.env.development`；不要提交真实部署地址或凭据。
 
 ## 文档
 
@@ -74,7 +78,8 @@ VITE_API_URL=https://127.0.0.1:4004/
 | --------------- | ------------------------------------------------- |
 | 前端概述        | `docs/20-前端/00-前端总览.md`                     |
 | spectra-ui 详情 | `docs/20-前端/10-spectra-ui.md`                   |
-| 命名规范        | `docs/20-知识库/50-规范与参考/20-前端命名规范.md` |
+| 命名规范        | `docs/40-规范/20-前端命名规范.md`                 |
+| 环境搭建        | `docs/50-开发指南/10-环境搭建.md`                 |
 
 ## 许可证
 

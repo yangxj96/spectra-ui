@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { LeaveApi } from "@/api/oa/leave-api.ts";
 import OAApproverSelect from "@/components/OAApproverSelect/index.vue";
 import useTable from "@/hooks/use-table.ts";
-import { toIsoDateTime } from "@/utils/date-utils.ts";
+import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
     DRAFT: ["草稿", "info"],
@@ -21,56 +22,15 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     LeaveApi.page,
     condition.value
 );
-
-const dialogVisible = ref(false);
 const approverUsername = ref("");
-const editingId = ref("");
-const form = ref<LeaveCreateParams>({
-    leave_type_code: "annual",
-    start_time: "",
-    end_time: "",
-    reason: "",
-    contact_address: "",
-    calculate_duration: true
-});
+const router = useRouter();
 
 function openCreate(): void {
-    editingId.value = "";
-    form.value = {
-        leave_type_code: "annual",
-        start_time: "",
-        end_time: "",
-        reason: "",
-        contact_address: "",
-        calculate_duration: true
-    };
-    dialogVisible.value = true;
+    router.push({ name: "OALeaveEdit" });
 }
 
 function openEdit(row: LeaveVO): void {
-    editingId.value = row.id;
-    form.value = {
-        leave_type_code: row.leave_type_code,
-        start_time: row.start_time,
-        end_time: row.end_time,
-        reason: row.reason,
-        contact_address: row.contact_address,
-        calculate_duration: true
-    };
-    dialogVisible.value = true;
-}
-
-async function submitCreate(): Promise<void> {
-    const params = {
-        ...form.value,
-        start_time: toIsoDateTime(form.value.start_time),
-        end_time: toIsoDateTime(form.value.end_time)
-    };
-    if (editingId.value) await LeaveApi.update(editingId.value, params);
-    else await LeaveApi.create(params);
-    dialogVisible.value = false;
-    ElMessage.success(editingId.value ? "请假申请已更新" : "已保存为草稿");
-    handlerConditionQuery();
+    router.push({ name: "OALeaveEdit", query: { id: row.id } });
 }
 
 async function submit(row: LeaveVO): Promise<void> {
@@ -107,26 +67,25 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" {
 </script>
 
 <template>
-    <el-row class="box__search">
-        <el-form :inline="true" :model="condition">
-            <el-form-item label="状态">
-                <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 160px">
-                    <el-option label="草稿" value="DRAFT" />
-                    <el-option label="审批中" value="IN_REVIEW" />
-                    <el-option label="已通过" value="APPROVED" />
-                    <el-option label="已驳回" value="REJECTED" />
-                </el-select>
-            </el-form-item>
-            <el-form-item>
-                <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
-                <el-button @click="openCreate">新建请假</el-button>
-            </el-form-item>
-            <el-form-item label="审批人"><OAApproverSelect v-model="approverUsername" /></el-form-item>
-        </el-form>
-    </el-row>
-
-    <el-row class="box__body">
-        <el-table :data="table_data" height="92%" stripe>
+    <OaListPage>
+        <template #search>
+            <el-form :inline="true" :model="condition">
+                <el-form-item label="状态">
+                    <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 160px">
+                        <el-option label="草稿" value="DRAFT" />
+                        <el-option label="审批中" value="IN_REVIEW" />
+                        <el-option label="已通过" value="APPROVED" />
+                        <el-option label="已驳回" value="REJECTED" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
+                    <el-button @click="openCreate">新建请假</el-button>
+                </el-form-item>
+                <el-form-item label="审批人"><OAApproverSelect v-model="approverUsername" /></el-form-item>
+            </el-form>
+        </template>
+        <el-table :data="table_data" stripe>
             <el-table-column type="index" width="60" align="center" />
             <el-table-column label="申请编号" prop="application_no" width="210" show-overflow-tooltip />
             <el-table-column label="类型" prop="leave_type_code" width="100" />
@@ -175,44 +134,5 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" {
             style="padding: 0 10px; margin-left: auto"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
-    </el-row>
-
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑请假申请' : '新建请假申请'" width="520px">
-        <el-form label-width="100px">
-            <el-form-item label="请假类型">
-                <el-select v-model="form.leave_type_code">
-                    <el-option label="年假" value="annual" />
-                    <el-option label="病假" value="sick" />
-                    <el-option label="事假" value="personal" />
-                </el-select>
-            </el-form-item>
-            <el-form-item label="开始时间">
-                <el-date-picker v-model="form.start_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
-            </el-form-item>
-            <el-form-item label="结束时间">
-                <el-date-picker v-model="form.end_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
-            </el-form-item>
-            <el-form-item label="请假事由"><el-input v-model="form.reason" type="textarea" :rows="3" /></el-form-item>
-            <el-form-item label="联系地址"><el-input v-model="form.contact_address" /></el-form-item>
-        </el-form>
-        <template #footer>
-            <el-button @click="dialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="submitCreate">保存草稿</el-button>
-        </template>
-    </el-dialog>
+    </OaListPage>
 </template>
-
-<style scoped lang="scss">
-.box__search {
-    height: 10%;
-    display: flex;
-    align-items: center;
-    padding-left: 20px;
-}
-.box__search .el-form-item {
-    margin-bottom: 0;
-}
-.box__body {
-    height: 90%;
-}
-</style>

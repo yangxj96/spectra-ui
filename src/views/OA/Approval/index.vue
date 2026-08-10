@@ -8,6 +8,7 @@ import { LeaveApi } from "@/api/oa/leave-api.ts";
 import { PurchaseApi } from "@/api/oa/purchase-api.ts";
 import { ReimbursementApi } from "@/api/oa/reimbursement-api.ts";
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
+import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const activeTab = ref<"todo" | "done">("todo");
 const route = useRoute();
@@ -143,44 +144,42 @@ watch(processDefinitionKey, async () => {
 </script>
 
 <template>
-    <div class="approval-page">
-        <el-row class="box__search">
+    <OaListPage>
+        <template #search>
             <el-tabs v-model="activeTab" @tab-change="changeTab">
                 <el-tab-pane label="待我审批" name="todo" />
                 <el-tab-pane label="我已审批" name="done" />
             </el-tabs>
-        </el-row>
+        </template>
 
-        <el-row class="box__body">
-            <el-table v-loading="loading" :data="rows" height="calc(100% - 88px)" stripe>
-                <el-table-column label="任务" prop="name" min-width="160" />
-                <el-table-column label="业务类型" min-width="160">
-                    <template #default="scope">
-                        {{ processNames[scope.row.process_definition_key] || scope.row.process_definition_key }}
+        <el-table v-loading="loading" :data="rows" stripe>
+            <el-table-column label="任务" prop="name" min-width="160" />
+            <el-table-column label="业务类型" min-width="160">
+                <template #default="scope">
+                    {{ processNames[scope.row.process_definition_key] || scope.row.process_definition_key }}
+                </template>
+            </el-table-column>
+            <el-table-column label="创建时间" prop="create_time" width="180" />
+            <el-table-column label="操作" fixed="right" :width="activeTab === 'todo' ? 210 : 90">
+                <template #default="scope">
+                    <el-button link type="primary" @click="openDetail(scope.row)">查看</el-button>
+                    <template v-if="activeTab === 'todo'">
+                        <el-button v-owner="'WF_TASK:UPDATE'" link type="success" @click="approve(scope.row)">
+                            通过
+                        </el-button>
+                        <el-button v-owner="'WF_TASK:UPDATE'" link type="danger" @click="reject(scope.row)">
+                            驳回
+                        </el-button>
                     </template>
-                </el-table-column>
-                <el-table-column label="创建时间" prop="create_time" width="180" />
-                <el-table-column label="操作" fixed="right" :width="activeTab === 'todo' ? 210 : 90">
-                    <template #default="scope">
-                        <el-button link type="primary" @click="openDetail(scope.row)">查看</el-button>
-                        <template v-if="activeTab === 'todo'">
-                            <el-button v-owner="'WF_TASK:UPDATE'" link type="success" @click="approve(scope.row)">
-                                通过
-                            </el-button>
-                            <el-button v-owner="'WF_TASK:UPDATE'" link type="danger" @click="reject(scope.row)">
-                                驳回
-                            </el-button>
-                        </template>
-                    </template>
-                </el-table-column>
-            </el-table>
-            <el-pagination
-                v-model:current-page="pageNum"
-                v-model:page-size="pageSize"
-                layout="total, sizes, prev, pager, next"
-                :total="total"
-                @change="load" />
-        </el-row>
+                </template>
+            </el-table-column>
+        </el-table>
+        <el-pagination
+            v-model:current-page="pageNum"
+            v-model:page-size="pageSize"
+            layout="total, sizes, prev, pager, next"
+            :total="total"
+            @change="load" />
 
         <el-drawer v-model="detailVisible" title="申请详情" size="520px">
             <div v-loading="detailLoading">
@@ -206,49 +205,33 @@ watch(processDefinitionKey, async () => {
                 </el-table>
             </div>
         </el-drawer>
-    </div>
+    </OaListPage>
 </template>
 
 <style scoped lang="scss">
-.approval-page {
-    height: 100%;
-}
-
-.box__search {
-    height: 10%;
-    display: flex;
-    align-items: center;
-    gap: 28px;
-    padding: 0 20px;
-}
-
-.box__search :deep(.el-tabs) {
+.oa-list-search :deep(.el-tabs) {
     flex: 1;
     min-width: 0;
     height: 100%;
 }
 
-.box__search :deep(.el-tabs__header) {
+.oa-list-search :deep(.el-tabs__header) {
     height: 100%;
     margin-bottom: 0;
 }
 
-.box__search :deep(.el-tabs__nav-wrap) {
+.oa-list-search :deep(.el-tabs__nav-wrap) {
     height: 100%;
 }
 
-.box__search :deep(.el-tabs__nav-scroll),
-.box__search :deep(.el-tabs__nav) {
+.oa-list-search :deep(.el-tabs__nav-scroll),
+.oa-list-search :deep(.el-tabs__nav) {
     height: 100%;
 }
 
-.box__search :deep(.el-tabs__item) {
+.oa-list-search :deep(.el-tabs__item) {
     height: 100%;
     line-height: 1;
-}
-
-.box__body {
-    height: 90%;
 }
 
 .detail-items {

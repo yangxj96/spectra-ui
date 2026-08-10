@@ -1,10 +1,11 @@
 ﻿<script setup lang="ts">
 import { ElMessage } from "element-plus";
-import { reactive, ref } from "vue";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { MeetingApi } from "@/api/oa/meeting-api.ts";
 import useTable from "@/hooks/use-table.ts";
-import { toIsoDateTime } from "@/utils/date-utils.ts";
+import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 // 会议状态下拉选项（查询用：业务状态）
 const statusOptions = [
@@ -41,25 +42,9 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     MeetingApi.page,
     condition.value
 );
+const router = useRouter();
 
-const dialogVisible = ref(false);
-const form = reactive<MeetingCreateParams>({ title: "", start_time: "", end_time: "", location: "", content: "" });
-
-const openCreate = () => {
-    Object.assign(form, { title: "", start_time: "", end_time: "", location: "", content: "" });
-    dialogVisible.value = true;
-};
-
-const create = async () => {
-    await MeetingApi.create({
-        ...form,
-        start_time: toIsoDateTime(form.start_time),
-        end_time: toIsoDateTime(form.end_time)
-    });
-    ElMessage.success("会议已创建");
-    dialogVisible.value = false;
-    handlerConditionQuery();
-};
+const openCreate = () => router.push({ name: "OAMeetingCreate" });
 
 const respond = async (row: MeetingVO, status: string) => {
     await MeetingApi.respond(row.id, status);
@@ -80,31 +65,29 @@ const handleReset = () => {
 </script>
 
 <template>
-    <!-- 搜索区 -->
-    <el-row class="box__search">
-        <el-form :inline="true" :model="condition">
-            <el-form-item label="会议标题" prop="title">
-                <el-input v-model="condition.title" placeholder="请输入会议标题" clearable />
-            </el-form-item>
-            <el-form-item label="会议状态" prop="status">
-                <el-select v-model="condition.status" placeholder="请选择状态" clearable style="width: 180px">
-                    <el-option
-                        v-for="item in statusOptions"
-                        :key="item.value"
-                        :label="item.label"
-                        :value="item.value" />
-                </el-select>
-            </el-form-item>
-            <el-form-item>
-                <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
-                <el-button @click="handleReset">重置</el-button>
-                <el-button @click="openCreate">新建会议</el-button>
-            </el-form-item>
-        </el-form>
-    </el-row>
-    <!-- 数据区 -->
-    <el-row class="box__body">
-        <el-table :data="table_data" height="92%" stripe>
+    <OaListPage>
+        <template #search>
+            <el-form :inline="true" :model="condition">
+                <el-form-item label="会议标题" prop="title">
+                    <el-input v-model="condition.title" placeholder="请输入会议标题" clearable />
+                </el-form-item>
+                <el-form-item label="会议状态" prop="status">
+                    <el-select v-model="condition.status" placeholder="请选择状态" clearable style="width: 180px">
+                        <el-option
+                            v-for="item in statusOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
+                    <el-button @click="handleReset">重置</el-button>
+                    <el-button @click="openCreate">新建会议</el-button>
+                </el-form-item>
+            </el-form>
+        </template>
+        <el-table :data="table_data" stripe>
             <el-table-column align="center" type="index" width="60" />
             <el-table-column align="center" width="200" show-overflow-tooltip label="会议标题" prop="title" />
             <el-table-column align="center" width="120" show-overflow-tooltip label="发起人" prop="initiator_id" />
@@ -134,7 +117,6 @@ const handleReset = () => {
                 </template>
             </el-table-column>
         </el-table>
-        <!-- 分页 -->
         <el-pagination
             layout="total, sizes, prev, pager, next"
             :page-size="pagination.size"
@@ -143,39 +125,5 @@ const handleReset = () => {
             style="padding: 0 10px; margin-left: auto"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
-    </el-row>
-    <el-dialog v-model="dialogVisible" title="新建会议" width="560px">
-        <el-form label-width="90px">
-            <el-form-item label="标题" required><el-input v-model="form.title" /></el-form-item>
-            <el-form-item label="开始" required>
-                <el-date-picker v-model="form.start_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
-            </el-form-item>
-            <el-form-item label="结束" required>
-                <el-date-picker v-model="form.end_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
-            </el-form-item>
-            <el-form-item label="地点"><el-input v-model="form.location" /></el-form-item>
-            <el-form-item label="议题"><el-input v-model="form.content" type="textarea" /></el-form-item>
-        </el-form>
-        <template #footer>
-            <el-button @click="dialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="create">创建</el-button>
-        </template>
-    </el-dialog>
+    </OaListPage>
 </template>
-
-<style scoped lang="scss">
-.box__search {
-    height: 10%;
-    display: flex;
-    align-items: center;
-    padding-left: 20px;
-
-    .el-form-item {
-        margin-bottom: 0;
-    }
-}
-
-.box__body {
-    height: 90%;
-}
-</style>

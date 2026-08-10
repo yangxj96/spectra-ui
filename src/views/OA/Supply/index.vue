@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
-import { reactive, ref } from "vue";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { SupplyApi } from "@/api/oa/supply-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
     ACTIVE: ["启用", "success"],
@@ -15,27 +17,10 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     SupplyApi.page,
     condition.value
 );
-const dialogVisible = ref(false);
-const form = reactive<SupplySaveParams>(emptyForm());
-
-function emptyForm(): SupplySaveParams {
-    return {
-        category: "办公耗材",
-        sku: "",
-        name: "",
-        specification: "",
-        unit: "件",
-        min_stock: 0,
-        status: "ACTIVE",
-        supplier: "",
-        location: "",
-        remark: ""
-    };
-}
+const router = useRouter();
 
 function openCreate(): void {
-    Object.assign(form, emptyForm());
-    dialogVisible.value = true;
+    router.push({ name: "OASupplyCreate" });
 }
 
 function statusLabel(status: string): string {
@@ -44,17 +29,6 @@ function statusLabel(status: string): string {
 
 function statusType(status: string): "success" | "warning" | "danger" | "info" {
     return statusMap[status]?.[1] ?? "info";
-}
-
-async function save(): Promise<void> {
-    if (!form.sku.trim() || !form.name.trim() || !form.unit.trim()) {
-        ElMessage.warning("请输入 SKU、名称和单位");
-        return;
-    }
-    await SupplyApi.create({ ...form, min_stock: Number(form.min_stock || 0) });
-    dialogVisible.value = false;
-    ElMessage.success("办公用品已保存");
-    handlerConditionQuery();
 }
 
 async function operate(row: SupplyItemVO, action: "inbound" | "issue" | "returnStock" | "adjust"): Promise<void> {
@@ -81,23 +55,22 @@ function toggleLowStock(value: boolean | string | number): void {
 </script>
 
 <template>
-    <el-row class="box__search">
-        <el-form :inline="true" :model="condition">
-            <el-form-item label="关键字">
-                <el-input v-model="condition.keyword" clearable placeholder="SKU、名称或规格" />
-            </el-form-item>
-            <el-form-item label="库存预警">
-                <el-switch v-model="condition.low_stock" active-text="仅看低库存" @change="toggleLowStock" />
-            </el-form-item>
-            <el-form-item>
-                <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
-                <el-button @click="openCreate">新建用品</el-button>
-            </el-form-item>
-        </el-form>
-    </el-row>
-
-    <el-row class="box__body">
-        <el-table :data="table_data" height="92%" stripe>
+    <OaListPage>
+        <template #search>
+            <el-form :inline="true" :model="condition">
+                <el-form-item label="关键字">
+                    <el-input v-model="condition.keyword" clearable placeholder="SKU、名称或规格" />
+                </el-form-item>
+                <el-form-item label="库存预警">
+                    <el-switch v-model="condition.low_stock" active-text="仅看低库存" @change="toggleLowStock" />
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
+                    <el-button @click="openCreate">新建用品</el-button>
+                </el-form-item>
+            </el-form>
+        </template>
+        <el-table :data="table_data" stripe>
             <el-table-column type="index" width="55" align="center" />
             <el-table-column label="SKU" prop="sku" width="150" show-overflow-tooltip />
             <el-table-column label="用品名称" prop="name" min-width="180" show-overflow-tooltip />
@@ -133,45 +106,10 @@ function toggleLowStock(value: boolean | string | number): void {
             style="padding: 0 10px; margin-left: auto"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
-    </el-row>
-
-    <el-dialog v-model="dialogVisible" title="新建办公用品" width="650px">
-        <el-form label-width="100px">
-            <el-form-item label="SKU" required><el-input v-model="form.sku" /></el-form-item>
-            <el-form-item label="名称" required><el-input v-model="form.name" /></el-form-item>
-            <el-form-item label="分类"><el-input v-model="form.category" /></el-form-item>
-            <el-form-item label="规格"><el-input v-model="form.specification" /></el-form-item>
-            <el-form-item label="单位" required><el-input v-model="form.unit" /></el-form-item>
-            <el-form-item label="最低库存">
-                <el-input-number v-model="form.min_stock" :min="0" :precision="3" />
-            </el-form-item>
-            <el-form-item label="供应商"><el-input v-model="form.supplier" /></el-form-item>
-            <el-form-item label="存放位置"><el-input v-model="form.location" /></el-form-item>
-            <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" /></el-form-item>
-        </el-form>
-        <template #footer>
-            <el-button @click="dialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="save">保存</el-button>
-        </template>
-    </el-dialog>
+    </OaListPage>
 </template>
 
 <style scoped lang="scss">
-.box__search {
-    height: 10%;
-    display: flex;
-    align-items: center;
-    padding-left: 20px;
-}
-
-.box__search .el-form-item {
-    margin-bottom: 0;
-}
-
-.box__body {
-    height: 90%;
-}
-
 .warning {
     color: #e6a23c;
     font-weight: 700;

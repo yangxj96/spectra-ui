@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
-import { onMounted, reactive, ref } from "vue";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { AssetApi } from "@/api/oa/asset-api.ts";
 import useTable from "@/hooks/use-table.ts";
-import { toLocalDateString } from "@/utils/date-utils.ts";
+import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info" | "primary"]> = {
     DRAFT: ["草稿", "info"],
@@ -19,26 +20,7 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     AssetApi.page,
     condition.value
 );
-const categories = ref<AssetCategoryVO[]>([]);
-const dialogVisible = ref(false);
-const form = reactive<AssetSaveParams>(emptyForm());
-
-function emptyForm(): AssetSaveParams {
-    return {
-        name: "",
-        asset_no: "",
-        specification: "",
-        serial_no: "",
-        asset_type: "FIXED",
-        quantity: 1,
-        acquisition_date: toLocalDateString(),
-        acquisition_amount: 0,
-        currency: "CNY",
-        supplier: "",
-        location: "",
-        remark: ""
-    };
-}
+const router = useRouter();
 
 function statusLabel(status: string): string {
     return statusMap[status]?.[0] ?? status;
@@ -48,28 +30,8 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" |
     return statusMap[status]?.[1] ?? "info";
 }
 
-async function loadCategories(): Promise<void> {
-    categories.value = await AssetApi.categories();
-}
-
 function openCreate(): void {
-    Object.assign(form, emptyForm());
-    dialogVisible.value = true;
-}
-
-async function saveDraft(): Promise<void> {
-    if (!form.name.trim()) {
-        ElMessage.warning("请输入资产名称");
-        return;
-    }
-    await AssetApi.create({
-        ...form,
-        quantity: Number(form.quantity),
-        acquisition_amount: Number(form.acquisition_amount || 0)
-    });
-    dialogVisible.value = false;
-    ElMessage.success("资产已保存");
-    handlerConditionQuery();
+    router.push({ name: "OAAssetCreate" });
 }
 
 async function operate(row: AssetVO, action: "assign" | "return" | "transfer" | "maintenance"): Promise<void> {
@@ -100,44 +62,31 @@ async function scrap(row: AssetVO): Promise<void> {
     handlerConditionQuery();
 }
 
-async function createFromPurchase(): Promise<void> {
-    const purchase = await ElMessageBox.prompt("请输入采购申请 ID", "从采购收货生成资产草稿", {
-        confirmButtonText: "下一步",
-        cancelButtonText: "取消"
-    });
-    const receipt = await ElMessageBox.prompt("请输入收货单 ID", "从采购收货生成资产草稿", {
-        confirmButtonText: "生成",
-        cancelButtonText: "取消"
-    });
-    const result = await AssetApi.fromPurchase({ purchase_id: purchase.value, receipt_id: receipt.value });
-    ElMessage.success(`已生成 ${result.length} 条资产草稿`);
-    handlerConditionQuery();
+function createFromPurchase(): void {
+    router.push({ name: "OAAssetFromPurchase" });
 }
-
-onMounted(loadCategories);
 </script>
 
 <template>
-    <el-row class="box__search">
-        <el-form :inline="true" :model="condition">
-            <el-form-item label="关键字">
-                <el-input v-model="condition.keyword" clearable placeholder="资产编号、名称或序列号" />
-            </el-form-item>
-            <el-form-item label="资产状态">
-                <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 130px">
-                    <el-option v-for="(value, key) in statusMap" :key="key" :label="value[0]" :value="key" />
-                </el-select>
-            </el-form-item>
-            <el-form-item>
-                <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
-                <el-button @click="openCreate">新建资产</el-button>
-                <el-button @click="createFromPurchase">采购收货转资产</el-button>
-            </el-form-item>
-        </el-form>
-    </el-row>
-
-    <el-row class="box__body">
-        <el-table :data="table_data" height="92%" stripe>
+    <OaListPage>
+        <template #search>
+            <el-form :inline="true" :model="condition">
+                <el-form-item label="关键字">
+                    <el-input v-model="condition.keyword" clearable placeholder="资产编号、名称或序列号" />
+                </el-form-item>
+                <el-form-item label="资产状态">
+                    <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 130px">
+                        <el-option v-for="(value, key) in statusMap" :key="key" :label="value[0]" :value="key" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
+                    <el-button @click="openCreate">新建资产</el-button>
+                    <el-button @click="createFromPurchase">采购收货转资产</el-button>
+                </el-form-item>
+            </el-form>
+        </template>
+        <el-table :data="table_data" stripe>
             <el-table-column type="index" width="55" align="center" />
             <el-table-column label="资产编号" prop="asset_no" width="160" show-overflow-tooltip />
             <el-table-column label="资产名称" prop="name" min-width="180" show-overflow-tooltip />
@@ -193,55 +142,5 @@ onMounted(loadCategories);
             style="padding: 0 10px; margin-left: auto"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
-    </el-row>
-
-    <el-dialog v-model="dialogVisible" title="新建资产" width="720px">
-        <el-form label-width="110px">
-            <el-form-item label="资产名称" required><el-input v-model="form.name" /></el-form-item>
-            <el-form-item label="资产编号"><el-input v-model="form.asset_no" placeholder="可稍后补充" /></el-form-item>
-            <el-form-item label="资产分类">
-                <el-select v-model="form.category_id" clearable placeholder="选择分类" style="width: 100%">
-                    <el-option
-                        v-for="category in categories"
-                        :key="category.id"
-                        :label="category.name"
-                        :value="category.id" />
-                </el-select>
-            </el-form-item>
-            <el-form-item label="规格型号"><el-input v-model="form.specification" /></el-form-item>
-            <el-form-item label="数量">
-                <el-input-number v-model="form.quantity" :min="0.001" :precision="3" />
-            </el-form-item>
-            <el-form-item label="购置日期">
-                <el-date-picker v-model="form.acquisition_date" type="date" value-format="YYYY-MM-DD" />
-            </el-form-item>
-            <el-form-item label="购置金额">
-                <el-input-number v-model="form.acquisition_amount" :min="0" :precision="2" />
-            </el-form-item>
-            <el-form-item label="供应商"><el-input v-model="form.supplier" /></el-form-item>
-            <el-form-item label="存放位置"><el-input v-model="form.location" /></el-form-item>
-            <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" /></el-form-item>
-        </el-form>
-        <template #footer>
-            <el-button @click="dialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="saveDraft">保存</el-button>
-        </template>
-    </el-dialog>
+    </OaListPage>
 </template>
-
-<style scoped lang="scss">
-.box__search {
-    height: 10%;
-    display: flex;
-    align-items: center;
-    padding-left: 20px;
-}
-
-.box__search .el-form-item {
-    margin-bottom: 0;
-}
-
-.box__body {
-    height: 90%;
-}
-</style>

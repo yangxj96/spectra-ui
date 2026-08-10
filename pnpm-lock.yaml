@@ -99,12 +99,6 @@ importers:
                 specifier: 5.0.2
                 version: 5.0.2(@vue/compiler-sfc@3.5.34)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.28(typescript@5.9.3)))(vue@3.5.28(typescript@5.9.3))
         devDependencies:
-            "@commitlint/cli":
-                specifier: 21.1.0
-                version: 21.1.0(@types/node@24.10.4)(typescript@5.9.3)
-            "@commitlint/config-conventional":
-                specifier: 21.1.0
-                version: 21.1.0
             "@pinia/testing":
                 specifier: 1.0.3
                 version: 1.0.3(pinia@3.0.4(typescript@5.9.3)(vue@3.5.28(typescript@5.9.3)))
@@ -162,15 +156,9 @@ importers:
             happy-dom:
                 specifier: 20.8.9
                 version: 20.8.9
-            husky:
-                specifier: 9.1.7
-                version: 9.1.7
             jiti:
                 specifier: 2.6.1
                 version: 2.6.1
-            lint-staged:
-                specifier: 16.2.7
-                version: 16.2.7
             npm-run-all2:
                 specifier: 8.0.4
                 version: 8.0.4

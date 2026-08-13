@@ -16,6 +16,13 @@ export const NotificationApi = {
         return get<Page<Notification>>("/api/notification/list", { ...params });
     },
     /**
+     * 获取消息详情
+     * @param id 消息ID
+     */
+    detail(id: string): Promise<Notification> {
+        return get<Notification>(`/api/notification/${id}`);
+    },
+    /**
      * 获取未读数量
      */
     unreadCount(): Promise<number> {
@@ -46,6 +53,25 @@ export const NotificationApi = {
      * @param ids 消息ID数组
      */
     batchDelete(ids: string[]): Promise<void> {
-        return post<void>("/api/notification/batch-delete", { body: { ids } });
+        return post<void>("/api/notification/batch-delete", { ids });
+    },
+    /**
+     * 获取当前用户用途×渠道偏好
+     */
+    preferences(): Promise<NotificationPreference[]> {
+        return get<NotificationPreference[]>("/api/notification-center/preferences");
+    },
+    /**
+     * 保存当前用户可选通知偏好；后端使用 query 参数接收表单
+     */
+    savePreference(params: NotificationPreferenceUpdate): Promise<void> {
+        return put<void>("/api/notification-center/preferences", undefined, {
+            params: {
+                purpose: params.purpose,
+                channel: params.channel,
+                enabled: params.enabled,
+                doNotDisturb: params.doNotDisturb ?? false
+            }
+        });
     }
 };

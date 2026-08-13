@@ -17,6 +17,25 @@ interface Notification {
     created_at: string;
 }
 
+/** 当前用户用途×渠道通知偏好 */
+interface NotificationPreference {
+    id?: string;
+    purpose: string;
+    channel: string;
+    enabled: boolean;
+    do_not_disturb: boolean;
+    do_not_disturb_start?: string;
+    do_not_disturb_end?: string;
+}
+
+/** 更新当前用户通知偏好 */
+interface NotificationPreferenceUpdate {
+    purpose: string;
+    channel: string;
+    enabled: boolean;
+    doNotDisturb?: boolean;
+}
+
 /** 消息查询参数 */
 interface NotificationQueryParams {
     page_num: number;

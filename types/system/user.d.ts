@@ -2,7 +2,7 @@ export {};
 
 declare global {
     type LoginForm = {
-        type: "PASSWORD" | "SMS" | "SCAN" | "WECHAT" | "GITHUB";
+        type: "PASSWORD" | "SMS" | "OTP" | "SCAN" | "WECHAT" | "GITHUB";
         username: string;
         password: string;
         client_id: string;
@@ -17,11 +17,11 @@ declare global {
         // 认证token
         access_token: string;
         // 刷新token
-        refresh_token: string;
+        refresh_token?: string;
         // 权限列表
         authorities: string[];
         // 角色
-        roles: RolePageVO[];
+        roles: string[];
     };
 
     // 用户分页查询的实体

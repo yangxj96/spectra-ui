@@ -26,11 +26,10 @@ export const AuthApi = {
     /**
      * 刷新token
      */
-    refresh(refreshToken: string): Promise<Token> {
-        return post<Token>(
-            "/api/auth/refresh",
-            { refresh_token: refreshToken },
-            { skipAuth: true, _skipRefresh: true }
-        );
+    refresh(refreshToken?: string): Promise<Token> {
+        return post<Token>("/api/auth/refresh", refreshToken ? { refresh_token: refreshToken } : undefined, {
+            skipAuth: true,
+            _skipRefresh: true
+        });
     }
 };

@@ -21,12 +21,6 @@ export function getToken(): string | null {
  */
 export async function refreshToken(): Promise<Token | null> {
     const store = useUserStore();
-    const refreshTokenValue = store.token.refresh_token;
-
-    if (!refreshTokenValue) {
-        return null;
-    }
-
     // 已有刷新进行中，直接共享结果；失败也必须让所有等待者收到 null，不能悬挂。
     if (refreshPromise) {
         return refreshPromise;
@@ -34,7 +28,8 @@ export async function refreshToken(): Promise<Token | null> {
 
     refreshPromise = (async () => {
         try {
-            const newToken = await AuthApi.refresh(refreshTokenValue);
+            // Web Refresh Token 位于 HttpOnly Cookie，不能从 JS 读取或写入 localStorage。
+            const newToken = await AuthApi.refresh();
             store.token = newToken;
             return newToken;
         } catch {
@@ -53,12 +48,6 @@ export async function refreshToken(): Promise<Token | null> {
  * @returns true 表示 Token 有效
  */
 export async function validateToken(): Promise<boolean> {
-    const store = useUserStore();
-
-    if (!store.token.refresh_token) {
-        return false;
-    }
-
     const newToken = await refreshToken();
 
     return newToken !== null;

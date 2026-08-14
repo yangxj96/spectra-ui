@@ -440,6 +440,9 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
                 headers: {
                     ...(isFormData ? {} : { "Content-Type": "application/json" }),
                     "Api-Version": "1.0.0",
+                    ...(!["GET", "HEAD", "OPTIONS"].includes(method)
+                        ? { "X-XSRF-TOKEN": readCookie("XSRF-TOKEN") ?? "" }
+                        : {}),
                     ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
                     ...headers
                 },
@@ -514,6 +517,16 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
     })();
     inflightRequests.set(key, requestPromise);
     return requestPromise;
+}
+
+function readCookie(name: string): string | null {
+    if (typeof document === "undefined") return null;
+    const prefix = `${encodeURIComponent(name)}=`;
+    const value = document.cookie
+        .split(";")
+        .map(item => item.trim())
+        .find(item => item.startsWith(prefix));
+    return value ? decodeURIComponent(value.slice(prefix.length)) : null;
 }
 
 /**

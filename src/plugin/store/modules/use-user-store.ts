@@ -22,7 +22,7 @@ export const useUserStore = defineStore("user", {
          * 获取角色列表
          */
         getRoles(): string[] {
-            return this.token.roles.map(item => item.code) || [];
+            return this.token.roles || [];
         },
         /**
          * 统一权限检查方法
@@ -64,5 +64,6 @@ export const useUserStore = defineStore("user", {
             };
         }
     },
-    persist: true
+    // Access Token 仅存在内存；Web Refresh Token 由后端 HttpOnly Cookie 管理。
+    persist: false
 });

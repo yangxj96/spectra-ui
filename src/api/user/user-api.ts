@@ -1,4 +1,4 @@
-import { del, get, post, put } from "@/plugin/request/api.ts";
+import { get, post, put } from "@/plugin/request/api.ts";
 
 /**
  * 用户相关接口
@@ -28,13 +28,6 @@ export const UserApi = {
      */
     async update(params: UserDTO): Promise<void> {
         return put<void>("/api/user", params);
-    },
-    /**
-     * 删除用户
-     * @param id 角色ID
-     */
-    async deleteById(id: string): Promise<void> {
-        return del<void>(`/api/user/${id}`);
     },
     /**
      * 重置用户密码

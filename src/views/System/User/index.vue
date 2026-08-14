@@ -55,16 +55,6 @@ const handleUserEdit = (row: UserPageVO) => {
     }, 0);
 };
 
-// 表行删除按钮被单击
-const handleTableItemDelete = (row: UserPageVO) => {
-    MessageUtils.box.confirm(`是否要删除[${row.username}]`, "提示").then(async () => {
-        await UserApi.deleteById(row.id);
-        MessageUtils.success("删除成功", () => {
-            handlerConditionQuery();
-        });
-    });
-};
-
 // 用户重置密码
 const handleTableItemResetPassword = (row: UserPageVO) => {
     console.log(`重置密码:${JSON.stringify(row)}`);
@@ -198,11 +188,6 @@ onMounted(async () => {
                         <el-tooltip content="编辑用户" placement="top">
                             <el-button link type="primary" @click="handleUserEdit(scope.row)">
                                 <ComponentsIcons name="icon-user-edit" style="width: 1.4em; height: 1.4em" />
-                            </el-button>
-                        </el-tooltip>
-                        <el-tooltip content="删除用户" placement="top">
-                            <el-button link type="primary" @click="handleTableItemDelete(scope.row)">
-                                <ComponentsIcons name="icon-user-del" style="width: 1.4em; height: 1.4em" />
                             </el-button>
                         </el-tooltip>
                     </template>

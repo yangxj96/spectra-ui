@@ -24,6 +24,12 @@ export default [
                 meta: { title: "安全上下文", requiresAuth: true, requiredMenu: "SystemSecurityContext" }
             },
             {
+                path: "security-audit",
+                name: "SystemSecurityAudit",
+                component: () => import("@/views/System/SecurityAudit/index.vue"),
+                meta: { title: "安全审计", requiresAuth: true, requiredMenu: "SystemSecurityAudit" }
+            },
+            {
                 path: "dept",
                 name: "SystemDept",
                 component: () => import("@/views/System/Dept/index.vue"),

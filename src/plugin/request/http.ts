@@ -308,6 +308,7 @@ async function handleBlobDownload(res: Response): Promise<Blob | null> {
         !contentType?.includes("application/octet-stream") &&
         !contentType?.includes("application/pdf") &&
         !contentType?.includes("application/vnd") &&
+        !contentType?.includes("text/csv") &&
         !contentType?.includes("image/png") &&
         !contentType?.includes("image/jpeg")
     ) {

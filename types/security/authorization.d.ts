@@ -33,4 +33,35 @@ declare global {
     type RoleAuthorizationApply = RoleAuthorizationChange & {
         preview_token: string;
     };
+
+    /** 用户的目标 RoleAssignment 及其逐 Permission Boundary。 */
+    type AuthorizationAssignment = {
+        assignment_id: string;
+        user_id: string;
+        role_id: string;
+        role_code: string;
+        role_kind: string;
+        role_name: string;
+        role_system_managed: boolean;
+        role_version: number;
+        version: number;
+        state: "ACTIVE" | "REVOKED" | "EXPIRED";
+        valid_from?: string;
+        valid_until?: string;
+        access_boundaries: AuthorizationBoundary[];
+        grant_boundaries: AuthorizationBoundary[];
+    };
+
+    type AuthorizationBoundary = {
+        permission_code: string;
+        scope_mode: "NONE" | "ALL" | "SELF" | "RULES";
+        resource_code?: string;
+        rules: AuthorizationScopeRule[];
+    };
+
+    type AuthorizationScopeRule = {
+        rule_type: string;
+        department_id?: string;
+        include_descendants: boolean;
+    };
 }

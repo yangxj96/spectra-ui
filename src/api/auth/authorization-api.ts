@@ -2,6 +2,10 @@ import { get, post } from "@/plugin/request/api.ts";
 
 /** 目标 Role 授权状态与 Preview/Apply 接口。 */
 export const AuthorizationApi = {
+    assignments(userId: string): Promise<AuthorizationAssignment[]> {
+        return get<AuthorizationAssignment[]>(`/api/security/authorization/users/${userId}/assignments`);
+    },
+
     currentRole(roleId: string): Promise<RoleAuthorizationState> {
         return get<RoleAuthorizationState>(`/api/security/authorization/roles/${roleId}`);
     },

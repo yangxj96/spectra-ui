@@ -3,7 +3,7 @@ import { Iphone, Lock, Message, Phone } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, ref, type Component } from "vue";
 
-import { AccountApi } from "@/api/account/account-api";
+import { AuthenticationIdentityApi } from "@/api/authentication/identity-api";
 
 defineOptions({
     name: "ProfileBinding"
@@ -18,7 +18,7 @@ const loginTypeMap: Record<string, { label: string; component: Component }> = {
 };
 
 // 已绑定账号列表
-const accountBindings = ref<AccountVO[]>([]);
+const identityBindings = ref<AuthenticationIdentityVO[]>([]);
 
 // 当前登录方式
 const currentLoginType = ref("PASSWORD");
@@ -40,33 +40,33 @@ let emailCountdownTimer: ReturnType<typeof setInterval> | null = null;
 
 // 检查是否已绑定手机
 const isPhoneBound = computed(() => {
-    return accountBindings.value.some(item => item.type === "SMS");
+    return identityBindings.value.some(item => item.method_code === "SMS");
 });
 
 // 检查是否已绑定邮箱
 const isEmailBound = computed(() => {
-    return accountBindings.value.some(item => item.type === "EMAIL");
+    return identityBindings.value.some(item => item.method_code === "EMAIL");
 });
 
 // 加载绑定列表
 async function loadBindings() {
     try {
-        const list = await AccountApi.list();
-        accountBindings.value = list;
+        const list = await AuthenticationIdentityApi.list();
+        identityBindings.value = list;
 
         // 找到当前登录方式
         const current = list.find(item => item.current);
         if (current) {
-            currentLoginType.value = current.type;
-            currentLoginName.value = current.loginName;
+            currentLoginType.value = current.method_code;
+            currentLoginName.value = "目标身份";
         }
     } catch (error) {
         console.error("加载绑定列表失败:", error);
     }
 }
 
-function getAccountDisplay(account: AccountVO): string {
-    return account.loginName || "";
+function getIdentityDisplay(identity: AuthenticationIdentityVO): string {
+    return identity.method_code === "PASSWORD" ? "密码凭证" : "已验证身份（仅保存摘要）";
 }
 
 // 发送手机验证码
@@ -81,8 +81,7 @@ async function handleSendPhoneCode() {
     }
 
     try {
-        // 调用发送验证码接口（复用现有的 auth/sms 接口）
-        // TODO: 需要对接实际的发送验证码 API
+        await AuthenticationIdentityApi.sendBindingPhoneCode(phoneForm.value.phone);
         ElMessage.success("验证码已发送");
         startPhoneCountdown();
     } catch {
@@ -111,7 +110,7 @@ async function handleBindPhone() {
 
     phoneLoading.value = true;
     try {
-        await AccountApi.bindPhone({
+        await AuthenticationIdentityApi.bindPhone({
             phone: phoneForm.value.phone,
             code: phoneForm.value.code
         });
@@ -139,8 +138,7 @@ async function handleSendEmailCode() {
     }
 
     try {
-        // 调用发送验证码接口（复用现有的 auth/email 接口）
-        // TODO: 需要对接实际的发送验证码 API
+        await AuthenticationIdentityApi.sendBindingEmailCode(emailForm.value.email);
         ElMessage.success("验证码已发送");
         startEmailCountdown();
     } catch {
@@ -169,7 +167,7 @@ async function handleBindEmail() {
 
     emailLoading.value = true;
     try {
-        await AccountApi.bindEmail({
+        await AuthenticationIdentityApi.bindEmail({
             email: emailForm.value.email,
             code: emailForm.value.code
         });
@@ -198,7 +196,7 @@ function handleBindEmailClick() {
 }
 
 // 解绑账号
-async function handleUnbind(accountId: string) {
+async function handleUnbind(identityId: string) {
     try {
         await ElMessageBox.confirm("确定要解绑该账号吗？", "提示", {
             confirmButtonText: "确定",
@@ -206,7 +204,7 @@ async function handleUnbind(accountId: string) {
             type: "warning"
         });
 
-        await AccountApi.unbind(accountId);
+        await AuthenticationIdentityApi.unbind(identityId);
         ElMessage.success("解绑成功");
         loadBindings();
     } catch (err: unknown) {
@@ -258,30 +256,30 @@ onMounted(() => {
 
         <div class="binding-section">
             <h4 class="section-title">已绑定账号</h4>
-            <el-table :data="accountBindings" stripe class="binding-table">
+            <el-table :data="identityBindings" stripe class="binding-table">
                 <el-table-column label="类型" width="120">
                     <template #default="{ row }">
                         <div class="type-cell">
-                            <el-icon><component :is="loginTypeMap[row.type]?.component" /></el-icon>
-                            <span>{{ loginTypeMap[row.type]?.label }}</span>
+                            <el-icon><component :is="loginTypeMap[row.method_code]?.component" /></el-icon>
+                            <span>{{ loginTypeMap[row.method_code]?.label }}</span>
                         </div>
                     </template>
                 </el-table-column>
                 <el-table-column label="账号">
                     <template #default="{ row }">
-                        <span>{{ getAccountDisplay(row) }}</span>
+                        <span>{{ getIdentityDisplay(row) }}</span>
                     </template>
                 </el-table-column>
                 <el-table-column label="状态" width="100">
                     <template #default="{ row }">
-                        <el-tag v-if="row.verified === 1" type="success" size="small">已验证</el-tag>
+                        <el-tag v-if="row.verified_at" type="success" size="small">已验证</el-tag>
                         <el-tag v-else type="warning" size="small">未验证</el-tag>
                     </template>
                 </el-table-column>
                 <el-table-column label="操作" width="80" align="center">
                     <template #default="{ row }">
                         <el-button
-                            v-if="row.type !== 'PASSWORD'"
+                            v-if="row.method_code !== 'PASSWORD'"
                             link
                             type="danger"
                             size="small"

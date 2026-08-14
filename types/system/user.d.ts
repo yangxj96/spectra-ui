@@ -198,18 +198,18 @@ declare global {
         verify_password: string;
     };
 
-    /** 账号绑定信息 */
-    type AccountVO = {
-        /** 账号ID */
+    /** 目标认证身份绑定信息 */
+    type AuthenticationIdentityVO = {
+        /** 认证身份ID */
         id: string;
-        /** 登录类型：PASSWORD/SMS/EMAIL/OTP */
-        type: "PASSWORD" | "SMS" | "EMAIL" | "OTP";
-        /** 登录名称 */
-        loginName: string;
-        /** 状态：1-正常 2-禁用 3-未验证 */
-        status: number;
-        /** 是否已验证：0-未验证 1-已验证 */
-        verified: number;
+        /** 认证方式：PASSWORD/SMS/EMAIL/OTP */
+        method_code: "PASSWORD" | "SMS" | "EMAIL" | "OTP";
+        /** Provider 编码 */
+        provider_code: string;
+        /** 目标身份状态 */
+        state: "ACTIVE" | "DISABLED" | "REVOKED";
+        /** 验证时间 */
+        verified_at?: string;
         /** 是否为当前登录方式 */
         current: boolean;
     };

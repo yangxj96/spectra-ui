@@ -29,6 +29,12 @@ declare global {
         state: boolean;
         // 是否内置
         builtin: boolean;
+        // 授权并发版本
+        version: number;
+        // 管理边界等级
+        authority_level?: number;
+        // 目标角色类型
+        role_kind?: string;
         //角色备注
         remark: string;
     };

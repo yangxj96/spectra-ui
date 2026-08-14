@@ -3,6 +3,7 @@ import { ElTree } from "element-plus";
 import { onMounted, reactive, ref, useTemplateRef } from "vue";
 
 import { AuthorityApi } from "@/api/auth/authority-api.ts";
+import { AuthorizationApi } from "@/api/auth/authorization-api.ts";
 import { RoleApi } from "@/api/auth/role-api.ts";
 import { MenuApi } from "@/api/system/menu-api.ts";
 import { roleConverter } from "@/converter/role-converter.ts";
@@ -15,6 +16,7 @@ import RoleEdit from "./components/RoleEdit/index.vue";
 
 // refs
 const powerRef = useTemplateRef<InstanceType<typeof ElTree>>("powerRef");
+const grantablePowerRef = useTemplateRef<InstanceType<typeof ElTree>>("grantablePowerRef");
 const menuRef = useTemplateRef<InstanceType<typeof ElTree>>("menuRef");
 
 // 数据
@@ -83,7 +85,35 @@ const handleRoleConditionQuery = () => {
 const cleanTreeCheckState = () => {
     currentRow.value = undefined;
     powerRef.value?.setCheckedKeys([]);
+    grantablePowerRef.value?.setCheckedKeys([]);
     menuRef.value?.setCheckedKeys([]);
+};
+
+const authorityLeaves = (nodes: AuthorityTree[]): AuthorityTree[] => {
+    const leaves: AuthorityTree[] = [];
+    for (const node of nodes) {
+        if (node.children?.length) {
+            leaves.push(...authorityLeaves(node.children));
+        } else {
+            leaves.push(node);
+        }
+    }
+    return leaves;
+};
+
+const checkedPermissionCodes = (treeRef: typeof powerRef): string[] => {
+    const checkedKeys = new Set((treeRef.value?.getCheckedKeys() ?? []).map(key => String(key)));
+    return authorityLeaves(authority_tree.value ?? [])
+        .filter(node => checkedKeys.has(String(node.id)))
+        .map(node => node.code);
+};
+
+const setCheckedPermissionCodes = (treeRef: typeof powerRef, codes: string[]) => {
+    const selectedCodes = new Set(codes);
+    const selectedIds = authorityLeaves(authority_tree.value ?? [])
+        .filter(node => selectedCodes.has(node.code))
+        .map(node => String(node.id));
+    treeRef.value?.setCheckedKeys(selectedIds);
 };
 
 // 角色列表行被单机
@@ -91,14 +121,17 @@ const handleRoleTableRowClick = async (row: RolePageVO) => {
     if (currentRow.value && currentRow.value.id && currentRow.value.id === row.id) return;
     try {
         cleanTreeCheckState();
-        currentRow.value = row;
-        // 权限部分
-        const roleAuthority = await RoleApi.getRoleAuthority(row.id);
-        const roleAuthorityIds = roleAuthority.map(i => i.id);
-        powerRef.value?.setCheckedKeys(roleAuthorityIds);
-
-        // 菜单部分
-        const roleMenu = await RoleApi.getRoleMenu(row.id);
+        const [roleAuthorization, roleMenu] = await Promise.all([
+            AuthorizationApi.currentRole(row.id),
+            RoleApi.getRoleMenu(row.id)
+        ]);
+        currentRow.value = {
+            ...row,
+            version: roleAuthorization.version,
+            authority_level: roleAuthorization.authority_level
+        };
+        setCheckedPermissionCodes(powerRef, roleAuthorization.permission_codes);
+        setCheckedPermissionCodes(grantablePowerRef, roleAuthorization.grantable_permission_codes);
         menuRef.value?.setCheckedKeys(roleMenu.map(i => i.id));
     } catch (error: unknown) {
         console.error("未知错误", error);
@@ -111,12 +144,27 @@ const handleSaveRoleAuthority = async () => {
         MessageUtils.warning("请先选中一个角色");
         return;
     }
-    const params = {
-        role_id: currentRow.value.id,
-        authority_ids: powerRef.value?.getCheckedKeys()
+    const roleAuthorization: RoleAuthorizationChange = {
+        expected_version: currentRow.value.version,
+        authority_level: currentRow.value.authority_level ?? 1,
+        permission_codes: checkedPermissionCodes(powerRef),
+        grantable_permission_codes: checkedPermissionCodes(grantablePowerRef)
     };
-    await RoleApi.saveRoleAuthority(params);
-    MessageUtils.success("保存成功");
+    const preview = await AuthorizationApi.previewRole(currentRow.value.id, roleAuthorization);
+    await MessageUtils.box.confirm(
+        `本次授权变更将影响 ${preview.affected_user_count} 个用户、${preview.affected_assignment_count} 个授权实例，是否继续提交？`,
+        "确认授权变更"
+    );
+    await AuthorizationApi.applyRole(currentRow.value.id, {
+        ...roleAuthorization,
+        expected_version: preview.expected_version,
+        preview_token: preview.preview_token
+    });
+    currentRow.value = {
+        ...currentRow.value,
+        version: preview.expected_version + 1
+    };
+    MessageUtils.success("角色授权已提交");
 };
 
 // 角色-菜单 关联关系保存
@@ -137,7 +185,7 @@ const handleSaveRoleMenu = async () => {
 <template>
     <el-row class="rbac-container">
         <!-- 角色 -->
-        <el-col :span="16" class="table-col">
+        <el-col :span="12" class="table-col">
             <!-- 过滤条件 -->
             <el-row>
                 <el-form :inline="true" :model="condition">
@@ -213,10 +261,26 @@ const handleSaveRoleMenu = async () => {
         <el-col :span="4" class="tree-col">
             <el-text type="primary">角色权限</el-text>
             <el-divider class="divider-box" />
-            <el-button link type="primary" @click="handleSaveRoleAuthority">保存角色权限</el-button>
+            <el-button link type="primary" @click="handleSaveRoleAuthority">预览并保存授权</el-button>
             <div class="tree-wrapper">
                 <ElTree
                     ref="powerRef"
+                    :data="authority_tree"
+                    :props="treeDefaultProps"
+                    node-key="id"
+                    default-expand-all
+                    empty-text="暂无权限"
+                    show-checkbox />
+            </div>
+        </el-col>
+        <!-- 可授予权限 -->
+        <el-col :span="4" class="tree-col">
+            <el-text type="primary">可授予权限</el-text>
+            <el-divider class="divider-box" />
+            <el-text size="small" type="info">与角色权限一起提交</el-text>
+            <div class="tree-wrapper">
+                <ElTree
+                    ref="grantablePowerRef"
                     :data="authority_tree"
                     :props="treeDefaultProps"
                     node-key="id"
@@ -256,7 +320,7 @@ const handleSaveRoleMenu = async () => {
 }
 
 .table-col {
-    flex: 0 0 66.666%;
+    flex: 0 0 50%;
     display: flex;
     flex-direction: column;
     min-height: 0;

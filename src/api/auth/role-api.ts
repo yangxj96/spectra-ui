@@ -45,25 +45,11 @@ export const RoleApi = {
         return get<RolePageVO[]>("/api/role/list");
     },
     /**
-     * 根据角色ID获取角色下有哪些权限
-     * @param roleId 角色ID
-     */
-    getRoleAuthority(roleId: string): Promise<Authority[]> {
-        return get<Authority[]>(`/api/role/${roleId}/authority`);
-    },
-    /**
      * 根据角色ID获取角色下有哪些菜单
      * @param roleId 角色ID
      */
     getRoleMenu(roleId: string): Promise<Menu[]> {
         return get<Menu[]>(`/api/role/${roleId}/menu`);
-    },
-    /**
-     * 关联角色-权限(全量)
-     * @param params 角色ID和权限列表
-     */
-    saveRoleAuthority(params: { role_id: string; authority_ids: TreeKey[] | undefined }): Promise<void> {
-        return put<void>(`/api/role/${params.role_id}/authorities`, params);
     },
     /**
      * 管理角色-菜单

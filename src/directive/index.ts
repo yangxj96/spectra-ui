@@ -1,4 +1,4 @@
-import { owner } from "./owner";
+import { permission } from "./permission";
 
 import type { App } from "vue";
 
@@ -7,5 +7,5 @@ import type { App } from "vue";
  * @param Vue Vue 应用实例
  */
 export function registerDirectives(Vue: App) {
-    Vue.directive("owner", owner);
+    Vue.directive("permission", permission);
 }

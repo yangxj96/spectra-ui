@@ -112,11 +112,11 @@ initData();
     <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item>
-                <el-button v-owner="'DICT:INSERT'" @click="handleDictGroupOpen()">
+                <el-button v-permission="'dictionary:create'" @click="handleDictGroupOpen()">
                     <ComponentsIcons name="icon-edit" />
                     新增字典组
                 </el-button>
-                <el-button v-owner="'DICT:INSERT'" @click="handleDictDataOpen()">
+                <el-button v-permission="'dictionary:create'" @click="handleDictDataOpen()">
                     <ComponentsIcons name="icon-edit" />
                     新增字典数据
                 </el-button>
@@ -143,7 +143,7 @@ initData();
                         <ComponentsIcons v-if="data.builtin" name="icon-builtin" class-name="icon-sidebar" />
                         <el-button
                             v-if="!data.builtin"
-                            v-owner="'DICT:UPDATE'"
+                            v-permission="'dictionary:update'"
                             class="tree-node__label-btn"
                             link
                             type="primary"
@@ -179,14 +179,22 @@ initData();
                 <el-table-column align="center" label="备注" prop="remark" :show-overflow-tooltip="true" />
                 <el-table-column
                     v-show="!currentGroup?.builtin"
-                    v-owner.or="['DICT:UPDATE', 'DICT:DELETE']"
+                    v-permission.or="['dictionary:update', 'dictionary:disable']"
                     align="center"
                     label="操作">
                     <template #default="scope">
-                        <el-button v-owner="'DICT:UPDATE'" link type="primary" @click="handleDictDataOpen(scope.row)">
+                        <el-button
+                            v-permission="'dictionary:update'"
+                            link
+                            type="primary"
+                            @click="handleDictDataOpen(scope.row)">
                             编辑
                         </el-button>
-                        <el-button v-owner="'DICT:DELETE'" link type="primary" @click="handleDictDataDelete(scope.row)">
+                        <el-button
+                            v-permission="'dictionary:disable'"
+                            link
+                            type="primary"
+                            @click="handleDictDataDelete(scope.row)">
                             删除
                         </el-button>
                     </template>

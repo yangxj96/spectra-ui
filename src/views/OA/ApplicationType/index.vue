@@ -42,7 +42,7 @@ onMounted(load);
         <template #search>
             <el-form :inline="true">
                 <el-form-item><span class="page-label">申请类型配置</span></el-form-item>
-                <el-button v-owner="'OA_APPLICATION_TYPE:INSERT'" type="primary" @click="openCreate">
+                <el-button v-permission="'oa:application-type:create'" type="primary" @click="openCreate">
                     新建类型
                 </el-button>
             </el-form>
@@ -62,10 +62,18 @@ onMounted(load);
             </el-table-column>
             <el-table-column label="操作" width="170" fixed="right">
                 <template #default="scope">
-                    <el-button v-owner="'OA_APPLICATION_TYPE:UPDATE'" link type="primary" @click="openEdit(scope.row)">
+                    <el-button
+                        v-permission="'oa:application-type:update'"
+                        link
+                        type="primary"
+                        @click="openEdit(scope.row)">
                         编辑
                     </el-button>
-                    <el-button v-owner="'OA_APPLICATION_TYPE:DELETE'" link type="danger" @click="remove(scope.row)">
+                    <el-button
+                        v-permission="'oa:application-type:disable'"
+                        link
+                        type="danger"
+                        @click="remove(scope.row)">
                         删除
                     </el-button>
                 </template>

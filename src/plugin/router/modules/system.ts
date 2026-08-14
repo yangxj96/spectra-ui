@@ -18,6 +18,12 @@ export default [
                 meta: { title: "访问控制", requiresAuth: true, requiredMenu: "SystemRBAC" }
             },
             {
+                path: "SecurityContext",
+                name: "SystemSecurityContext",
+                component: () => import("@/views/System/SecurityContext/index.vue"),
+                meta: { title: "安全上下文", requiresAuth: true, requiredMenu: "SystemSecurityContext" }
+            },
+            {
                 path: "dept",
                 name: "SystemDept",
                 component: () => import("@/views/System/Dept/index.vue"),

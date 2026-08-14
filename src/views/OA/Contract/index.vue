@@ -173,8 +173,8 @@ onMounted(load);
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="load">查询</el-button>
-                    <el-button v-owner="'OA_CONTRACT:INSERT'" @click="openCreate">新建合同</el-button>
-                    <el-button v-owner="'OA_CONTRACT:UPDATE'" @click="runReminders">执行履约提醒</el-button>
+                    <el-button v-permission="'oa:contract:create'" @click="openCreate">新建合同</el-button>
+                    <el-button v-permission="'oa:contract:update'" @click="runReminders">执行履约提醒</el-button>
                 </el-form-item>
             </el-form>
         </template>
@@ -209,18 +209,18 @@ onMounted(load);
                     <el-button link type="primary" @click="openDetail(scope.row)">详情</el-button>
                     <el-button
                         v-if="scope.row.status === 'DRAFT'"
-                        v-owner="'OA_CONTRACT:UPDATE'"
+                        v-permission="'oa:contract:update'"
                         link
                         type="primary"
                         @click="openEdit(scope.row)">
                         编辑
                     </el-button>
-                    <el-button v-owner="'OA_CONTRACT:UPDATE'" link type="primary" @click="openVersion(scope.row)">
+                    <el-button v-permission="'oa:contract:update'" link type="primary" @click="openVersion(scope.row)">
                         上传版本
                     </el-button>
                     <el-button
                         v-if="scope.row.status === 'DRAFT'"
-                        v-owner="'OA_CONTRACT:UPDATE'"
+                        v-permission="'oa:contract:update'"
                         link
                         type="warning"
                         @click="sign(scope.row)">
@@ -228,7 +228,7 @@ onMounted(load);
                     </el-button>
                     <el-button
                         v-if="scope.row.signing_status === 'SIGNED' && scope.row.status === 'DRAFT'"
-                        v-owner="'OA_CONTRACT:UPDATE'"
+                        v-permission="'oa:contract:update'"
                         link
                         type="success"
                         @click="activate(scope.row)">
@@ -236,7 +236,7 @@ onMounted(load);
                     </el-button>
                     <el-button
                         v-if="scope.row.status === 'ACTIVE'"
-                        v-owner="'OA_CONTRACT:UPDATE'"
+                        v-permission="'oa:contract:update'"
                         link
                         type="danger"
                         @click="terminate(scope.row)">
@@ -244,7 +244,7 @@ onMounted(load);
                     </el-button>
                     <el-button
                         v-if="['ACTIVE', 'EXPIRED', 'TERMINATED'].includes(scope.row.status)"
-                        v-owner="'OA_CONTRACT:UPDATE'"
+                        v-permission="'oa:contract:update'"
                         link
                         type="warning"
                         @click="archive(scope.row)">
@@ -252,7 +252,7 @@ onMounted(load);
                     </el-button>
                     <el-button
                         v-if="scope.row.status === 'DRAFT'"
-                        v-owner="'OA_CONTRACT:DELETE'"
+                        v-permission="'oa:contract:delete'"
                         link
                         type="danger"
                         @click="remove(scope.row)">
@@ -309,7 +309,7 @@ onMounted(load);
                 <el-divider />
                 <div class="section-title">
                     <span>文件版本</span>
-                    <el-button v-owner="'OA_CONTRACT:UPDATE'" size="small" @click="openVersion(detail.data)">
+                    <el-button v-permission="'oa:contract:update'" size="small" @click="openVersion(detail.data)">
                         上传版本
                     </el-button>
                 </div>
@@ -324,7 +324,7 @@ onMounted(load);
                 <el-divider />
                 <div class="section-title">
                     <span>履约节点</span>
-                    <el-button v-owner="'OA_CONTRACT:UPDATE'" size="small" @click="openMilestone(detail.data)">
+                    <el-button v-permission="'oa:contract:update'" size="small" @click="openMilestone(detail.data)">
                         新增节点
                     </el-button>
                 </div>

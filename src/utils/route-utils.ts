@@ -1,6 +1,8 @@
+import { SecurityContextApi } from "@/api/auth/security-context-api.ts";
 import { MenuApi } from "@/api/system/menu-api.ts";
 import { hideLoading } from "@/plugin/element/loading.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
+import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { collectAuthorizedRouteNames } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -18,7 +20,8 @@ export async function loadMenu(): Promise<boolean> {
     sessionStorage.removeItem("reloaded");
     appStore.isFetchingMenus = true;
     try {
-        const menus = await MenuApi.current();
+        const [menus, context] = await Promise.all([MenuApi.current(), SecurityContextApi.current()]);
+        useUserStore().token.permissions = context.permissions;
         appStore.menus = menus;
         appStore.authorizedRouteNames = collectAuthorizedRouteNames(menus);
         appStore.menusLoaded = true;

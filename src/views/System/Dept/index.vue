@@ -78,7 +78,7 @@ const handleDialogClose = () => {
             <el-form-item>
                 <el-button type="primary" @click="handleCriteriaQuery">查询</el-button>
                 <el-button>重置</el-button>
-                <el-button v-owner="'DEPT:INSERT'" @click="handleDepartmentAdd()">新增</el-button>
+                <el-button v-permission="'department:create'" @click="handleDepartmentAdd()">新增</el-button>
             </el-form-item>
         </el-form>
     </el-row>
@@ -99,7 +99,7 @@ const handleDialogClose = () => {
             <el-table-column align="center" width="180" label="操作">
                 <template #default="scope">
                     <el-button
-                        v-owner="'DEPT:UPDATE'"
+                        v-permission="'department:update'"
                         link
                         type="primary"
                         size="small"
@@ -107,7 +107,7 @@ const handleDialogClose = () => {
                         编辑
                     </el-button>
                     <el-button
-                        v-owner="'DEPT:DELETE'"
+                        v-permission="'department:disable'"
                         link
                         type="primary"
                         size="small"

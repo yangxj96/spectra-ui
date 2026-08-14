@@ -18,10 +18,8 @@ declare global {
         access_token: string;
         // 刷新token
         refresh_token?: string;
-        // 权限列表
-        authorities: string[];
-        // 角色
-        roles: string[];
+        // Permission Catalog 权限编码；不包含角色名称
+        permissions: string[];
     };
 
     // 用户分页查询的实体

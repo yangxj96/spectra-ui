@@ -18,8 +18,7 @@ const token = {
     access_token: "access-2",
     refresh_token: "refresh-2",
     expires_in: 300,
-    roles: [],
-    authorities: []
+    permissions: []
 } as Token;
 
 describe("Web Refresh Token single-flight", () => {
@@ -30,13 +29,13 @@ describe("Web Refresh Token single-flight", () => {
 
     it("并发请求只发起一次刷新并共享新 Token", async () => {
         const store = useUserStore();
-        store.token = { access_token: "access-1", refresh_token: "refresh-1" } as Token;
+        store.token = { access_token: "access-1", permissions: [] } as Token;
         refreshMock.mockResolvedValue(token);
 
         const [first, second] = await Promise.all([refreshToken(), refreshToken()]);
 
         expect(refreshMock).toHaveBeenCalledTimes(1);
-        expect(refreshMock).toHaveBeenCalledWith("refresh-1");
+        expect(refreshMock).toHaveBeenCalledWith();
         expect(first).toBe(token);
         expect(second).toBe(token);
         expect(store.token).toEqual(token);
@@ -44,17 +43,18 @@ describe("Web Refresh Token single-flight", () => {
 
     it("刷新失败时所有等待者都收到 null，不会悬挂", async () => {
         const store = useUserStore();
-        store.token = { access_token: "access-1", refresh_token: "refresh-1" } as Token;
+        store.token = { access_token: "access-1", permissions: [] } as Token;
         refreshMock.mockRejectedValue(new Error("expired"));
 
         await expect(Promise.all([refreshToken(), refreshToken()])).resolves.toEqual([null, null]);
         expect(refreshMock).toHaveBeenCalledTimes(1);
     });
 
-    it("没有 Refresh Token 时不调用后端", async () => {
-        useUserStore().token = {} as Token;
+    it("HttpOnly Refresh Token 不暴露给 JavaScript 仍可刷新", async () => {
+        useUserStore().token = { access_token: "access-1", permissions: [] } as Token;
+        refreshMock.mockResolvedValue(token);
 
-        await expect(refreshToken()).resolves.toBeNull();
-        expect(refreshMock).not.toHaveBeenCalled();
+        await expect(refreshToken()).resolves.toBe(token);
+        expect(refreshMock).toHaveBeenCalledWith();
     });
 });

@@ -86,7 +86,7 @@ const handleEditClose = () => {
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                 <el-button>重置</el-button>
-                <el-button v-owner="'REGION:INSERT'" @click="handleAdd">新增</el-button>
+                <el-button v-permission="'region:create'" @click="handleAdd">新增</el-button>
             </el-form-item>
         </el-form>
     </el-row>
@@ -113,7 +113,7 @@ const handleEditClose = () => {
             <el-table-column align="center" width="180" label="操作" fixed="right">
                 <template #default="scope">
                     <el-button
-                        v-owner="'REGION:UPDATE'"
+                        v-permission="'region:update'"
                         link
                         type="primary"
                         size="small"
@@ -121,7 +121,7 @@ const handleEditClose = () => {
                         编辑
                     </el-button>
                     <el-button
-                        v-owner="'REGION:DELETE'"
+                        v-permission="'region:disable'"
                         link
                         type="primary"
                         size="small"

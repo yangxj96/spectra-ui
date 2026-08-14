@@ -75,7 +75,7 @@ const handleEditClose = () => {
             <el-form-item>
                 <el-button type="primary" @click="handleCriteriaQuery">查询</el-button>
                 <el-button>重置</el-button>
-                <el-button v-owner="'MENU:INSERT'" @click="handleMenuAddDialog">新增</el-button>
+                <el-button v-permission="'menu:create'" @click="handleMenuAddDialog">新增</el-button>
             </el-form-item>
         </el-form>
     </el-row>
@@ -105,10 +105,10 @@ const handleEditClose = () => {
             </el-table-column>
             <el-table-column align="center" prop="routeName" label="路由名称" :show-overflow-tooltip="true" />
             <el-table-column align="center" prop="sort" label="排序" />
-            <el-table-column align="center" label="操作" v-owner.or="['MENU:UPDATE', 'MENU:DELETE']">
+            <el-table-column align="center" label="操作" v-permission.or="['menu:update', 'menu:disable']">
                 <template #default="scope">
                     <el-button
-                        v-owner="'MENU:UPDATE'"
+                        v-permission="'menu:update'"
                         link
                         type="primary"
                         size="small"
@@ -116,7 +116,7 @@ const handleEditClose = () => {
                         编辑
                     </el-button>
                     <el-button
-                        v-owner="'MENU:DELETE'"
+                        v-permission="'menu:disable'"
                         link
                         type="primary"
                         size="small"

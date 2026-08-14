@@ -164,10 +164,14 @@ watch(processDefinitionKey, async () => {
                 <template #default="scope">
                     <el-button link type="primary" @click="openDetail(scope.row)">查看</el-button>
                     <template v-if="activeTab === 'todo'">
-                        <el-button v-owner="'WF_TASK:UPDATE'" link type="success" @click="approve(scope.row)">
+                        <el-button
+                            v-permission="'workflow:task:update'"
+                            link
+                            type="success"
+                            @click="approve(scope.row)">
                             通过
                         </el-button>
-                        <el-button v-owner="'WF_TASK:UPDATE'" link type="danger" @click="reject(scope.row)">
+                        <el-button v-permission="'workflow:task:update'" link type="danger" @click="reject(scope.row)">
                             驳回
                         </el-button>
                     </template>

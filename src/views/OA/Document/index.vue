@@ -125,9 +125,9 @@ onMounted(async () => {
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="load">查询</el-button>
-                    <el-button v-owner="'OA_DOCUMENT:INSERT'" @click="openCreate">新建文档</el-button>
+                    <el-button v-permission="'oa:document:create'" @click="openCreate">新建文档</el-button>
                     <el-button
-                        v-owner="'OA_DOCUMENT:INSERT'"
+                        v-permission="'oa:document:create'"
                         @click="
                             router.push({
                                 name: 'OADocumentFolderCreate',
@@ -163,18 +163,18 @@ onMounted(async () => {
             <el-table-column align="center" prop="updated_at" label="更新时间" width="190" />
             <el-table-column align="center" label="操作" width="270" fixed="right">
                 <template #default="scope">
-                    <el-button v-owner="'OA_DOCUMENT:UPDATE'" link type="primary" @click="openEdit(scope.row)">
+                    <el-button v-permission="'oa:document:update'" link type="primary" @click="openEdit(scope.row)">
                         编辑
                     </el-button>
-                    <el-button v-owner="'OA_DOCUMENT:UPDATE'" link type="primary" @click="openVersion(scope.row)">
+                    <el-button v-permission="'oa:document:update'" link type="primary" @click="openVersion(scope.row)">
                         上传版本
                     </el-button>
-                    <el-button v-owner="'OA_DOCUMENT:QUERY'" link type="primary" @click="openHistory(scope.row)">
+                    <el-button v-permission="'oa:document:read'" link type="primary" @click="openHistory(scope.row)">
                         版本历史
                     </el-button>
                     <el-button
                         v-if="scope.row.status !== 'PUBLISHED'"
-                        v-owner="'OA_DOCUMENT:UPDATE'"
+                        v-permission="'oa:document:update'"
                         link
                         type="success"
                         @click="publish(scope.row)">
@@ -182,7 +182,7 @@ onMounted(async () => {
                     </el-button>
                     <el-button
                         v-if="scope.row.status === 'PUBLISHED'"
-                        v-owner="'OA_DOCUMENT:UPDATE'"
+                        v-permission="'oa:document:update'"
                         link
                         type="warning"
                         @click="archive(scope.row)">
@@ -227,7 +227,7 @@ onMounted(async () => {
                         <el-tag v-if="scope.row.current" type="success">当前版本</el-tag>
                         <el-button
                             v-else
-                            v-owner="'OA_DOCUMENT:UPDATE'"
+                            v-permission="'oa:document:update'"
                             link
                             type="warning"
                             @click="restoreVersion(scope.row)">

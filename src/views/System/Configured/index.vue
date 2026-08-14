@@ -84,10 +84,10 @@ const handleRefreshCrypto = async () => {
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery()">查询</el-button>
                 <el-button>重置</el-button>
-                <el-button v-owner="'ROLE:ROLE_DEV_OPS'" type="danger" plain @click="handleGenerateKeyPair()">
+                <el-button v-permission="'security:crypto:manage'" type="danger" plain @click="handleGenerateKeyPair()">
                     生成RSA密钥对
                 </el-button>
-                <el-button v-owner="'ROLE:ROLE_DEV_OPS'" type="warning" plain @click="handleRefreshCrypto()">
+                <el-button v-permission="'security:crypto:manage'" type="warning" plain @click="handleRefreshCrypto()">
                     刷新加密状态
                 </el-button>
             </el-form-item>
@@ -126,7 +126,7 @@ const handleRefreshCrypto = async () => {
             <el-table-column align="center" label="操作">
                 <template #default="scope">
                     <el-button
-                        v-owner="'ROLE:ROLE_DEV_OPS'"
+                        v-permission="'security:config:update'"
                         link
                         type="primary"
                         size="small"

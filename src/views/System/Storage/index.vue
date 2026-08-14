@@ -170,7 +170,12 @@ const handleReset = () => {
                 <template #default="scope">
                     <el-button link type="primary" size="small" @click="handlePreview(scope.row)">预览</el-button>
                     <el-button link type="primary" size="small" @click="handleDownload(scope.row)">下载</el-button>
-                    <el-button v-owner="'FILE:DELETE'" link type="danger" size="small" @click="handleDelete(scope.row)">
+                    <el-button
+                        v-permission="'file:admin:delete'"
+                        link
+                        type="danger"
+                        size="small"
+                        @click="handleDelete(scope.row)">
                         删除
                     </el-button>
                 </template>

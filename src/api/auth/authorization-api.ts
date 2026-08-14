@@ -16,5 +16,16 @@ export const AuthorizationApi = {
 
     applyRole(roleId: string, params: RoleAuthorizationApply): Promise<void> {
         return post<void>(`/api/security/authorization/roles/${roleId}/impact-apply`, params);
+    },
+
+    previewAssignment(userId: string, params: AuthorizationAssignmentChange): Promise<AuthorizationAssignmentPreview> {
+        return post<AuthorizationAssignmentPreview>(
+            `/api/security/authorization/users/${userId}/assignments/preview`,
+            params
+        );
+    },
+
+    applyAssignment(userId: string, params: AuthorizationAssignmentChange & { preview_token: string }): Promise<void> {
+        return post<void>(`/api/security/authorization/users/${userId}/assignments/apply`, params);
     }
 };

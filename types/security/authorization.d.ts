@@ -64,4 +64,33 @@ declare global {
         department_id?: string;
         include_descendants: boolean;
     };
+
+    type AuthorizationScopeChange = {
+        mode: "NONE" | "ALL" | "SELF" | "RULES";
+        department_ids: string[];
+        include_descendants: boolean;
+    };
+
+    type AuthorizationBoundaryChange = {
+        permission: string;
+        access: AuthorizationScopeChange;
+        grant?: AuthorizationScopeChange;
+    };
+
+    type AuthorizationAssignmentChange = {
+        assignment_id?: string;
+        role_id: string;
+        expected_version: number;
+        boundaries: AuthorizationBoundaryChange[];
+    };
+
+    type AuthorizationAssignmentPreview = {
+        preview_token: string;
+        target_user_id: string;
+        assignment_id: string;
+        expected_version: number;
+        expires_at: string;
+        affected_assignment_count: number;
+        affected_user_count: number;
+    };
 }

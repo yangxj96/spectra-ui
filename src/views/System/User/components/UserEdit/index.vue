@@ -12,6 +12,8 @@ import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import { email, mobile } from "@/utils/verify-rules.ts";
 
+import RoleAssignmentEditor from "../RoleAssignmentEditor/index.vue";
+
 // 定义Model
 const form = defineModel<UserForm>("form", {
     required: true
@@ -184,6 +186,7 @@ const handleEmailSuggestions = (query: string, callback: (results: AutocompleteD
                     type="info"
                     :closable="false"
                     show-icon />
+                <RoleAssignmentEditor v-if="form.id" :user-id="form.id" />
                 <el-form-item label="所属组织" prop="department_id">
                     <el-tree-select
                         v-model="form.department_id"

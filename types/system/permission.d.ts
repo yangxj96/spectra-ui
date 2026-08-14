@@ -15,6 +15,8 @@ declare global {
     type AuthorityTree = Authority & {
         // 下级权限
         children: AuthorityTree[];
+        // Permission 允许的数据范围模式；资源分组节点为空
+        allowed_scope_modes?: ("NONE" | "ALL" | "SELF" | "RULES")[];
     };
 
     // 角色分页查询VO

@@ -2,7 +2,6 @@
 import { type AutocompleteData, type FormInstance, type FormRules } from "element-plus";
 import { onMounted, ref, useTemplateRef } from "vue";
 
-import { RoleApi } from "@/api/auth/role-api.ts";
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import { UserApi } from "@/api/user/user-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
@@ -40,7 +39,6 @@ const rules: FormRules<UserForm> = {
 };
 
 // 数据
-const roles = ref<RolePageVO[]>();
 const department_tree = ref<DepartmentTreeVO[]>();
 
 // 组件
@@ -57,7 +55,6 @@ onMounted(async () => {
             emailSuffixes.value = items.map(i => i.value);
         });
 
-    roles.value = await RoleApi.list();
     department_tree.value = await DepartmentApi.tree();
 });
 
@@ -181,11 +178,12 @@ const handleEmailSuggestions = (query: string, callback: (results: AutocompleteD
                 <el-form-item label="时区" prop="timezone">
                     <DictSelect v-model="form.timezone" dict_code="sys_timezone" placeholder="请选择时区" />
                 </el-form-item>
-                <el-form-item label="角色" prop="role_ids">
-                    <el-select v-model="form.role_ids" value-key="id" multiple placeholder="请选择角色" clearable>
-                        <el-option v-for="item in roles" :key="item.id" :label="item.name" :value="item.id" />
-                    </el-select>
-                </el-form-item>
+                <el-alert
+                    v-if="form.id"
+                    title="角色与数据边界请在 RoleAssignment 授权编辑器中通过 Preview/Apply 管理"
+                    type="info"
+                    :closable="false"
+                    show-icon />
                 <el-form-item label="所属组织" prop="department_id">
                     <el-tree-select
                         v-model="form.department_id"

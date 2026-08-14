@@ -88,8 +88,6 @@ declare global {
         timezone: string;
         // 部门ID
         department_id: string;
-        // 角色ID列表
-        role_ids: string[];
     };
 
     // 用户表单提交内容
@@ -120,8 +118,6 @@ declare global {
         timezone: string;
         // 部门ID
         department_id: string;
-        // 角色ID列表
-        role_ids: string[];
     };
 
     /** 当前用户详情 */

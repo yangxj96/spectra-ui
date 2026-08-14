@@ -21,8 +21,7 @@ export const userConverter = {
             city: "",
             language: "",
             timezone: "",
-            department_id: "",
-            role_ids: []
+            department_id: ""
         };
     },
     /** 列表数据转表单回显 */
@@ -41,8 +40,7 @@ export const userConverter = {
             city: datum.city ?? "",
             language: datum.language ?? "",
             timezone: datum.timezone ?? "",
-            department_id: datum.department_id ?? "",
-            role_ids: datum.roles?.map(r => r.id) ?? []
+            department_id: datum.department_id ?? ""
         };
     },
     /** 表单数据转接口请求参数 */
@@ -60,8 +58,7 @@ export const userConverter = {
             city: form.city,
             language: form.language,
             timezone: form.timezone,
-            department_id: form.department_id,
-            role_ids: form.role_ids ?? []
+            department_id: form.department_id
         };
     }
 };

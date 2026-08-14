@@ -22,9 +22,7 @@ export const userConverter = {
             language: "",
             timezone: "",
             department_id: "",
-            role_ids: [],
-            data_scope: undefined,
-            target_ids: []
+            role_ids: []
         };
     },
     /** 列表数据转表单回显 */
@@ -44,9 +42,7 @@ export const userConverter = {
             language: datum.language ?? "",
             timezone: datum.timezone ?? "",
             department_id: datum.department_id ?? "",
-            role_ids: datum.roles?.map(r => r.id) ?? [],
-            data_scope: datum.data_scope ?? undefined,
-            target_ids: datum.target_ids ?? []
+            role_ids: datum.roles?.map(r => r.id) ?? []
         };
     },
     /** 表单数据转接口请求参数 */
@@ -65,10 +61,7 @@ export const userConverter = {
             language: form.language,
             timezone: form.timezone,
             department_id: form.department_id,
-            role_ids: form.role_ids ?? [],
-            data_scope: form.data_scope ?? undefined,
-            // 根据 data_scope 控制
-            target_ids: form.data_scope === 4 ? (form.target_ids ?? []) : []
+            role_ids: form.role_ids ?? []
         };
     }
 };

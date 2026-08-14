@@ -27,10 +27,6 @@ declare global {
         code: string;
         //角色状态
         state: boolean;
-        //角色范围
-        scope: number;
-        // 自定义范围ID列表
-        target_ids: string[];
         // 是否内置
         builtin: boolean;
         //角色备注
@@ -47,10 +43,6 @@ declare global {
         code: string;
         // 角色状态
         state: boolean | undefined;
-        // 角色范围
-        scope: number | undefined;
-        // 自定义范围ID列表
-        target_ids: string[];
         // 是否内置
         builtin: boolean | undefined;
         // 角色备注
@@ -67,10 +59,6 @@ declare global {
         code: string;
         //角色状态
         state: boolean | undefined;
-        //角色范围
-        scope: number | undefined;
-        // 自定义范围ID列表
-        target_ids: string[];
         // 是否内置
         builtin: boolean | undefined;
         //角色备注

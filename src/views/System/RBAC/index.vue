@@ -174,7 +174,6 @@ const handleSaveRoleMenu = async () => {
                 <el-table-column align="center" width="060" type="index" label="序号" />
                 <el-table-column align="center" width="150" prop="name" label="名称" />
                 <el-table-column align="center" width="120" prop="code" label="标识" show-overflow-tooltip />
-                <el-table-column align="center" width="120" prop="scope" label="范围" />
                 <el-table-column align="center" width="120" label="是否启用">
                     <template #default="scope">
                         <el-tag :type="scope.row.state ? 'primary' : 'danger'">

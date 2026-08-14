@@ -13,8 +13,6 @@ export const roleConverter = {
             name: "",
             code: "",
             state: false,
-            scope: 0,
-            target_ids: [],
             builtin: false,
             remark: ""
         };
@@ -26,8 +24,6 @@ export const roleConverter = {
             name: datum.name ?? "",
             code: datum.code ?? "",
             state: datum.state ?? false,
-            scope: datum.scope ?? 0,
-            target_ids: datum.target_ids ?? [],
             builtin: datum.builtin ?? false,
             remark: datum.remark ?? ""
         };
@@ -39,8 +35,6 @@ export const roleConverter = {
             name: datum.name ?? "",
             code: datum.code ?? "",
             state: datum.state ?? false,
-            scope: datum.scope ?? 0,
-            target_ids: datum.target_ids ?? [],
             builtin: datum.builtin ?? false,
             remark: datum.remark ?? ""
         };

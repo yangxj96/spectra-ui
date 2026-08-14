@@ -196,26 +196,6 @@ const handleEmailSuggestions = (query: string, callback: (results: AutocompleteD
                         default-expand-all
                         :props="treeDefaultProps" />
                 </el-form-item>
-                <el-form-item label="用户数据范围">
-                    <el-select v-model="form.data_scope" placeholder="请选择用户数据范围" style="width: 100%">
-                        <el-option label="全局" :value="0" />
-                        <el-option label="本人" :value="1" />
-                        <el-option label="部门" :value="2" />
-                        <el-option label="部门及子部门" :value="3" />
-                        <el-option label="自定义" :value="4" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item v-if="form.data_scope === 4" label="自定义数据范围">
-                    <el-tree-select
-                        v-model="form.target_ids"
-                        :data="department_tree"
-                        node-key="id"
-                        clearable
-                        check-strictly
-                        multiple
-                        default-expand-all
-                        :props="treeDefaultProps" />
-                </el-form-item>
             </el-form>
         </template>
 

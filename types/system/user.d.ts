@@ -56,10 +56,6 @@ declare global {
         department_id: string;
         // 部门名称
         department_name: string;
-        // 数据范围类型
-        data_scope: number;
-        // 目标ID列表
-        target_ids: string[];
         // 创建时间
         created_at: string;
     };
@@ -94,10 +90,6 @@ declare global {
         department_id: string;
         // 角色ID列表
         role_ids: string[];
-        // 数据范围类型
-        data_scope: number | undefined;
-        // 目标ID列表
-        target_ids: string[];
     };
 
     // 用户表单提交内容
@@ -130,10 +122,6 @@ declare global {
         department_id: string;
         // 角色ID列表
         role_ids: string[];
-        // 数据范围类型
-        data_scope: number | undefined;
-        // 目标ID列表
-        target_ids: string[];
     };
 
     /** 当前用户详情 */

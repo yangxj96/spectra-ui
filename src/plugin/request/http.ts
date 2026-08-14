@@ -367,6 +367,8 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
         persistent = false,
         headers,
         _retry,
+        skipAuth = false,
+        _skipRefresh = false,
         ...rest
     } = options;
 
@@ -438,14 +440,14 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
                 headers: {
                     ...(isFormData ? {} : { "Content-Type": "application/json" }),
                     "Api-Version": "1.0.0",
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
                     ...headers
                 },
                 credentials: "include",
                 signal: controller.signal
             });
             // Token 过期自动刷新
-            if (res.status === 401 && !_retry) {
+            if (res.status === 401 && !_retry && !_skipRefresh) {
                 console.debug(`[HTTP] ${method} ${finalUrl} 返回 401，尝试刷新 token`);
                 const newToken = await refreshToken();
 

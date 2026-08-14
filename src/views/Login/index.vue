@@ -30,13 +30,6 @@ const login = reactive({
     } as FormRules
 });
 
-// 开发环境添加个账号名密码,省的输入
-if (import.meta.env.DEV) {
-    login.form.username = "devops@devops00.com";
-    login.form.password = "admin123";
-    login.form.captcha = "1";
-}
-
 // 刷新验证码
 const refreshKaptcha = () => {
     kaptchaUrl.value = import.meta.env.VITE_API_URL + "api/common/kaptcha?_t=" + Date.now();

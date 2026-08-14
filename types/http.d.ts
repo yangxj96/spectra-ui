@@ -63,6 +63,16 @@ declare global {
          * 内部字段：token 刷新标记
          */
         _retry?: boolean;
+
+        /**
+         * 不附带 Access Token；用于 Refresh 请求本身。
+         */
+        skipAuth?: boolean;
+
+        /**
+         * 内部字段：Refresh 请求失败时禁止再次触发刷新。
+         */
+        _skipRefresh?: boolean;
     }
 
     // 响应整体

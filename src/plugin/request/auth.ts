@@ -1,10 +1,8 @@
 ﻿import { AuthApi } from "@/api/auth/auth-api";
 import { useUserStore } from "@/plugin/store/modules/use-user-store";
 
-/** 是否正在刷新 Token（防止并发刷新） */
-let refreshing = false;
-/** 等待刷新完成的回调队列 */
-let queue: (() => void)[] = [];
+/** 当前进行中的刷新请求；所有并发调用共享同一个 Promise。 */
+let refreshPromise: Promise<Token | null> | null = null;
 
 /**
  * 获取当前 access_token
@@ -29,30 +27,24 @@ export async function refreshToken(): Promise<Token | null> {
         return null;
     }
 
-    // 已有刷新进行中，加入等待队列
-    if (refreshing) {
-        return new Promise(resolve => {
-            queue.push(() => resolve(store.token));
-        });
+    // 已有刷新进行中，直接共享结果；失败也必须让所有等待者收到 null，不能悬挂。
+    if (refreshPromise) {
+        return refreshPromise;
     }
 
-    refreshing = true;
+    refreshPromise = (async () => {
+        try {
+            const newToken = await AuthApi.refresh(refreshTokenValue);
+            store.token = newToken;
+            return newToken;
+        } catch {
+            return null;
+        } finally {
+            refreshPromise = null;
+        }
+    })();
 
-    try {
-        const newToken = await AuthApi.refresh(refreshTokenValue);
-
-        store.token = newToken;
-
-        queue.forEach(cb => cb());
-        queue = [];
-
-        return newToken;
-    } catch {
-        queue = [];
-        return null;
-    } finally {
-        refreshing = false;
-    }
+    return refreshPromise;
 }
 
 /**

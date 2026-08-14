@@ -8,7 +8,6 @@ for (let i = 0; i < 25; i++) {
         organization_name: "Tom",
         ac: [
             {
-                token: "96402775-f65a-4ad2-8a04-a9fb26fbc442",
                 device_type: "PC",
                 create_time: "2025-10-15 00:00:00",
                 ip: "255.255.255.255",
@@ -46,7 +45,6 @@ for (let i = 0; i < 25; i++) {
                     <el-row style="width: 100%; padding-left: 1vw; padding-right: 1vw">
                         <el-table :data="props.row.ac" border style="width: 100%">
                             <el-table-column align="center" width="060" type="index" label="序号" />
-                            <el-table-column align="center" width="300" prop="token" label="令牌" />
                             <el-table-column align="center" width="100" prop="device_type" label="设备类型" />
                             <el-table-column align="center" width="200" prop="ip" label="登录IP" />
                             <el-table-column align="center" prop="address" label="登录地点" />

@@ -24,11 +24,25 @@ export const AccountApi = {
     },
 
     /**
+     * 发送绑定手机号验证码。
+     */
+    async sendBindingPhoneCode(phone: string): Promise<void> {
+        return post<void>("/api/auth/bind/sms", { phone });
+    },
+
+    /**
      * 绑定邮箱
      * @param params 邮箱和验证码
      */
     async bindEmail(params: { email: string; code: string }): Promise<void> {
         return post<void>("/api/account/bindEmail", params);
+    },
+
+    /**
+     * 发送绑定邮箱验证码。
+     */
+    async sendBindingEmailCode(email: string): Promise<void> {
+        return post<void>("/api/auth/bind/email", { email });
     },
 
     /**

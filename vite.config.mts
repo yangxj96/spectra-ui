@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { resolve } from "path";
 
 import vue from "@vitejs/plugin-vue";
@@ -12,6 +13,12 @@ export default defineConfig(({ mode }) => {
         console.log("环境变量:", env);
     }
     const srcPath = resolve(__dirname, "src");
+    const localHttps = process.env.SSL_PASSWORD
+        ? {
+              passphrase: process.env.SSL_PASSWORD,
+              pfx: readFileSync(resolve(__dirname, "../spectra-admin/files/ssl/keystore.p12"))
+          }
+        : undefined;
     return {
         base: "/",
         plugins: [
@@ -37,6 +44,10 @@ export default defineConfig(({ mode }) => {
                 ),
                 "@yangxj96/logicflow-plugin-flowable": resolve(__dirname, "../logicflow-plugin-flowable/src")
             }
+        },
+        server: {
+            https: localHttps,
+            port: 5173
         },
         css: {
             preprocessorOptions: {

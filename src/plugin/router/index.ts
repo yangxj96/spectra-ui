@@ -68,7 +68,9 @@ router.beforeEach(async (to, _, next) => {
     // 4. 需要加载菜单（首次进入或刷新）
     if (!appStore.menusLoaded || sessionStorage.getItem("reloaded")) {
         console.debug("[守卫] 需要验证token并加载菜单");
-        const valid = tokenValidated || (await validateToken());
+        // 登录刚完成时已有新签发的 Access Token，直接使用它加载菜单。
+        // 只有刷新页面、内存中没有 Access Token 时，才需要通过 Refresh Cookie 恢复会话。
+        const valid = tokenValidated || Boolean(token.access_token) || (await validateToken());
         if (!valid) {
             console.debug("[守卫] token验证失败，跳转登录页");
             hideLoading();

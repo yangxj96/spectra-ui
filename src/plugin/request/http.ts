@@ -139,8 +139,11 @@ function getFilename(disposition: string | null): string | null {
  * 拼接 URL
  */
 function joinUrl(base: string, url: string) {
-    const full = `${base}/${url}`;
-    return full.replace(/([^:]\/)\/+/g, "$1");
+    const normalizedPath = "/" + url.replace(/^\/+/, "");
+    if (!base || base === "/") {
+        return normalizedPath;
+    }
+    return base.replace(/\/+$/, "") + normalizedPath;
 }
 
 /**

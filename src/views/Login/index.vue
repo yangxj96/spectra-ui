@@ -16,6 +16,8 @@ const router = useRouter();
 const loginRef = useTemplateRef<InstanceType<typeof ElForm>>("loginForm");
 const kaptchaUrl = ref(import.meta.env.VITE_API_URL + "api/common/kaptcha?_t=" + Date.now());
 const redirect = ref<string>(route.query.redirect as string | "/");
+const mfaVisible = ref(false);
+const mfaEnrollmentCompleted = ref(false);
 const login = reactive({
     form: {
         type: "PASSWORD",
@@ -29,10 +31,44 @@ const login = reactive({
         captcha: [{ required: true, message: "请输入验证码", trigger: "blur" }]
     } as FormRules
 });
+const mfa = reactive({
+    challengeId: "",
+    enrollmentId: "",
+    code: "",
+    provisioningUri: "",
+    secret: "",
+    enrollmentRequired: false,
+    recoveryCodes: [] as string[]
+});
 
 // 刷新验证码
 const refreshKaptcha = () => {
     kaptchaUrl.value = import.meta.env.VITE_API_URL + "api/common/kaptcha?_t=" + Date.now();
+};
+
+const finishLogin = async (token: Token) => {
+    useUserStore().token = token;
+    useUserStore().isLoggedIn = true;
+    await fetchClientPrivateKey();
+    MessageUtils.success("登录成功");
+    const path = "/redirect" + (redirect.value ?? "");
+    await router.push({ path });
+};
+
+const openMfaChallenge = async (token: Token) => {
+    if (!token.mfa_required || !token.mfa_challenge_id) {
+        await finishLogin(token);
+        return;
+    }
+    mfa.challengeId = token.mfa_challenge_id;
+    mfa.enrollmentRequired = token.mfa_enrollment_required === true;
+    mfaVisible.value = true;
+    if (mfa.enrollmentRequired) {
+        const enrollment = await AuthApi.beginMfaEnrollment(mfa.challengeId);
+        mfa.enrollmentId = enrollment.enrollment_id;
+        mfa.provisioningUri = enrollment.provisioning_uri;
+        mfa.secret = enrollment.secret;
+    }
 };
 
 // 登录
@@ -51,18 +87,48 @@ const handleLogin = async () => {
     }
 
     try {
-        useUserStore().token = await AuthApi.login(login.form);
-        useUserStore().isLoggedIn = true;
-        await fetchClientPrivateKey();
-        MessageUtils.success("登录成功", () => {
-            const path = "/redirect" + (redirect.value ?? "");
-            router.push({ path });
-        });
+        await openMfaChallenge(await AuthApi.login(login.form));
     } catch (error) {
         // 登录失败，刷新验证码
         refreshKaptcha();
         console.error("登录请求失败:", error);
     }
+};
+
+const handleMfa = async () => {
+    try {
+        if (mfaEnrollmentCompleted.value) {
+            await finishLogin(await AuthApi.completeMfaEnrollment(mfa.challengeId));
+            return;
+        }
+        if (!mfa.code.trim()) {
+            MessageUtils.error("请输入 MFA 验证码");
+            return;
+        }
+
+        if (mfa.enrollmentRequired) {
+            mfa.recoveryCodes = await AuthApi.confirmMfaEnrollment(mfa.challengeId, mfa.enrollmentId, mfa.code.trim());
+            mfa.code = "";
+            mfaEnrollmentCompleted.value = true;
+            return;
+        }
+
+        await finishLogin(await AuthApi.verifyMfa(mfa.challengeId, mfa.code.trim()));
+    } catch (error) {
+        console.error("MFA 验证失败:", error);
+    }
+};
+
+const resetMfa = () => {
+    mfaVisible.value = false;
+    mfaEnrollmentCompleted.value = false;
+    mfa.challengeId = "";
+    mfa.enrollmentId = "";
+    mfa.code = "";
+    mfa.provisioningUri = "";
+    mfa.secret = "";
+    mfa.enrollmentRequired = false;
+    mfa.recoveryCodes = [];
 };
 </script>
 
@@ -83,7 +149,7 @@ const handleLogin = async () => {
                     用户登录
                 </p>
             </template>
-            <div>
+            <div v-if="!mfaVisible">
                 <ElForm ref="loginForm" label-width="70px" :model="login.form" :rules="login.rules">
                     <el-form-item label="账号" prop="username">
                         <el-input v-model="login.form.username" placeholder="请输入账号" />
@@ -110,10 +176,61 @@ const handleLogin = async () => {
                     </el-form-item>
                 </ElForm>
             </div>
+            <div v-else class="mfa-panel">
+                <el-alert
+                    v-if="mfa.enrollmentRequired && !mfaEnrollmentCompleted"
+                    title="首次登录需要绑定 MFA"
+                    description="请将下面的密钥添加到身份验证器，然后输入生成的 6 位验证码。"
+                    type="warning"
+                    :closable="false" />
+                <el-alert
+                    v-else-if="mfaEnrollmentCompleted"
+                    title="MFA 已绑定"
+                    description="请妥善保存 Recovery Code，然后点击完成登录。"
+                    type="success"
+                    :closable="false" />
+                <el-alert
+                    v-else
+                    title="请输入 MFA 验证码"
+                    description="请输入身份验证器当前显示的 6 位验证码。"
+                    type="info"
+                    :closable="false" />
+
+                <template v-if="mfa.enrollmentRequired && !mfaEnrollmentCompleted">
+                    <ElForm label-width="90px" class="mfa-form">
+                        <el-form-item label="密钥">
+                            <el-input :model-value="mfa.secret" readonly />
+                        </el-form-item>
+                        <el-form-item label="配置 URI">
+                            <el-input :model-value="mfa.provisioningUri" type="textarea" :rows="3" readonly />
+                        </el-form-item>
+                        <el-form-item label="验证码">
+                            <el-input
+                                v-model="mfa.code"
+                                maxlength="6"
+                                inputmode="numeric"
+                                placeholder="请输入 6 位验证码" />
+                        </el-form-item>
+                    </ElForm>
+                </template>
+                <template v-else-if="mfaEnrollmentCompleted">
+                    <el-input :model-value="mfa.recoveryCodes.join('\n')" type="textarea" :rows="6" readonly />
+                </template>
+                <ElForm v-else class="mfa-form">
+                    <el-form-item label="验证码">
+                        <el-input
+                            v-model="mfa.code"
+                            maxlength="6"
+                            inputmode="numeric"
+                            placeholder="请输入 6 位验证码" />
+                    </el-form-item>
+                </ElForm>
+            </div>
             <template #footer>
-                <el-button type="primary" @click="handleLogin">
+                <el-button v-if="mfaVisible" text @click="resetMfa">返回登录</el-button>
+                <el-button type="primary" @click="mfaVisible ? handleMfa() : handleLogin()">
                     <ComponentsIcons name="icon-login" />
-                    <span>&nbsp;登录</span>
+                    <span>&nbsp;{{ mfaEnrollmentCompleted ? "完成登录" : mfaVisible ? "验证并继续" : "登录" }}</span>
                 </el-button>
             </template>
         </el-dialog>
@@ -140,6 +257,16 @@ const handleLogin = async () => {
 
 :deep(.el-dialog__footer) {
     padding-top: 0;
+}
+
+.mfa-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mfa-form {
+    margin-top: 4px;
 }
 
 .v-code {

@@ -20,6 +20,21 @@ declare global {
         refresh_token?: string;
         // Permission Catalog 权限编码；不包含角色名称
         permissions: string[];
+        // 是否需要完成 MFA 二阶段验证
+        mfa_required?: boolean;
+        // 是否需要先登记 TOTP
+        mfa_enrollment_required?: boolean;
+        // MFA 预认证挑战 ID
+        mfa_challenge_id?: string;
+        // MFA 预认证挑战过期时间
+        mfa_challenge_expires_at?: number;
+    };
+
+    /** TOTP 首次登记响应。 */
+    type MfaEnrollment = {
+        enrollment_id: string;
+        provisioning_uri: string;
+        secret: string;
     };
 
     // 用户分页查询的实体

@@ -370,6 +370,7 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
         _retry,
         skipAuth = false,
         _skipRefresh = false,
+        noBody = false,
         ...rest
     } = options;
 
@@ -477,6 +478,8 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
 
             const blob = await handleBlobDownload(res);
             if (blob) return blob as T;
+
+            if (noBody) return undefined as T;
 
             // JSON 响应
             const result: IResult<T> = await res.json();

@@ -4,6 +4,22 @@ import { useUserStore } from "@/plugin/store/modules/use-user-store";
 /** 当前进行中的刷新请求；所有并发调用共享同一个 Promise。 */
 let refreshPromise: Promise<Token | null> | null = null;
 
+const CSRF_COOKIE_NAME = "XSRF-TOKEN";
+
+/**
+ * Web Refresh 请求必须同时携带 CSRF Cookie 和对应 Header。
+ * 退出登录后服务端会清除该 Cookie，此时直接发起 Refresh 只会得到 CSRF 错误。
+ */
+function hasCsrfCookie(): boolean {
+    if (typeof document === "undefined") return true;
+
+    const prefix = `${encodeURIComponent(CSRF_COOKIE_NAME)}=`;
+    return document.cookie.split(";").some(item => {
+        const cookie = item.trim();
+        return cookie.startsWith(prefix) && cookie.slice(prefix.length).trim().length > 0;
+    });
+}
+
 /**
  * 获取当前 access_token
  * @returns token 字符串，未登录时返回 null
@@ -21,6 +37,10 @@ export function getToken(): string | null {
  */
 export async function refreshToken(): Promise<Token | null> {
     const store = useUserStore();
+    if (!hasCsrfCookie()) {
+        return null;
+    }
+
     // 已有刷新进行中，直接共享结果；失败也必须让所有等待者收到 null，不能悬挂。
     if (refreshPromise) {
         return refreshPromise;

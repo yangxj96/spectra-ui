@@ -47,12 +47,17 @@ function handleTopMenu(menu: Menu) {
     if (target?.routeName) router.push({ name: target.routeName });
 }
 
-function handleUserLogout() {
+async function handleUserLogout() {
     cancelAllRequests();
-    AuthApi.logout();
-    MessageUtils.success("退出成功", () => {
-        GlobalUtils.exit();
-    });
+    try {
+        await AuthApi.logout();
+        MessageUtils.success("退出成功", () => {
+            GlobalUtils.exit();
+        });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "退出失败";
+        MessageUtils.error(message);
+    }
 }
 
 function handleGoToProfile() {

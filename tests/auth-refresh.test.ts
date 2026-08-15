@@ -25,6 +25,7 @@ describe("Web Refresh Token single-flight", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         refreshMock.mockReset();
+        document.cookie = "XSRF-TOKEN=csrf-test-token; path=/";
     });
 
     it("并发请求只发起一次刷新并共享新 Token", async () => {
@@ -56,5 +57,12 @@ describe("Web Refresh Token single-flight", () => {
 
         await expect(refreshToken()).resolves.toBe(token);
         expect(refreshMock).toHaveBeenCalledWith();
+    });
+
+    it("退出后没有 CSRF Cookie 时不发起刷新请求", async () => {
+        document.cookie = "XSRF-TOKEN=; Max-Age=0; path=/";
+
+        await expect(refreshToken()).resolves.toBeNull();
+        expect(refreshMock).not.toHaveBeenCalled();
     });
 });

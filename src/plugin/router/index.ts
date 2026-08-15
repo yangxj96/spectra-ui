@@ -36,6 +36,7 @@ router.beforeEach(async (to, _, next) => {
     const userStore = useUserStore();
     const appStore = useAppStore();
     const token = userStore.token;
+    let tokenValidated = false;
 
     console.debug(`[路由守卫] 开始 | token: ${!!token.access_token}, 目标: ${to.path}`);
 
@@ -46,11 +47,16 @@ router.beforeEach(async (to, _, next) => {
         return next();
     }
 
-    // 2. 无 token：跳转登录
+    // 2. 刷新页面后 Access Token 仅存在内存，先用 HttpOnly Refresh Cookie 恢复一次会话。
     if (!token.access_token) {
-        console.debug("[守卫] 无 token，跳转登录页");
-        hideLoading();
-        return next({ path: "/login" });
+        console.debug("[守卫] 无 Access Token，尝试使用 Refresh Cookie 恢复会话");
+        const valid = await validateToken();
+        if (!valid) {
+            console.debug("[守卫] Refresh Cookie 无效，跳转登录页");
+            hideLoading();
+            return next({ path: "/login" });
+        }
+        tokenValidated = true;
     }
 
     // 3. 有 token 但访问登录页：重定向到主页
@@ -62,7 +68,7 @@ router.beforeEach(async (to, _, next) => {
     // 4. 需要加载菜单（首次进入或刷新）
     if (!appStore.menusLoaded || sessionStorage.getItem("reloaded")) {
         console.debug("[守卫] 需要验证token并加载菜单");
-        const valid = await validateToken();
+        const valid = tokenValidated || (await validateToken());
         if (!valid) {
             console.debug("[守卫] token验证失败，跳转登录页");
             hideLoading();

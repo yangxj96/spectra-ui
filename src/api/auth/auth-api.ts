@@ -21,7 +21,11 @@ export const AuthApi = {
      * 退出登录
      */
     logout(): Promise<void> {
-        return post<void>("/api/auth/logout");
+        return post<void>("/api/auth/logout", undefined, {
+            // Logout 是终止会话的请求，401 时不能再触发 Refresh。
+            _skipRefresh: true,
+            noBody: true
+        });
     },
     /**
      * 刷新token

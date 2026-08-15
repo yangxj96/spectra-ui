@@ -73,6 +73,11 @@ declare global {
          * 内部字段：Refresh 请求失败时禁止再次触发刷新。
          */
         _skipRefresh?: boolean;
+
+        /**
+         * 接口成功时不解析响应体；适用于 HTTP 200/204 的空响应。
+         */
+        noBody?: boolean;
     }
 
     // 响应整体

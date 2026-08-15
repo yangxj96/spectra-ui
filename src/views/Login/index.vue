@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { ElForm, type FormRules } from "element-plus";
-import { reactive, ref, useTemplateRef } from "vue";
+import QRCode from "qrcode";
+import { nextTick, reactive, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { AuthApi } from "@/api/auth/auth-api.ts";
@@ -14,6 +15,7 @@ const particlesOptions = loginParticles;
 const route = useRoute();
 const router = useRouter();
 const loginRef = useTemplateRef<InstanceType<typeof ElForm>>("loginForm");
+const mfaQrCode = useTemplateRef<HTMLCanvasElement>("mfaQrCode");
 const kaptchaUrl = ref(import.meta.env.VITE_API_URL + "api/common/kaptcha?_t=" + Date.now());
 const redirect = ref<string>(route.query.redirect as string | "/");
 const mfaVisible = ref(false);
@@ -35,8 +37,6 @@ const mfa = reactive({
     challengeId: "",
     enrollmentId: "",
     code: "",
-    provisioningUri: "",
-    secret: "",
     enrollmentRequired: false,
     recoveryCodes: [] as string[]
 });
@@ -44,6 +44,28 @@ const mfa = reactive({
 // 刷新验证码
 const refreshKaptcha = () => {
     kaptchaUrl.value = import.meta.env.VITE_API_URL + "api/common/kaptcha?_t=" + Date.now();
+};
+
+/** 将后端返回的 TOTP provisioning URI 渲染为本地二维码。 */
+const renderMfaQrCode = async (provisioningUri: string) => {
+    await nextTick();
+    const canvas = mfaQrCode.value;
+    if (!canvas || !provisioningUri) return;
+
+    try {
+        await QRCode.toCanvas(canvas, provisioningUri, {
+            errorCorrectionLevel: "M",
+            margin: 2,
+            width: 220,
+            color: {
+                dark: "#111827",
+                light: "#ffffff"
+            }
+        });
+    } catch (error) {
+        console.error("MFA 二维码生成失败:", error);
+        MessageUtils.error("MFA 二维码生成失败，请刷新后重试");
+    }
 };
 
 const finishLogin = async (token: Token) => {
@@ -66,8 +88,7 @@ const openMfaChallenge = async (token: Token) => {
     if (mfa.enrollmentRequired) {
         const enrollment = await AuthApi.beginMfaEnrollment(mfa.challengeId);
         mfa.enrollmentId = enrollment.enrollment_id;
-        mfa.provisioningUri = enrollment.provisioning_uri;
-        mfa.secret = enrollment.secret;
+        await renderMfaQrCode(enrollment.provisioning_uri);
     }
 };
 
@@ -125,8 +146,6 @@ const resetMfa = () => {
     mfa.challengeId = "";
     mfa.enrollmentId = "";
     mfa.code = "";
-    mfa.provisioningUri = "";
-    mfa.secret = "";
     mfa.enrollmentRequired = false;
     mfa.recoveryCodes = [];
 };
@@ -180,7 +199,7 @@ const resetMfa = () => {
                 <el-alert
                     v-if="mfa.enrollmentRequired && !mfaEnrollmentCompleted"
                     title="首次登录需要绑定 MFA"
-                    description="请将下面的密钥添加到身份验证器，然后输入生成的 6 位验证码。"
+                    description="请用身份验证器扫描下方二维码，然后输入生成的 6 位验证码。"
                     type="warning"
                     :closable="false" />
                 <el-alert
@@ -197,13 +216,15 @@ const resetMfa = () => {
                     :closable="false" />
 
                 <template v-if="mfa.enrollmentRequired && !mfaEnrollmentCompleted">
-                    <ElForm label-width="90px" class="mfa-form">
-                        <el-form-item label="密钥">
-                            <el-input :model-value="mfa.secret" readonly />
-                        </el-form-item>
-                        <el-form-item label="配置 URI">
-                            <el-input :model-value="mfa.provisioningUri" type="textarea" :rows="3" readonly />
-                        </el-form-item>
+                    <div class="mfa-qr-panel">
+                        <div class="mfa-qr-code">
+                            <canvas ref="mfaQrCode" role="img" aria-label="MFA 配置二维码" />
+                        </div>
+                        <p class="mfa-qr-hint">
+                            使用 Microsoft Authenticator 或其他身份验证器扫描二维码，然后输入生成的 6 位验证码。
+                        </p>
+                    </div>
+                    <ElForm label-width="70px" class="mfa-form">
                         <el-form-item label="验证码">
                             <el-input
                                 v-model="mfa.code"
@@ -267,6 +288,35 @@ const resetMfa = () => {
 
 .mfa-form {
     margin-top: 4px;
+}
+
+.mfa-qr-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.mfa-qr-code {
+    display: flex;
+    padding: 12px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 12%);
+}
+
+.mfa-qr-code canvas {
+    display: block;
+    width: 220px;
+    height: 220px;
+}
+
+.mfa-qr-hint {
+    margin: 0;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
 }
 
 .v-code {

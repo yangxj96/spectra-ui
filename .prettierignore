@@ -1,0 +1,29 @@
+# 依赖
+node_modules/
+
+# 构建与缓存产物
+dist/
+coverage/
+.vite/
+
+# 浏览器测试产物
+.playwright-cli/
+playwright-report/
+test-results/
+
+# 第三方或压缩资源
+vendor/
+*.min.js
+*.min.css
+
+# 包管理器生成文件
+package-lock.json
+npm-shrinkwrap.json
+yarn.lock
+pnpm-lock.yaml
+bun.lock
+bun.lockb
+
+# 日志与系统文件
+*.log
+.DS_Store

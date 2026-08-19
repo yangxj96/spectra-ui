@@ -40,6 +40,42 @@ export const AuthorizationApi = {
         );
     },
 
+    organizationVersion(): Promise<number> {
+        return get<number>(
+            "/api/security/authorization/departments/organization-version",
+            undefined,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
+    previewDepartmentCreate(params: OrganizationChange): Promise<OrganizationChangePreview> {
+        return post<OrganizationChangePreview>(
+            "/api/security/authorization/departments/impact-preview",
+            params,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
+    applyDepartmentCreate(params: OrganizationCreateApply): Promise<void> {
+        return post<void>("/api/security/authorization/departments/impact-apply", params, AUTHORIZATION_API_OPTIONS);
+    },
+
+    previewDepartment(departmentId: string, params: OrganizationChange): Promise<OrganizationChangePreview> {
+        return post<OrganizationChangePreview>(
+            `/api/security/authorization/departments/${departmentId}/impact-preview`,
+            params,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
+    applyDepartment(departmentId: string, params: OrganizationChangeApply): Promise<void> {
+        return post<void>(
+            `/api/security/authorization/departments/${departmentId}/impact-apply`,
+            params,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
     previewAssignment(userId: string, params: AuthorizationAssignmentChange): Promise<AuthorizationAssignmentPreview> {
         return post<AuthorizationAssignmentPreview>(
             `/api/security/authorization/users/${userId}/assignments/preview`,

@@ -72,4 +72,7 @@ declare global {
         // 备注
         remark: string;
     };
+
+    // 部门新增请求类型（主键和组织机构编码均由后端生成）
+    type DepartmentCreateDTO = Omit<DepartmentDTO, "id" | "code">;
 }

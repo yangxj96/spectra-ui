@@ -2,7 +2,7 @@
 import { type FormInstance, type FormRules } from "element-plus";
 import { computed, useTemplateRef } from "vue";
 
-import { DepartmentApi } from "@/api/user/department-api.ts";
+import { AuthorizationApi } from "@/api/auth/authorization-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
 import RegionSelectLazy from "@/components/RegionSelectLazy/index.vue";
@@ -55,10 +55,28 @@ const handleOrganizationSave = async () => {
     if (!formRef.value) return;
     try {
         await formRef.value?.validate();
+        const organizationVersion = await AuthorizationApi.organizationVersion();
+        const request = deptConverter.toOrganizationChange(form.value, organizationVersion);
+        const preview = modify.value
+            ? await AuthorizationApi.previewDepartment(form.value.id, request)
+            : await AuthorizationApi.previewDepartmentCreate(request);
+        await MessageUtils.box.confirm(
+            `本次组织结构变更将影响 ${preview.affected_user_count} 个用户、${preview.affected_assignment_count} 个授权实例，是否继续提交？`,
+            "确认组织结构变更"
+        );
         if (modify.value) {
-            await DepartmentApi.update(deptConverter.toDTO(form.value));
+            await AuthorizationApi.applyDepartment(form.value.id, {
+                ...request,
+                expected_organization_version: preview.expected_organization_version,
+                preview_token: preview.preview_token
+            });
         } else {
-            await DepartmentApi.create(deptConverter.toDTO(form.value));
+            await AuthorizationApi.applyDepartmentCreate({
+                ...request,
+                expected_organization_version: preview.expected_organization_version,
+                department_id: preview.department_id,
+                preview_token: preview.preview_token
+            });
         }
         MessageUtils.success(modify.value ? "修改组织机构成功" : "新增组织机构成功", handleClose);
     } catch (error) {
@@ -88,6 +106,9 @@ const handleOrganizationSave = async () => {
                 </el-form-item>
                 <el-form-item v-if="modify" label="编码" prop="code">
                     <el-text type="info">{{ form.code }}</el-text>
+                </el-form-item>
+                <el-form-item v-else label="编码">
+                    <el-text type="info">保存后由系统自动生成</el-text>
                 </el-form-item>
                 <el-form-item label="父级" prop="pid">
                     <el-tree-select

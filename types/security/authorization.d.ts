@@ -93,4 +93,38 @@ declare global {
         affected_assignment_count: number;
         affected_user_count: number;
     };
+
+    /** 组织部门新增、编辑和移动 Preview 请求。 */
+    type OrganizationChange = {
+        expected_organization_version: number;
+        new_parent_id?: string;
+        name: string;
+        type: number;
+        region_id: string;
+        sort?: number;
+        remark?: string;
+    };
+
+    /** 组织变更影响预览。 */
+    type OrganizationChangePreview = {
+        department_id: string;
+        new_parent_id?: string;
+        preview_token: string;
+        expected_organization_version: number;
+        after_organization_version: number;
+        expires_at: string;
+        affected_assignment_count: number;
+        affected_user_count: number;
+        expands_effective_authority: boolean;
+    };
+
+    /** 已有部门编辑/移动 Apply 请求。 */
+    type OrganizationChangeApply = OrganizationChange & {
+        preview_token: string;
+    };
+
+    /** 新部门 Apply 请求。部门 ID 来自 Preview 响应。 */
+    type OrganizationCreateApply = OrganizationChangeApply & {
+        department_id: string;
+    };
 }

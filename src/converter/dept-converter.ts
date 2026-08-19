@@ -49,5 +49,33 @@ export const deptConverter = {
             sort: datum.sort ?? undefined,
             remark: datum.remark ?? ""
         };
+    },
+    /** 部门新增请求数据（主键和编码由后端自动生成） */
+    toCreateDTO(datum: DepartmentForm): DepartmentCreateDTO {
+        const dto = this.toDTO(datum);
+        return {
+            pid: dto.pid,
+            name: dto.name,
+            type: dto.type,
+            region_id: dto.region_id,
+            path: dto.path,
+            sort: dto.sort,
+            remark: dto.remark
+        };
+    },
+    /** 部门安全变更 Preview 请求，不携带后端生成的 ID、编码和路径。 */
+    toOrganizationChange(datum: DepartmentForm, organizationVersion: number): OrganizationChange {
+        if (datum.type === undefined) {
+            throw new Error("部门类型不能为空");
+        }
+        return {
+            expected_organization_version: organizationVersion,
+            new_parent_id: datum.pid || undefined,
+            name: datum.name,
+            type: datum.type,
+            region_id: datum.region_id,
+            sort: datum.sort,
+            remark: datum.remark || undefined
+        };
     }
 };

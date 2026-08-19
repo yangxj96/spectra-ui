@@ -68,7 +68,7 @@ pnpm install
 pnpm start
 ```
 
-模板默认连接 `http://127.0.0.1:4004/`。后端启用 HTTPS、修改端口或位于其他主机时，只修改本机 `.env.development`；不要提交真实部署地址或凭据。
+模板默认连接 `https://127.0.0.1:4004/`。Vite 会通过 `SSL_PASSWORD` 加载本地 P12 证书并使用 HTTPS；修改端口或位于其他主机时，只修改本机 `.env.development`；不要提交真实部署地址或凭据。
 
 ## 文档
 

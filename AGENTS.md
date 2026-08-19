@@ -6,7 +6,7 @@ Vue 3 SPA 管理后台（光谱后端管理系统）— `spectra-admin` 的 **We
 
 - 后端 API：`spectra-admin`（Spring Boot，端口 4004）
 - 开发服务器：端口 5173
-- 所有 API 调用指向 `VITE_API_URL`（新克隆模板默认 `http://127.0.0.1:4004/`；本机启用后端证书时可覆盖为 HTTPS）
+- 所有 API 调用指向 `VITE_API_URL`（新克隆模板默认 `https://127.0.0.1:4004/`；Vite 本地开发服务器同时使用共享 P12 证书启用 HTTPS）
 
 编码规范由 `spectra/spectra-ui-spec` skill 控制（修改前端代码时自动加载）。
 

@@ -4,9 +4,7 @@ import QRCode from "qrcode";
 import { computed, nextTick, onMounted, reactive, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 
-import { fetchClientPrivateKey } from "@/api/system/crypto-api";
 import { SystemInitializationApi } from "@/api/system/initialization-api.ts";
-import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 const router = useRouter();
@@ -183,15 +181,11 @@ const completeInitialization = async () => {
 
     submitting.value = true;
     try {
-        const token = await SystemInitializationApi.complete({
+        await SystemInitializationApi.complete({
             initialization_id: initialization.initialization_id
         });
-        const userStore = useUserStore();
-        userStore.token = token;
-        userStore.isLoggedIn = true;
-        await fetchClientPrivateKey();
-        MessageUtils.success("系统初始化完成");
-        await router.replace("/");
+        MessageUtils.success("系统初始化完成，请重新登录");
+        await router.replace("/login");
     } catch (error) {
         console.error("完成系统初始化失败:", error);
     } finally {
@@ -243,7 +237,7 @@ onMounted(loadStatus);
                 <div v-if="currentStep === 0" class="step-content">
                     <el-alert
                         title="初始化令牌不会保存到浏览器"
-                        description="从后端运行环境的 SPECTRA_SECURITY_INITIALIZATION_TOKEN 获取令牌，仅在本次初始化请求中使用。"
+                        description="启动后从后端控制台日志获取初始化令牌，仅在本次初始化请求中使用；请勿将令牌写入共享日志或工单。"
                         type="info"
                         show-icon
                         :closable="false" />
@@ -330,7 +324,7 @@ onMounted(loadStatus);
                     <el-button plain type="primary" @click="copyRecoveryCodes">复制全部 Recovery Code</el-button>
                     <el-checkbox v-model="recoveryCodesSaved">我已将 Recovery Code 保存到安全位置</el-checkbox>
                     <el-button type="primary" :loading="submitting" @click="completeInitialization">
-                        完成初始化并登录
+                        完成初始化，返回登录
                     </el-button>
                 </div>
             </template>

@@ -39,9 +39,9 @@ export const SystemInitializationApi = {
         });
     },
 
-    /** 使用已确认的 MFA 完成初始化并签发首个 Token。 */
-    complete(from: SystemInitializationCompleteFrom): Promise<Token> {
-        return post<Token>("/api/system/initialization/complete", from, {
+    /** 使用已确认的 MFA 完成初始化；完成后需要重新登录。 */
+    complete(from: SystemInitializationCompleteFrom): Promise<void> {
+        return post<void>("/api/system/initialization/complete", from, {
             skipAuth: true,
             priority: "high",
             fetchPriority: "high"

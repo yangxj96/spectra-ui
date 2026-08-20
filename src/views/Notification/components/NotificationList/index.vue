@@ -79,14 +79,14 @@ function formatTime(time: string): string {
     return date.toLocaleDateString("zh-CN");
 }
 
-/** 获取类型标签 */
-function getTypeLabel(type: NotificationType): string {
-    return notificationStore.getTypeLabel(type);
+/** 获取用途标签 */
+function getPurposeLabel(purpose: NotificationPurpose): string {
+    return notificationStore.getPurposeLabel(purpose);
 }
 
-/** 获取类型颜色 */
-function getTypeColor(type: NotificationType): string {
-    return notificationStore.getTypeColor(type);
+/** 获取用途颜色 */
+function getPurposeColor(purpose: NotificationPurpose): string {
+    return notificationStore.getPurposeColor(purpose);
 }
 </script>
 
@@ -102,8 +102,8 @@ function getTypeColor(type: NotificationType): string {
             <el-table-column type="selection" width="50" />
             <el-table-column label="类型" width="100">
                 <template #default="{ row }">
-                    <el-tag :color="getTypeColor(row.type)" effect="dark" size="small">
-                        {{ getTypeLabel(row.type) }}
+                    <el-tag :color="getPurposeColor(row.purpose)" effect="dark" size="small">
+                        {{ getPurposeLabel(row.purpose) }}
                     </el-tag>
                 </template>
             </el-table-column>

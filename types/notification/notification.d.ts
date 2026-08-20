@@ -1,18 +1,29 @@
-/** 消息类型枚举 - 可扩展 */
-type NotificationType = "system" | "workflow" | "oa" | "inner_mail" | "approval" | string;
+/** 通知用途枚举，与后端 NotificationPurpose 保持一致 */
+type NotificationPurpose =
+    | "LOGIN_CODE"
+    | "BIND_PHONE_CODE"
+    | "BIND_EMAIL_CODE"
+    | "RESET_PASSWORD_CODE"
+    | "SECURITY_ALERT"
+    | "SYSTEM_NOTICE"
+    | "WORKFLOW_TODO"
+    | "WORKFLOW_RESULT"
+    | "OA_NOTICE"
+    | "OA_REMINDER"
+    | "INNER_MESSAGE";
 
 /** 消息实体 */
 interface Notification {
     id: string;
     title: string;
     content: string;
-    type: NotificationType;
-    sender_id?: string;
+    purpose: NotificationPurpose;
+    sender_user_id?: string;
     sender_name?: string;
     link?: string;
     is_read: boolean;
     read_at?: string;
-    receiver_id?: string;
+    receiver_user_id?: string;
     extra?: Record<string, unknown>;
     created_at: string;
 }
@@ -40,16 +51,16 @@ interface NotificationPreferenceUpdate {
 interface NotificationQueryParams {
     page_num: number;
     page_size: number;
-    type?: NotificationType | "all";
+    purpose?: NotificationPurpose | "all";
     is_read?: boolean;
     keyword?: string;
     start_time?: string;
     end_time?: string;
 }
 
-/** 消息类型配置 */
-interface NotificationTypeConfig {
-    type: NotificationType;
+/** 通知用途配置 */
+interface NotificationPurposeConfig {
+    purpose: NotificationPurpose;
     label: string;
     color: string;
     icon: string;

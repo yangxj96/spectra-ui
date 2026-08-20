@@ -17,7 +17,7 @@ const notificationStore = useNotificationStore();
 
 const searchForm = reactive({
     keyword: "",
-    type: "" as NotificationType | "all",
+    purpose: "" as NotificationPurpose | "all",
     is_read: "" as boolean | "",
     dateRange: [] as string[]
 });
@@ -32,8 +32,8 @@ function handleSearch(): void {
     if (searchForm.keyword) {
         params.keyword = searchForm.keyword;
     }
-    if (searchForm.type) {
-        params.type = searchForm.type;
+    if (searchForm.purpose) {
+        params.purpose = searchForm.purpose;
     }
     if (searchForm.is_read !== "") {
         params.is_read = searchForm.is_read === "true";
@@ -50,7 +50,7 @@ function handleSearch(): void {
 /** 重置 */
 function handleReset(): void {
     searchForm.keyword = "";
-    searchForm.type = "";
+    searchForm.purpose = "";
     searchForm.is_read = "";
     searchForm.dateRange = [];
     emit("reset");
@@ -63,13 +63,13 @@ function handleReset(): void {
             <el-input v-model="searchForm.keyword" placeholder="搜索标题或内容" clearable style="width: 200px" />
         </el-form-item>
         <el-form-item label="消息类型">
-            <el-select v-model="searchForm.type" placeholder="全部" clearable style="width: 140px">
+            <el-select v-model="searchForm.purpose" placeholder="全部" clearable style="width: 140px">
                 <el-option label="全部" value="" />
                 <el-option
-                    v-for="item in notificationStore.typeConfigs"
-                    :key="item.type"
+                    v-for="item in notificationStore.purposeConfigs"
+                    :key="item.purpose"
                     :label="item.label"
-                    :value="item.type" />
+                    :value="item.purpose" />
             </el-select>
         </el-form-item>
         <el-form-item label="状态">

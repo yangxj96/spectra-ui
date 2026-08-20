@@ -4,7 +4,6 @@ import { onMounted, reactive, ref } from "vue";
 
 import { MenuApi } from "@/api/system/menu-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
-import { filterMenuModelTree } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 import MenuEdit from "./components/MenuEdit/index.vue";
@@ -24,7 +23,7 @@ onMounted(() => {
 
 // 初始化数据
 const handleCriteriaQuery = async () => {
-    table_data.value = filterMenuModelTree(await MenuApi.tree());
+    table_data.value = await MenuApi.tree();
 };
 
 // 表行修改按钮被单击

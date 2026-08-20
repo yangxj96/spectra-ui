@@ -2,7 +2,7 @@ import { get, post } from "@/plugin/request/api.ts";
 
 const AUTHORIZATION_API_OPTIONS = {
     headers: {
-        "Api-Version": "2.0.0"
+        "Api-Version": "1.0.0"
     }
 };
 

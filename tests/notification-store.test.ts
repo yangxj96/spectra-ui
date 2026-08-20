@@ -31,7 +31,7 @@ describe("通知 Store", () => {
                     id: "message-1",
                     title: "系统通知",
                     content: "内容",
-                    type: "system",
+                    purpose: "SYSTEM_NOTICE",
                     is_read: false,
                     created_at: "2026-08-13T00:00:00Z"
                 }
@@ -40,12 +40,12 @@ describe("通知 Store", () => {
         });
         const store = useNotificationStore();
 
-        await store.fetchNotifications({ page_num: 2, page_size: 10, type: "system", is_read: false });
+        await store.fetchNotifications({ page_num: 2, page_size: 10, purpose: "SYSTEM_NOTICE", is_read: false });
 
         expect(notificationApiMock.list).toHaveBeenCalledWith({
             page_num: 2,
             page_size: 10,
-            type: "system",
+            purpose: "SYSTEM_NOTICE",
             is_read: false
         });
         expect(store.notifications).toHaveLength(1);
@@ -70,7 +70,7 @@ describe("通知 Store", () => {
                     id: "message-2",
                     title: "二",
                     content: "内容",
-                    type: "oa",
+                    purpose: "OA_NOTICE",
                     is_read: false,
                     created_at: "2026-08-13T00:00:00Z"
                 }

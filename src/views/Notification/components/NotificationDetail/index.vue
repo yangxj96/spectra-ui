@@ -53,14 +53,14 @@ function formatTime(time: string): string {
     });
 }
 
-/** 获取类型标签 */
-function getTypeLabel(type: NotificationType): string {
-    return notificationStore.getTypeLabel(type);
+/** 获取用途标签 */
+function getPurposeLabel(purpose: NotificationPurpose): string {
+    return notificationStore.getPurposeLabel(purpose);
 }
 
-/** 获取类型颜色 */
-function getTypeColor(type: NotificationType): string {
-    return notificationStore.getTypeColor(type);
+/** 获取用途颜色 */
+function getPurposeColor(purpose: NotificationPurpose): string {
+    return notificationStore.getPurposeColor(purpose);
 }
 
 /** 跳转链接 */
@@ -109,8 +109,8 @@ function handleClose(): void {
         <div v-if="notification" class="notification-detail">
             <!-- 状态栏 -->
             <div class="detail-status">
-                <el-tag :color="getTypeColor(notification.type)" effect="dark" size="small" class="type-tag">
-                    {{ getTypeLabel(notification.type) }}
+                <el-tag :color="getPurposeColor(notification.purpose)" effect="dark" size="small" class="type-tag">
+                    {{ getPurposeLabel(notification.purpose) }}
                 </el-tag>
                 <el-tag :type="notification.is_read ? 'info' : 'danger'" size="small" effect="plain">
                     {{ notification.is_read ? "已读" : "未读" }}

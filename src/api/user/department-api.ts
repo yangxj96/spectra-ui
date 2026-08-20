@@ -1,4 +1,4 @@
-import { del, get } from "@/plugin/request/api.ts";
+import { get } from "@/plugin/request/api.ts";
 
 /**
  * 组织机构相关接口
@@ -13,12 +13,5 @@ export const DepartmentApi = {
      */
     tree(): Promise<DepartmentTreeVO[]> {
         return get<DepartmentTreeVO[]>("/api/department/tree");
-    },
-    /**
-     * 根据ID删除组织机构
-     * @param id 组织机构ID
-     */
-    deleteById(id: string): Promise<void> {
-        return del<void>(`/api/department/${id}`);
     }
 };

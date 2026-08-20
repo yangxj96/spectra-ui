@@ -9,7 +9,7 @@ import { MenuApi } from "@/api/system/menu-api.ts";
 import { roleConverter } from "@/converter/role-converter.ts";
 import useTable from "@/hooks/use-table.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
-import { collectMenuIds, filterMenuModelTree } from "@/utils/menu-utils.ts";
+import { collectMenuIds } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 import RoleEdit from "./components/RoleEdit/index.vue";
@@ -46,7 +46,7 @@ onMounted(() => {
 
 // 初始化数据
 const handleInitData = async () => {
-    menu_tree.value = filterMenuModelTree(await MenuApi.tree());
+    menu_tree.value = await MenuApi.tree();
     authority_tree.value = await AuthorityApi.tree();
 };
 

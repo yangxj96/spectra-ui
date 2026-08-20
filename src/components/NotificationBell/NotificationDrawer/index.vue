@@ -25,15 +25,11 @@ const router = useRouter();
 const notificationStore = useNotificationStore();
 const activeTab = ref<string>("all");
 
-/** Tab配置 */
-const tabs = [
+/** 按通知用途生成筛选 Tab */
+const tabs = computed(() => [
     { label: "全部", value: "all" },
-    { label: "系统", value: "system" },
-    { label: "工作流", value: "workflow" },
-    { label: "OA", value: "oa" },
-    { label: "站内信", value: "inner_mail" },
-    { label: "待审批", value: "approval" }
-];
+    ...notificationStore.purposeConfigs.map(({ purpose, label }) => ({ label, value: purpose }))
+]);
 
 /** 抽屉显示状态 */
 const visible = computed({
@@ -61,7 +57,7 @@ async function loadNotifications(): Promise<void> {
 /** 切换Tab */
 function handleTabChange(tab: string): void {
     activeTab.value = tab;
-    notificationStore.setCurrentType(tab as NotificationType | "all");
+    notificationStore.setCurrentPurpose(tab as NotificationPurpose | "all");
 }
 
 /** 点击消息项 */
@@ -106,40 +102,19 @@ function formatTime(time: string): string {
     return date.toLocaleDateString("zh-CN");
 }
 
-/** 获取类型图标 */
-function getTypeIcon(type: string): string {
-    const iconMap: Record<string, string> = {
-        system: "icon-notification",
-        workflow: "icon-workflow",
-        oa: "icon-office",
-        inner_mail: "icon-mail",
-        approval: "icon-approval"
-    };
-    return iconMap[type] || "icon-notification";
+/** 获取用途图标 */
+function getPurposeIcon(purpose: NotificationPurpose): string {
+    return notificationStore.getPurposeIcon(purpose);
 }
 
-/** 获取类型颜色 */
-function getTypeColor(type: string): string {
-    const colorMap: Record<string, string> = {
-        system: "#409eff",
-        workflow: "#e6a23c",
-        oa: "#67c23a",
-        inner_mail: "#909399",
-        approval: "#f56c6c"
-    };
-    return colorMap[type] || "#909399";
+/** 获取用途颜色 */
+function getPurposeColor(purpose: NotificationPurpose): string {
+    return notificationStore.getPurposeColor(purpose);
 }
 
-/** 获取类型名称 */
-function getTypeName(type: string): string {
-    const nameMap: Record<string, string> = {
-        system: "系统",
-        workflow: "工作流",
-        oa: "OA",
-        inner_mail: "站内信",
-        approval: "待审批"
-    };
-    return nameMap[type] || type;
+/** 获取用途名称 */
+function getPurposeName(purpose: NotificationPurpose): string {
+    return notificationStore.getPurposeLabel(purpose);
 }
 
 onMounted(() => {
@@ -184,14 +159,18 @@ onMounted(() => {
                     class="notification-item"
                     :class="{ unread: !item.is_read }"
                     @click="handleNotificationClick(item)">
-                    <div class="item-icon" :style="{ backgroundColor: getTypeColor(item.type) + '15' }">
-                        <ComponentsIcons :name="getTypeIcon(item.type)" class-name="icon-sidebar" />
+                    <div class="item-icon" :style="{ backgroundColor: getPurposeColor(item.purpose) + '15' }">
+                        <ComponentsIcons :name="getPurposeIcon(item.purpose)" class-name="icon-sidebar" />
                     </div>
                     <div class="item-content">
                         <div class="item-header">
                             <div class="item-title-row">
-                                <el-tag :color="getTypeColor(item.type)" effect="dark" size="small" class="type-tag">
-                                    {{ getTypeName(item.type) }}
+                                <el-tag
+                                    :color="getPurposeColor(item.purpose)"
+                                    effect="dark"
+                                    size="small"
+                                    class="type-tag">
+                                    {{ getPurposeName(item.purpose) }}
                                 </el-tag>
                                 <span class="item-title">{{ item.title }}</span>
                             </div>

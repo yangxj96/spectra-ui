@@ -4,7 +4,6 @@ import { onMounted, reactive, ref } from "vue";
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
 import { deptConverter } from "@/converter/dept-converter.ts";
-import { MessageUtils } from "@/utils/message-utils.ts";
 
 import DeptEdit from "./components/DeptEdit/index.vue";
 
@@ -26,18 +25,6 @@ onMounted(() => {
 // 初始化数据
 const handleCriteriaQuery = async () => {
     table_data.value = await DepartmentApi.tree();
-};
-
-// 表行删除按钮被单击
-const handleTableItemDelete = (row: DepartmentTreeVO) => {
-    MessageUtils.box.confirm(`是否要删除[${row.name}]`, "提示").then(async () => {
-        try {
-            await DepartmentApi.deleteById(row.id);
-            MessageUtils.success("删除成功");
-        } finally {
-            await handleCriteriaQuery();
-        }
-    });
 };
 
 // 部门新增
@@ -105,14 +92,6 @@ const handleDialogClose = () => {
                         size="small"
                         @click="handleDepartmentEdit(scope.row)">
                         编辑
-                    </el-button>
-                    <el-button
-                        v-permission="'department:disable'"
-                        link
-                        type="primary"
-                        size="small"
-                        @click="handleTableItemDelete(scope.row)">
-                        删除
                     </el-button>
                 </template>
             </el-table-column>

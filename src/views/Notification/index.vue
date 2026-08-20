@@ -22,7 +22,7 @@ const queryParams = ref<NotificationQueryParams>({
 /** 搜索表单 */
 const searchForm = ref({
     keyword: "",
-    type: "" as NotificationType | "all",
+    purpose: "" as NotificationPurpose | "all",
     is_read: "" as boolean | "",
     dateRange: [] as string[]
 });
@@ -56,8 +56,8 @@ function handleSearch(): void {
     if (searchForm.value.keyword) {
         queryParams.value.keyword = searchForm.value.keyword;
     }
-    if (searchForm.value.type && searchForm.value.type !== "all") {
-        queryParams.value.type = searchForm.value.type;
+    if (searchForm.value.purpose && searchForm.value.purpose !== "all") {
+        queryParams.value.purpose = searchForm.value.purpose;
     }
     if (searchForm.value.is_read !== "") {
         queryParams.value.is_read = searchForm.value.is_read === "true";
@@ -75,7 +75,7 @@ function handleSearch(): void {
 function handleReset(): void {
     searchForm.value = {
         keyword: "",
-        type: "",
+        purpose: "",
         is_read: "",
         dateRange: []
     };
@@ -173,14 +173,14 @@ function formatTime(time: string): string {
     return date.toLocaleDateString("zh-CN");
 }
 
-/** 获取类型标签 */
-function getTypeLabel(type: NotificationType): string {
-    return notificationStore.getTypeLabel(type);
+/** 获取用途标签 */
+function getPurposeLabel(purpose: NotificationPurpose): string {
+    return notificationStore.getPurposeLabel(purpose);
 }
 
-/** 获取类型颜色 */
-function getTypeColor(type: NotificationType): string {
-    return notificationStore.getTypeColor(type);
+/** 获取用途颜色 */
+function getPurposeColor(purpose: NotificationPurpose): string {
+    return notificationStore.getPurposeColor(purpose);
 }
 
 onMounted(() => {
@@ -207,13 +207,13 @@ onMounted(() => {
                         style="width: 200px" />
                 </el-form-item>
                 <el-form-item label="消息类型">
-                    <el-select v-model="searchForm.type" placeholder="全部" clearable style="width: 140px">
+                    <el-select v-model="searchForm.purpose" placeholder="全部" clearable style="width: 140px">
                         <el-option label="全部" value="" />
                         <el-option
-                            v-for="item in notificationStore.typeConfigs"
-                            :key="item.type"
+                            v-for="item in notificationStore.purposeConfigs"
+                            :key="item.purpose"
                             :label="item.label"
-                            :value="item.type" />
+                            :value="item.purpose" />
                     </el-select>
                 </el-form-item>
                 <el-form-item label="状态">
@@ -256,8 +256,8 @@ onMounted(() => {
                 <el-table-column type="selection" width="50" />
                 <el-table-column label="类型" width="100">
                     <template #default="{ row }">
-                        <el-tag :color="getTypeColor(row.type)" effect="dark" size="small">
-                            {{ getTypeLabel(row.type) }}
+                        <el-tag :color="getPurposeColor(row.purpose)" effect="dark" size="small">
+                            {{ getPurposeLabel(row.purpose) }}
                         </el-tag>
                     </template>
                 </el-table-column>

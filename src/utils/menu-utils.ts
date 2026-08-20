@@ -61,10 +61,3 @@ export function filterDirectoryTree(menus: Menu[], excludedId?: string): Menu[] 
         .filter(menu => menu.menuType === "DIRECTORY" && menu.id !== excludedId)
         .map(menu => ({ ...menu, children: filterDirectoryTree(menu.children ?? [], excludedId) }));
 }
-
-/** 过滤尚未迁移到新模型的兼容期节点 */
-export function filterMenuModelTree(menus: Menu[]): Menu[] {
-    return menus
-        .filter(menu => menu.menuType !== null)
-        .map(menu => ({ ...menu, children: filterMenuModelTree(menu.children ?? []) }));
-}

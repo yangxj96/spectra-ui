@@ -10,7 +10,7 @@ declare global {
         //名称
         name: string;
         //节点类型
-        menuType: "DIRECTORY" | "MENU" | null;
+        menuType: "DIRECTORY" | "MENU";
         //静态路由名称
         routeName: string | null;
         //排序

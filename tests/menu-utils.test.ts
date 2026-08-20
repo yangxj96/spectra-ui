@@ -4,7 +4,6 @@ import {
     collectMenuIds,
     collectAuthorizedRouteNames,
     filterDirectoryTree,
-    filterMenuModelTree,
     findFirstRoutableMenu,
     findMenuByRouteName,
     findMenuPath
@@ -86,11 +85,5 @@ describe("菜单树工具", () => {
     it("应该从父级候选中排除菜单节点、当前节点和后代", () => {
         expect(filterDirectoryTree(menus, "group").map(menu => menu.id)).toEqual(["root"]);
         expect(filterDirectoryTree(menus, "group")[0]?.children).toEqual([]);
-    });
-
-    it("应该从管理树中移除迁移期旧节点", () => {
-        const legacy = { ...leaf("legacy", "Legacy"), menuType: null, routeName: null };
-
-        expect(filterMenuModelTree([...menus, legacy]).map(menu => menu.id)).not.toContain("legacy");
     });
 });

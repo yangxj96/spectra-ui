@@ -1,6 +1,6 @@
 import commonRoutes from "@/plugin/router/modules/common.ts";
+import devopsRoutes from "@/plugin/router/modules/devops.ts";
 import exampleRoutes from "@/plugin/router/modules/example.ts";
-import monitorRoutes from "@/plugin/router/modules/monitor.ts";
 import oaRoutes from "@/plugin/router/modules/oa.ts";
 import systemRoutes from "@/plugin/router/modules/system.ts";
 
@@ -13,7 +13,7 @@ import type { RouteRecordRaw } from "vue-router";
 export default [
     ...commonRoutes,
     ...systemRoutes,
-    ...monitorRoutes,
+    ...devopsRoutes,
     ...oaRoutes,
     ...exampleRoutes,
     {

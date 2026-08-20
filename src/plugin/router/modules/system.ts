@@ -18,28 +18,10 @@ export default [
                 meta: { title: "访问控制", requiresAuth: true, requiredMenu: "SystemRBAC" }
             },
             {
-                path: "SecurityContext",
-                name: "SystemSecurityContext",
-                component: () => import("@/views/System/SecurityContext/index.vue"),
-                meta: { title: "安全上下文", requiresAuth: true, requiredMenu: "SystemSecurityContext" }
-            },
-            {
-                path: "security-audit",
-                name: "SystemSecurityAudit",
-                component: () => import("@/views/System/SecurityAudit/index.vue"),
-                meta: { title: "安全审计", requiresAuth: true, requiredMenu: "SystemSecurityAudit" }
-            },
-            {
                 path: "dept",
                 name: "SystemDept",
                 component: () => import("@/views/System/Dept/index.vue"),
                 meta: { title: "部门管理", requiresAuth: true, requiredMenu: "SystemDept" }
-            },
-            {
-                path: "configured",
-                name: "SystemConfigured",
-                component: () => import("@/views/System/Configured/index.vue"),
-                meta: { title: "系统配置", requiresAuth: true, requiredMenu: "SystemConfigured" }
             },
             {
                 path: "dict",
@@ -52,12 +34,6 @@ export default [
                 name: "SystemMenu",
                 component: () => import("@/views/System/Menu/index.vue"),
                 meta: { title: "菜单管理", requiresAuth: true, requiredMenu: "SystemMenu" }
-            },
-            {
-                path: "storage",
-                name: "SystemStorage",
-                component: () => import("@/views/System/Storage/index.vue"),
-                meta: { title: "文件管理", requiresAuth: true, requiredMenu: "SystemStorage" }
             },
             {
                 path: "workflow",

@@ -7,7 +7,7 @@ import { CryptoApi, initCrypto } from "@/api/system/crypto-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
 import { configuredConverter } from "@/converter/configured-converter.ts";
 import useTable from "@/hooks/use-table.ts";
-import ConfiguredEdit from "@/views/System/Configured/components/ConfiguredEdit/index.vue";
+import ConfiguredEdit from "@/views/Devops/SystemMaintenance/Configured/components/ConfiguredEdit/index.vue";
 
 const edit = reactive({
     show: false,

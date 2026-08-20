@@ -63,7 +63,7 @@ src/
     router/       # Vue Router 配置
     store/        # Pinia stores（模块：app, dict, props, user）
   utils/          # 工具函数（common, crypto, message, route, verify）
-  views/          # 页面组件（Dashboard, Login, Monitor, System, Example, Common）
+  views/          # 页面组件（Dashboard, Login, Devops, System, Example, Common）
 types/            # 全局 .d.ts 类型声明
 tests/            # 测试文件（扁平结构，无子目录）
 ```

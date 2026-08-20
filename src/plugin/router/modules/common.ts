@@ -8,6 +8,12 @@ export default [
         meta: { title: "登录" }
     },
     {
+        path: "/initialization",
+        name: "SystemInitialization",
+        component: () => import("@/views/Initialization/index.vue"),
+        meta: { title: "系统初始化" }
+    },
+    {
         path: "/",
         component: () => import("@/layouts/Blank/index.vue"),
         children: [

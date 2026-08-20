@@ -26,7 +26,7 @@ const router = createRouter({
 });
 
 /** 无需登录即可访问的路径白名单 */
-const whiteList = new Set(["/login"]);
+const whiteList = new Set(["/login", "/initialization"]);
 
 // 路由前置守卫
 router.beforeEach(async (to, _, next) => {

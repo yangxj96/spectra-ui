@@ -1,11 +1,12 @@
 ﻿<script setup lang="ts">
 import { ElForm, type FormRules } from "element-plus";
 import QRCode from "qrcode";
-import { nextTick, reactive, ref, useTemplateRef } from "vue";
+import { nextTick, onMounted, reactive, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { AuthApi } from "@/api/auth/auth-api.ts";
 import { fetchClientPrivateKey } from "@/api/system/crypto-api";
+import { SystemInitializationApi } from "@/api/system/initialization-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -149,6 +150,18 @@ const resetMfa = () => {
     mfa.enrollmentRequired = false;
     mfa.recoveryCodes = [];
 };
+
+onMounted(async () => {
+    try {
+        const status = await SystemInitializationApi.status();
+        if (status.initialization_required) {
+            await router.replace("/initialization");
+        }
+    } catch (error) {
+        // 后端不可用时保留登录页，让统一请求错误处理显示具体错误。
+        console.debug("检查系统初始化状态失败:", error);
+    }
+});
 </script>
 
 <template>

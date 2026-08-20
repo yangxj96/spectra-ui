@@ -8,6 +8,7 @@ import { AuthApi } from "@/api/auth/auth-api.ts";
 import { fetchClientPrivateKey } from "@/api/system/crypto-api";
 import { SystemInitializationApi } from "@/api/system/initialization-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
+import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import { loginParticles } from "@/views/Login/Config/login-particles.ts";
@@ -15,6 +16,7 @@ import { loginParticles } from "@/views/Login/Config/login-particles.ts";
 const particlesOptions = loginParticles;
 const route = useRoute();
 const router = useRouter();
+const appStore = useAppStore();
 const loginRef = useTemplateRef<InstanceType<typeof ElForm>>("loginForm");
 const mfaQrCode = useTemplateRef<HTMLCanvasElement>("mfaQrCode");
 const kaptchaUrl = ref(import.meta.env.VITE_API_URL + "api/common/kaptcha?_t=" + Date.now());
@@ -152,13 +154,21 @@ const resetMfa = () => {
 };
 
 onMounted(async () => {
+    if (appStore.bootstrap_loaded) {
+        if (appStore.initialization.initialization_required) {
+            await router.replace("/initialization");
+        }
+        return;
+    }
+
     try {
         const status = await SystemInitializationApi.status();
+        appStore.setInitializationStatus(status);
         if (status.initialization_required) {
             await router.replace("/initialization");
         }
     } catch (error) {
-        // 后端不可用时保留登录页，让统一请求错误处理显示具体错误。
+        // 启动聚合接口不可用时保留登录页，让统一请求错误处理显示具体错误。
         console.debug("检查系统初始化状态失败:", error);
     }
 });

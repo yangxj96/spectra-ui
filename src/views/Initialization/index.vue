@@ -5,26 +5,34 @@ import { computed, nextTick, onMounted, reactive, ref, useTemplateRef } from "vu
 import { useRouter } from "vue-router";
 
 import { SystemInitializationApi } from "@/api/system/initialization-api.ts";
+import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 const router = useRouter();
+const appStore = useAppStore();
 const accountFormRef = useTemplateRef<InstanceType<typeof ElForm>>("accountForm");
 const qrCodeRef = useTemplateRef<HTMLCanvasElement>("qrCode");
 
-const checking = ref(true);
+const checking = ref(!appStore.bootstrap_loaded);
 const statusError = ref("");
 const currentStep = ref(0);
 const recoveryCodesSaved = ref(false);
 const submitting = ref(false);
-const initialized = ref(false);
-const initializationState = ref<SystemInitializationStatus["state"]>("UNINITIALIZED");
+const initialized = ref(appStore.initialization.initialized);
+const initializationState = ref<SystemInitializationStatus["state"]>(appStore.initialization.state);
 
 const accountForm = reactive({
     username: "devops00.com",
     real_name: "DEV_OPS",
     password: "",
     verify_password: "",
-    initialization_token: ""
+    initialization_token: "",
+    system_name: "Spectra",
+    system_short_name: "Spectra",
+    system_logo: "",
+    default_locale: "zh-CN" as "zh-CN" | "en-US",
+    default_timezone: "Asia/Shanghai",
+    security_profile: "STANDARD" as "STANDARD" | "STRICT"
 });
 
 const initialization = reactive({
@@ -38,6 +46,15 @@ const initialization = reactive({
 });
 
 const accountRules: FormRules = {
+    system_name: [
+        { required: true, message: "请输入系统名称", trigger: "blur" },
+        { max: 100, message: "系统名称长度不能超过 100 个字符", trigger: "blur" }
+    ],
+    system_short_name: [{ max: 50, message: "系统简称长度不能超过 50 个字符", trigger: "blur" }],
+    system_logo: [{ max: 512, message: "系统 Logo 地址长度不能超过 512 个字符", trigger: "blur" }],
+    default_locale: [{ required: true, message: "请选择默认语言", trigger: "change" }],
+    default_timezone: [{ required: true, message: "请输入默认时区", trigger: "blur" }],
+    security_profile: [{ required: true, message: "请选择安全策略", trigger: "change" }],
     username: [{ required: true, message: "请输入 DEV_OPS 用户账号", trigger: "blur" }],
     real_name: [{ required: true, message: "请输入真实姓名", trigger: "blur" }],
     password: [
@@ -62,6 +79,7 @@ const loadStatus = async () => {
     statusError.value = "";
     try {
         const status = await SystemInitializationApi.status();
+        appStore.setInitializationStatus(status);
         initializationState.value = status.state;
         initialized.value = status.initialized;
     } catch (error) {
@@ -70,6 +88,12 @@ const loadStatus = async () => {
     } finally {
         checking.value = false;
     }
+};
+
+const applyBootstrapStatus = () => {
+    initializationState.value = appStore.initialization.state;
+    initialized.value = appStore.initialization.initialized;
+    checking.value = false;
 };
 
 const renderQrCode = async () => {
@@ -112,7 +136,13 @@ const startInitialization = async () => {
             {
                 username: accountForm.username.trim(),
                 real_name: accountForm.real_name.trim(),
-                password: accountForm.password
+                password: accountForm.password,
+                system_name: accountForm.system_name.trim(),
+                system_short_name: accountForm.system_short_name.trim(),
+                system_logo: accountForm.system_logo.trim(),
+                default_locale: accountForm.default_locale,
+                default_timezone: accountForm.default_timezone.trim(),
+                security_profile: accountForm.security_profile
             },
             accountForm.initialization_token.trim()
         );
@@ -184,6 +214,13 @@ const completeInitialization = async () => {
         await SystemInitializationApi.complete({
             initialization_id: initialization.initialization_id
         });
+        appStore.setInitializationStatus({
+            state: "INITIALIZED",
+            initialized: true,
+            initialization_required: false
+        });
+        initializationState.value = "INITIALIZED";
+        initialized.value = true;
         MessageUtils.success("系统初始化完成，请重新登录");
         await router.replace("/login");
     } catch (error) {
@@ -193,7 +230,10 @@ const completeInitialization = async () => {
     }
 };
 
-onMounted(loadStatus);
+onMounted(() => {
+    if (appStore.bootstrap_loaded) applyBootstrapStatus();
+    else void loadStatus();
+});
 </script>
 
 <template>
@@ -227,7 +267,7 @@ onMounted(loadStatus);
 
             <template v-if="!checking && !initialized && initializationState !== 'INITIALIZING' && !statusError">
                 <el-steps :active="currentStep" finish-status="success" class="steps">
-                    <el-step title="创建账号" description="设置 DEV_OPS 密码" />
+                    <el-step title="系统与账号" description="设置系统信息和 DEV_OPS" />
                     <el-step title="绑定 MFA" description="登记身份验证器" />
                     <el-step title="保存恢复码" description="完成首次登录" />
                 </el-steps>
@@ -247,6 +287,41 @@ onMounted(loadStatus);
                         label-position="top"
                         :model="accountForm"
                         :rules="accountRules">
+                        <el-divider content-position="left">系统信息</el-divider>
+                        <el-form-item label="系统名称" prop="system_name">
+                            <el-input v-model="accountForm.system_name" clearable />
+                        </el-form-item>
+                        <el-form-item label="系统简称" prop="system_short_name">
+                            <el-input v-model="accountForm.system_short_name" clearable />
+                        </el-form-item>
+                        <el-form-item label="系统 Logo 地址或文件标识" prop="system_logo">
+                            <el-input v-model="accountForm.system_logo" clearable placeholder="可选" />
+                        </el-form-item>
+                        <el-form-item label="默认语言" prop="default_locale">
+                            <el-select v-model="accountForm.default_locale" style="width: 100%">
+                                <el-option label="简体中文" value="zh-CN" />
+                                <el-option label="English" value="en-US" />
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="默认时区" prop="default_timezone">
+                            <el-select
+                                v-model="accountForm.default_timezone"
+                                filterable
+                                allow-create
+                                style="width: 100%">
+                                <el-option label="中国/上海（Asia/Shanghai）" value="Asia/Shanghai" />
+                                <el-option label="协调世界时（UTC）" value="UTC" />
+                                <el-option label="美国/洛杉矶（America/Los_Angeles）" value="America/Los_Angeles" />
+                                <el-option label="欧洲/伦敦（Europe/London）" value="Europe/London" />
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="安全策略" prop="security_profile">
+                            <el-select v-model="accountForm.security_profile" style="width: 100%">
+                                <el-option label="标准（STANDARD）" value="STANDARD" />
+                                <el-option label="严格（STRICT）" value="STRICT" />
+                            </el-select>
+                        </el-form-item>
+                        <el-divider content-position="left">DEV_OPS 账号</el-divider>
                         <el-form-item label="DEV_OPS 用户账号" prop="username">
                             <el-input v-model="accountForm.username" autocomplete="username" clearable />
                         </el-form-item>

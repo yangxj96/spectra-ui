@@ -4,7 +4,6 @@ import type { Directive } from "vue";
 
 interface ImportMetaEnvironment {
     readonly VITE_API_URL: string;
-    readonly VITE_WEB_TITLE: string;
 }
 
 interface ImportMeta {
@@ -27,6 +26,7 @@ declare module "vue-router" {
     interface RouteMeta {
         title?: string | (() => string);
         approvalProcessKey?: string;
+        requiresAuth?: boolean;
     }
 }
 

@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
 import { fetchClientPrivateKey } from "@/api/system/crypto-api.ts";
+import { SystemGuideApi } from "@/api/system/system-guide-api.ts";
 import { hideLoading, showLoading } from "@/plugin/element/loading";
 import { validateToken } from "@/plugin/request/auth.ts";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
@@ -65,7 +66,34 @@ router.beforeEach(async (to, _, next) => {
         return next({ path: "/" });
     }
 
-    // 4. 需要加载菜单（首次进入或刷新）
+    // 4. DEV_OPS 首次登录必须完成系统设置引导；其他用户直接视为不需要引导。
+    const isSystemGuide = to.path === "/system-guide";
+    let guideStatus = appStore.system_guide;
+    if (!appStore.system_guide_loaded) {
+        try {
+            guideStatus = await SystemGuideApi.status();
+            appStore.setSystemGuideStatus(guideStatus);
+        } catch (error) {
+            console.error("[守卫] 查询系统设置引导状态失败", error);
+            hideLoading();
+            return isSystemGuide ? next() : next(false);
+        }
+    }
+    if (guideStatus.required && !isSystemGuide) {
+        console.debug("[守卫] 系统设置引导未完成，跳转引导页");
+        return next({ path: "/system-guide", query: { redirect: to.fullPath }, replace: true });
+    }
+    if (!guideStatus.required && isSystemGuide) {
+        const redirect =
+            typeof to.query.redirect === "string" && to.query.redirect.startsWith("/") ? to.query.redirect : "/";
+        return next({ path: redirect, replace: true });
+    }
+    if (isSystemGuide) {
+        showLoading();
+        return next();
+    }
+
+    // 5. 需要加载菜单（首次进入或刷新）
     if (!appStore.menusLoaded || sessionStorage.getItem("reloaded")) {
         console.debug("[守卫] 需要验证token并加载菜单");
         // 登录刚完成时已有新签发的 Access Token，直接使用它加载菜单。
@@ -84,14 +112,14 @@ router.beforeEach(async (to, _, next) => {
         return next({ ...to, replace: true });
     }
 
-    // 5. 校验静态路由声明的菜单权限
+    // 6. 校验静态路由声明的菜单权限
     const accessTarget = resolveRouteAccess(
         typeof to.meta.requiredMenu === "string" ? to.meta.requiredMenu : undefined,
         appStore.authorizedRouteNames
     );
     if (accessTarget) return next({ path: accessTarget, replace: true });
 
-    // 6. 正常放行
+    // 7. 正常放行
     console.debug("[守卫] 正常跳转");
     showLoading();
     next();
@@ -100,7 +128,8 @@ router.beforeEach(async (to, _, next) => {
 // 路由后置守卫
 router.afterEach(to => {
     const title = getRouteTitle(to.meta.title);
-    document.title = title ? `${import.meta.env.VITE_WEB_TITLE} - ${title}` : import.meta.env.VITE_WEB_TITLE;
+    const systemName = useAppStore().system.name || "Spectra";
+    document.title = title ? `${systemName} - ${title}` : systemName;
     hideLoading();
 });
 

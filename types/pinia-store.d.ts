@@ -5,6 +5,16 @@ declare global {
     type StoreApp = {
         // 全局i18n语言
         lang: object;
+        // 系统公开信息
+        system: SystemPublicConfig;
+        // 系统初始化状态
+        initialization: SystemInitializationStatus;
+        // 系统设置引导状态
+        system_guide: SystemGuideStatus;
+        // 系统设置引导状态是否已加载
+        system_guide_loaded: boolean;
+        // 启动配置是否已加载
+        bootstrap_loaded: boolean;
         // 菜单列表
         menus: Menu[];
         // 当前菜单子级.

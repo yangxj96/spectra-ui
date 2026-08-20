@@ -77,6 +77,9 @@ function handlerRouter(r: RouteLocationMatched[] = []) {
 
 .box__main {
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 
     .box__breadcrumb {
         margin-top: 0.5vh;
@@ -96,11 +99,8 @@ function handlerRouter(r: RouteLocationMatched[] = []) {
 
     .box__content {
         width: 100%;
-        // 面包屑3.6vh,有个地方计算错了,改成5vh,头高62px,底部版权20px
-        // 5vh - 面包屑
-        // 62px - 头部固定高度
-        // 20px - 底部版权固定高度
-        height: calc(100vh - 62px - 20px);
+        flex: 1;
+        min-height: 0;
         overflow: auto;
     }
 
@@ -121,6 +121,7 @@ function handlerRouter(r: RouteLocationMatched[] = []) {
     }
 
     .footer {
+        flex: 0 0 auto;
         text-align: center;
         width: 100%;
         height: 20px;

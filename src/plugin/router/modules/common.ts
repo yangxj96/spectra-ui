@@ -14,6 +14,12 @@ export default [
         meta: { title: "系统初始化" }
     },
     {
+        path: "/system-guide",
+        name: "SystemGuide",
+        component: () => import("@/views/SystemGuide/index.vue"),
+        meta: { title: "系统设置引导", requiresAuth: true }
+    },
+    {
         path: "/",
         component: () => import("@/layouts/Blank/index.vue"),
         children: [

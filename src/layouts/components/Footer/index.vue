@@ -1,18 +1,28 @@
 <script setup lang="ts">
+import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
+
 defineOptions({
     name: "LayoutsFooter"
 });
+
+const appStore = useAppStore();
 </script>
 
 <template>
     <!-- 底部版权 -->
-    <el-footer class="footer">
+    <el-footer v-if="appStore.system.copyright_enabled" class="footer">
         Copyright © 2025
-        <strong><a href="https://www.devops00.com" target="_blank">devops00</a></strong>
-        &nbsp;
-        <strong><a href="https://www.devops00.com" target="_blank">devops00.com</a></strong>
-        All Rights Reserved. 备案号：
-        <a target="_blank" rel="nofollow" href="https://beian.miit.gov.cn/">滇ICP备2025012345号-1</a>
+        <strong>
+            <a
+                v-if="appStore.system.copyright_url"
+                :href="appStore.system.copyright_url"
+                target="_blank"
+                rel="noopener noreferrer">
+                {{ appStore.system.copyright_name || appStore.system.name }}
+            </a>
+            <span v-else>{{ appStore.system.copyright_name || appStore.system.name }}</span>
+        </strong>
+        All Rights Reserved.
     </el-footer>
 </template>
 

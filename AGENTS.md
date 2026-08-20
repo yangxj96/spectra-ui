@@ -91,7 +91,7 @@ API 辅助函数：`get()`, `post()`, `put()`, `del()`, `upload()`, `download()`
 ## 环境变量
 
 - `VITE_API_URL` — 后端 API 基础 URL（指向 `spectra-admin`）
-- `VITE_WEB_TITLE` — 页面标题
+- 系统名称由启动阶段 `/api/system/bootstrap` 返回，页面标题根据系统名称和当前路由动态生成
 - 仓库只提交 `.env.example`；新克隆复制为被忽略的 `.env.development`，生产值由部署环境注入，不假设仓库存在 `.env.production`
 
 ## 注意事项

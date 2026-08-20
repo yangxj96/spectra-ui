@@ -5,7 +5,6 @@ import { useRoute, useRouter } from "vue-router";
 
 import { AuthApi } from "@/api/auth/auth-api.ts";
 import avatar from "@/assets/images/avatar.png";
-import logo from "@/assets/images/logo.svg";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import NotificationBell from "@/components/NotificationBell/index.vue";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
@@ -23,6 +22,16 @@ const router = useRouter();
 const route = useRoute();
 const appStore = useAppStore();
 const prefixes = computed(() => appStore.menus);
+const currentLogo = computed(() => appStore.system.logo || "/logo.svg");
+const systemName = computed(() => appStore.system.name);
+const systemNameStyle = computed(() => {
+    const textUnits = Array.from(systemName.value).reduce(
+        (units, character) => units + (/[^\u0000-\u00ff]/.test(character) ? 1 : 0.6),
+        0
+    );
+    const fontSize = Math.max(14, Math.min(24, 176 / Math.max(textUnits, 1)));
+    return { fontSize: `${fontSize.toFixed(1)}px` };
+});
 const active = ref("");
 
 // 监听路由变化
@@ -71,11 +80,14 @@ function handleGoToNotification() {
 
 <template>
     <el-row style="height: 60px">
-        <el-col :span="3">
-            <el-image :src="logo" style="height: 55px; width: 90%" />
+        <el-col :span="4">
+            <router-link class="system-brand" :to="{ name: 'Dashboard' }" :title="`${systemName} - 返回首页`">
+                <img class="system-brand__logo" :src="currentLogo" :alt="systemName" />
+                <span class="system-brand__name" :style="systemNameStyle">{{ systemName }}</span>
+            </router-link>
         </el-col>
 
-        <el-col :span="19" style="padding-right: 40px">
+        <el-col :span="18" style="padding-right: 40px">
             <el-menu :default-active="active" mode="horizontal">
                 <el-menu-item v-for="o in prefixes" :key="o.id" :index="o.id" @click="handleTopMenu(o)">
                     <ComponentsIcons :name="o.icon" class-name="icon-sidebar" />
@@ -119,6 +131,44 @@ function handleGoToNotification() {
 <style scoped lang="scss">
 .goto-home {
     cursor: pointer;
+}
+
+.system-brand {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    color: inherit;
+    cursor: pointer;
+    gap: 10px;
+    height: 60px;
+    width: 100%;
+    padding: 0 8px;
+    overflow: hidden;
+    text-decoration: none;
+    user-select: none;
+}
+
+.system-brand__logo {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.system-brand__name {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--el-text-color-primary);
+    font-weight: 600;
+    line-height: 1;
+    text-align: justify;
+    text-align-last: justify;
+    text-overflow: ellipsis;
+    transform: scaleY(1.2);
+    transform-origin: center;
+    white-space: nowrap;
 }
 
 .el-menu.el-menu--horizontal {

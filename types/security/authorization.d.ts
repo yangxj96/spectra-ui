@@ -107,7 +107,7 @@ declare global {
 
     /** 组织变更影响预览。 */
     type OrganizationChangePreview = {
-        department_id: string;
+        department_id?: string;
         new_parent_id?: string;
         preview_token: string;
         expected_organization_version: number;
@@ -123,8 +123,6 @@ declare global {
         preview_token: string;
     };
 
-    /** 新部门 Apply 请求。部门 ID 来自 Preview 响应。 */
-    type OrganizationCreateApply = OrganizationChangeApply & {
-        department_id: string;
-    };
+    /** 新部门 Apply 请求。部门主键由后端 MyBatis-Plus 插入时生成。 */
+    type OrganizationCreateApply = OrganizationChangeApply;
 }

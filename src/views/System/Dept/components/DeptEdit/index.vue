@@ -74,7 +74,6 @@ const handleOrganizationSave = async () => {
             await AuthorizationApi.applyDepartmentCreate({
                 ...request,
                 expected_organization_version: preview.expected_organization_version,
-                department_id: preview.department_id,
                 preview_token: preview.preview_token
             });
         }

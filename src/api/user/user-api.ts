@@ -40,8 +40,8 @@ export const UserApi = {
      * 重置用户密码
      * @param id 角色ID
      */
-    async passwordResetById(id: string): Promise<void> {
-        return put<void>(`/api/user/password/reset/${id}`);
+    async passwordResetById(id: string): Promise<UserPasswordResetVO> {
+        return put<UserPasswordResetVO>(`/api/user/password/reset/${id}`);
     },
     /**
      * 获取当前用户详情

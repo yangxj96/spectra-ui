@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 
 import { UserApi } from "@/api/user/user-api";
 import avatar from "@/assets/images/avatar.png";
@@ -13,7 +14,8 @@ defineOptions({
     name: "Profile"
 });
 
-const activeTab = ref("info");
+const route = useRoute();
+const activeTab = ref(route.query.tab === "password" ? "password" : "info");
 
 const userInfo = ref<UserProfileVO>({
     id: "",

@@ -28,6 +28,8 @@ declare global {
         mfa_challenge_id?: string;
         // MFA 预认证挑战过期时间
         mfa_challenge_expires_at?: number;
+        // 是否需要先修改临时密码
+        password_change_required?: boolean;
     };
 
     /** TOTP 首次登记响应。 */
@@ -150,6 +152,13 @@ declare global {
     type UserCreatedVO = {
         id: string;
         username: string;
+    };
+
+    /** 管理员重置密码后的一次性临时凭证。 */
+    type UserPasswordResetVO = {
+        temporary_password: string;
+        expires_at: string;
+        must_change: boolean;
     };
 
     // 用户表单相关使用的

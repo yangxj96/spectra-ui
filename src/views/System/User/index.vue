@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { DepartmentApi } from "@/api/user/department-api.ts";
@@ -21,6 +21,8 @@ const organizationTree = ref<DepartmentTreeVO[]>([]);
 
 const dictStore = useDictStore();
 const router = useRouter();
+const temporaryPasswordDialogVisible = ref(false);
+const temporaryPasswordResult = ref<UserPasswordResetVO>();
 
 // table分页请求
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<UserPageVO>(
@@ -77,15 +79,39 @@ const authorizationStatusMeta: Record<
 const authorizationStatusOf = (status: UserAuthorizationStatus | undefined) =>
     authorizationStatusMeta[status ?? "UNCONFIGURED"];
 
+const temporaryPasswordExpiresText = computed(() => {
+    const expiresAt = temporaryPasswordResult.value?.expires_at;
+    return expiresAt ? new Date(expiresAt).toLocaleString() : "—";
+});
+
 // 用户重置密码
-const handleTableItemResetPassword = (row: UserPageVO) => {
-    console.log(`重置密码:${JSON.stringify(row)}`);
-    MessageUtils.box.confirm(`是否要重置[${row.username}]的密码`, "提示").then(async () => {
-        await UserApi.passwordResetById(row.id);
-        MessageUtils.success("重置成功", () => {
-            handlerConditionQuery();
-        });
-    });
+const handleTableItemResetPassword = async (row: UserPageVO) => {
+    try {
+        await MessageUtils.box.confirm(`是否要重置[${row.username}]的密码`, "提示");
+    } catch {
+        return;
+    }
+
+    const result = await UserApi.passwordResetById(row.id);
+    temporaryPasswordResult.value = result;
+    temporaryPasswordDialogVisible.value = true;
+    await handlerConditionQuery();
+};
+
+const handleCopyTemporaryPassword = async () => {
+    const password = temporaryPasswordResult.value?.temporary_password;
+    if (!password) return;
+
+    try {
+        await navigator.clipboard.writeText(password);
+        MessageUtils.success("临时密码已复制");
+    } catch {
+        MessageUtils.error("复制失败，请手动复制临时密码");
+    }
+};
+
+const handleTemporaryPasswordDialogClosed = () => {
+    temporaryPasswordResult.value = undefined;
 };
 
 // 组织机构树节点被单击
@@ -232,6 +258,42 @@ onMounted(async () => {
                 @current-change="handleCurrentChange" />
         </el-col>
     </el-row>
+
+    <el-dialog
+        v-model="temporaryPasswordDialogVisible"
+        title="临时密码（仅显示一次）"
+        width="500px"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+        @closed="handleTemporaryPasswordDialogClosed">
+        <el-alert
+            title="请立即复制并安全转交给用户"
+            description="关闭此窗口后将无法再次查看临时密码；如遗失，请重新执行重置密码。用户首次登录后必须修改密码。"
+            type="warning"
+            :closable="false"
+            show-icon />
+        <div v-if="temporaryPasswordResult" class="temporary-password-content">
+            <div class="temporary-password-field">
+                <span class="temporary-password-label">临时密码</span>
+                <div class="temporary-password-input">
+                    <el-input
+                        :model-value="temporaryPasswordResult.temporary_password"
+                        type="password"
+                        readonly
+                        show-password
+                        autocomplete="off" />
+                    <el-button type="primary" plain @click="handleCopyTemporaryPassword">复制</el-button>
+                </div>
+            </div>
+            <div class="temporary-password-meta">
+                <span>有效期至</span>
+                <strong>{{ temporaryPasswordExpiresText }}</strong>
+            </div>
+        </div>
+        <template #footer>
+            <el-button type="primary" @click="temporaryPasswordDialogVisible = false">我已保存</el-button>
+        </template>
+    </el-dialog>
 </template>
 
 <style scoped lang="scss">
@@ -248,5 +310,43 @@ onMounted(async () => {
 
 .box__body {
     height: 90%;
+}
+
+.temporary-password-content {
+    margin-top: 20px;
+}
+
+.temporary-password-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.temporary-password-label,
+.temporary-password-meta span {
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+}
+
+.temporary-password-input {
+    display: flex;
+    gap: 10px;
+
+    .el-input {
+        flex: 1;
+    }
+}
+
+.temporary-password-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--el-border-color-lighter);
+
+    strong {
+        color: var(--el-text-color-primary);
+        font-weight: 500;
+    }
 }
 </style>

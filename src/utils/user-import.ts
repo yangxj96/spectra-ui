@@ -24,6 +24,54 @@ export const USER_IMPORT_HEADER_LABELS: Record<UserImportHeader, string> = {
     authorization_profile_code: "授权方案编码"
 };
 
+/** 批量导入错误分类。 */
+export type UserImportErrorCategory = "REQUIRED" | "FORMAT" | "DUPLICATE" | "REFERENCE" | "AUTHORIZATION" | "OTHER";
+
+export const USER_IMPORT_ERROR_CATEGORY_LABELS: Record<UserImportErrorCategory, string> = {
+    REQUIRED: "必填字段",
+    FORMAT: "格式错误",
+    DUPLICATE: "重复数据",
+    REFERENCE: "组织或字典",
+    AUTHORIZATION: "授权配置",
+    OTHER: "其他错误"
+};
+
+/** 根据后端当前错误文案归类，便于管理员快速筛选。 */
+export function classifyUserImportError(message: string): UserImportErrorCategory {
+    if (message.includes("不能为空")) return "REQUIRED";
+    if (message.includes("格式不正确")) return "FORMAT";
+    if (message.includes("重复") || message.includes("已存在")) return "DUPLICATE";
+    if (message.includes("部门") || message.includes("语言") || message.includes("时区")) return "REFERENCE";
+    if (
+        message.includes("授权") ||
+        message.includes("Role") ||
+        message.includes("Permission") ||
+        message.includes("Boundary")
+    ) {
+        return "AUTHORIZATION";
+    }
+    return "OTHER";
+}
+
+/** 将错误行序列化为可下载的 CSV 明细。 */
+export function serializeUserImportErrors(rows: UserImportRowResult[]): string {
+    const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
+    const headers = ["row_number", "row_key", "state", "error_type", "error"];
+    const records = rows.flatMap(row =>
+        (row.errors?.length ? row.errors : ["处理失败，请重新 Preview"]).map(error => [
+            String(row.row_number),
+            row.row_key,
+            row.state,
+            USER_IMPORT_ERROR_CATEGORY_LABELS[classifyUserImportError(error)],
+            error
+        ])
+    );
+    return [headers.join(","), ...records.map(record => record.map(escape).join(","))].join("\n");
+}
+
+/** 当前固定文本导入的浏览器端文件大小上限。 */
+export const MAX_USER_IMPORT_FILE_SIZE = 5 * 1024 * 1024;
+
 /**
  * 解析固定表头的 CSV 文本。
  * 支持双引号包裹字段、字段内逗号和换行；首行为固定模板表头。

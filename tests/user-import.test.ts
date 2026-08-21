@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { parseUserImportCsv, serializeUserImportRows, sha256Text } from "@/utils/user-import.ts";
+import {
+    classifyUserImportError,
+    parseUserImportCsv,
+    serializeUserImportErrors,
+    serializeUserImportRows,
+    sha256Text
+} from "@/utils/user-import.ts";
 
 describe("用户批量导入工具", () => {
     it("应解析带引号逗号和换行的 CSV 行", () => {
@@ -50,5 +56,21 @@ describe("用户批量导入工具", () => {
 
     it("应生成稳定的 SHA-256 摘要", async () => {
         expect(await sha256Text("spectra")).toBe("e285cdd85064e369f2a8abef7052b621d9e596b3a29a8aadba8070de08c566c0");
+    });
+
+    it("应按错误类型归类并导出错误明细", () => {
+        expect(classifyUserImportError("手机号码不能为空")).toBe("REQUIRED");
+        expect(classifyUserImportError("邮箱在导入文件中重复")).toBe("DUPLICATE");
+        expect(
+            serializeUserImportErrors([
+                {
+                    id: "row-id",
+                    row_number: 2,
+                    row_key: "zhangsan",
+                    state: "ERROR",
+                    errors: ["手机号码不能为空"]
+                }
+            ])
+        ).toContain('"2","zhangsan","ERROR","必填字段","手机号码不能为空"');
     });
 });

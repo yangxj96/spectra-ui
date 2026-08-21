@@ -5,12 +5,17 @@ import { useRouter } from "vue-router";
 import { UserImportApi } from "@/api/user/user-import-api.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import {
+    classifyUserImportError,
     createUserImportIdempotencyKey,
+    MAX_USER_IMPORT_FILE_SIZE,
     parseUserImportCsv,
     serializeUserImportRows,
+    serializeUserImportErrors,
     sha256Text,
+    USER_IMPORT_ERROR_CATEGORY_LABELS,
     USER_IMPORT_HEADERS,
     USER_IMPORT_HEADER_LABELS,
+    type UserImportErrorCategory,
     type UserImportHeader
 } from "@/utils/user-import.ts";
 
@@ -27,10 +32,25 @@ const errorRows = ref<UserImportRowResult[]>([]);
 const parseError = ref("");
 const idempotencyKey = ref("");
 const skipExisting = ref(true);
+const errorCategory = ref<"ALL" | UserImportErrorCategory>("ALL");
 
 const previewReady = computed(
     () => task.value?.status === "PREVIEWED" && Boolean(task.value.preview_token) && task.value.error_rows === 0
 );
+const filteredErrorRows = computed(() => {
+    if (errorCategory.value === "ALL") return errorRows.value;
+    return errorRows.value.filter(row =>
+        row.errors?.some(error => classifyUserImportError(error) === errorCategory.value)
+    );
+});
+const errorCategoryOptions = computed(() => {
+    const categories = new Set(
+        errorRows.value.flatMap(row => (row.errors ?? []).map(error => classifyUserImportError(error)))
+    );
+    return Object.entries(USER_IMPORT_ERROR_CATEGORY_LABELS)
+        .filter(([category]) => categories.has(category as UserImportErrorCategory))
+        .map(([value, label]) => ({ value: value as UserImportErrorCategory, label }));
+});
 const resultTitle = computed(() => {
     if (task.value?.status === "SUCCEEDED") return "批量导入已完成";
     if (task.value?.status === "PARTIAL_FAILED") return "批量导入部分完成";
@@ -61,6 +81,10 @@ function emptyRow(): UserImportRow {
 
 async function handleFileChange(file: UploadFile): Promise<void> {
     if (!file.raw) return;
+    if (file.raw.size > MAX_USER_IMPORT_FILE_SIZE) {
+        MessageUtils.warning("导入文件不能超过 5 MB");
+        return;
+    }
     if (!/\.(csv|txt)$/i.test(file.name)) {
         MessageUtils.warning("当前仅支持 CSV 或 TXT 文件，Excel 解析将在后续版本接入");
         return;
@@ -108,6 +132,22 @@ function downloadTemplate(): void {
     URL.revokeObjectURL(url);
 }
 
+function downloadErrors(): void {
+    if (!filteredErrorRows.value.length) {
+        MessageUtils.warning("当前筛选条件下没有错误明细");
+        return;
+    }
+    const blob = new Blob(["\uFEFF", serializeUserImportErrors(filteredErrorRows.value)], {
+        type: "text/csv;charset=utf-8"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "用户批量导入错误明细.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
 async function handlePreview(): Promise<void> {
     if (!rows.value.length) {
         MessageUtils.warning("请先上传文件或解析粘贴的数据");
@@ -127,6 +167,7 @@ async function handlePreview(): Promise<void> {
         });
         task.value = nextTask;
         errorRows.value = await UserImportApi.errors(nextTask.id);
+        errorCategory.value = "ALL";
         activeStep.value = 1;
     } catch (error: unknown) {
         MessageUtils.error(error);
@@ -189,6 +230,11 @@ function stateLabel(state: string): string {
 
 function errorSummary(row: UserImportRowResult): string {
     return row.errors?.join("；") || "处理失败，请查看服务端日志或重新 Preview";
+}
+
+function errorTypeLabel(row: UserImportRowResult): string {
+    const categories = new Set((row.errors ?? []).map(error => classifyUserImportError(error)));
+    return [...categories].map(category => USER_IMPORT_ERROR_CATEGORY_LABELS[category]).join("、") || "其他错误";
 }
 
 function headerLabel(header: UserImportHeader): string {
@@ -343,15 +389,33 @@ function headerLabel(header: UserImportHeader): string {
 
                 <div v-if="errorRows.length" class="error-section">
                     <div class="subsection-title">
-                        <strong>错误明细</strong>
-                        <span>返回上一步后，可按行号修正本地数据。</span>
+                        <div class="error-toolbar-title">
+                            <strong>错误明细</strong>
+                            <span>返回上一步后，可按行号修正本地数据。</span>
+                        </div>
+                        <div class="error-toolbar-actions">
+                            <el-select v-model="errorCategory" size="small" placeholder="筛选错误类型">
+                                <el-option label="全部错误" value="ALL" />
+                                <el-option
+                                    v-for="option in errorCategoryOptions"
+                                    :key="option.value"
+                                    :label="option.label"
+                                    :value="option.value" />
+                            </el-select>
+                            <el-button size="small" plain @click="downloadErrors">下载错误明细</el-button>
+                        </div>
                     </div>
-                    <el-table :data="errorRows" border stripe>
+                    <el-table :data="filteredErrorRows" border stripe>
                         <el-table-column prop="row_number" label="行号" width="90" align="center" />
                         <el-table-column prop="row_key" label="行标识" width="180" show-overflow-tooltip />
                         <el-table-column label="状态" width="100" align="center">
                             <template #default="scope">
                                 <el-tag type="danger">{{ stateLabel(scope.row.state) }}</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="类型" width="130" align="center">
+                            <template #default="scope">
+                                {{ errorTypeLabel(scope.row) }}
                             </template>
                         </el-table-column>
                         <el-table-column label="错误信息" min-width="420">
@@ -387,15 +451,33 @@ function headerLabel(header: UserImportHeader): string {
 
                 <div v-if="errorRows.length" class="error-section">
                     <div class="subsection-title">
-                        <strong>失败明细</strong>
-                        <span>修正失败行后可以重新发起一次导入。</span>
+                        <div class="error-toolbar-title">
+                            <strong>失败明细</strong>
+                            <span>修正失败行后可以重新发起一次导入。</span>
+                        </div>
+                        <div class="error-toolbar-actions">
+                            <el-select v-model="errorCategory" size="small" placeholder="筛选错误类型">
+                                <el-option label="全部错误" value="ALL" />
+                                <el-option
+                                    v-for="option in errorCategoryOptions"
+                                    :key="option.value"
+                                    :label="option.label"
+                                    :value="option.value" />
+                            </el-select>
+                            <el-button size="small" plain @click="downloadErrors">下载错误明细</el-button>
+                        </div>
                     </div>
-                    <el-table :data="errorRows" border stripe>
+                    <el-table :data="filteredErrorRows" border stripe>
                         <el-table-column prop="row_number" label="行号" width="90" align="center" />
                         <el-table-column prop="row_key" label="行标识" width="180" show-overflow-tooltip />
                         <el-table-column label="状态" width="100" align="center">
                             <template #default="scope">
                                 <el-tag type="danger">{{ stateLabel(scope.row.state) }}</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="类型" width="130" align="center">
+                            <template #default="scope">
+                                {{ errorTypeLabel(scope.row) }}
                             </template>
                         </el-table-column>
                         <el-table-column label="错误信息" min-width="420">
@@ -653,6 +735,17 @@ function headerLabel(header: UserImportHeader): string {
     margin-bottom: 12px;
 }
 
+.error-toolbar-title,
+.error-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.error-toolbar-actions .el-select {
+    width: 140px;
+}
+
 .result-section {
     min-height: 420px;
 }
@@ -710,9 +803,16 @@ function headerLabel(header: UserImportHeader): string {
     .section-heading,
     .data-toolbar,
     .source-actions,
-    .action-bar {
+    .action-bar,
+    .subsection-title {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .error-toolbar-title,
+    .error-toolbar-actions {
+        align-items: flex-start;
+        flex-wrap: wrap;
     }
 
     .data-toolbar > div:first-child,

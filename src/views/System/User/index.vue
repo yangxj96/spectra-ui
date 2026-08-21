@@ -40,6 +40,39 @@ const handleUserEdit = (row: UserPageVO) => {
     router.push({ name: "SystemUserEdit", params: { id: row.id } });
 };
 
+const handleUserAuthorization = (row: UserPageVO) => {
+    router.push({ name: "SystemUserEdit", params: { id: row.id }, query: { step: "authorization" } });
+};
+
+const authorizationStatusMeta: Record<
+    UserAuthorizationStatus,
+    { label: string; type: "success" | "warning" | "danger" | "info"; description: string }
+> = {
+    UNCONFIGURED: {
+        label: "未配置",
+        type: "info",
+        description: "该用户还没有 RoleAssignment，需要配置角色授权。"
+    },
+    INCOMPLETE: {
+        label: "授权不完整",
+        type: "warning",
+        description: "已配置角色，但仍有 Permission 缺少访问范围。"
+    },
+    ACTIVE: {
+        label: "已生效",
+        type: "success",
+        description: "当前有效角色和 Permission Boundary 均已生效。"
+    },
+    PARTIAL: {
+        label: "部分失效",
+        type: "danger",
+        description: "部分授权已撤销、过期、停用或未完整生效。"
+    }
+};
+
+const authorizationStatusOf = (status: UserAuthorizationStatus | undefined) =>
+    authorizationStatusMeta[status ?? "UNCONFIGURED"];
+
 // 用户重置密码
 const handleTableItemResetPassword = (row: UserPageVO) => {
     console.log(`重置密码:${JSON.stringify(row)}`);
@@ -138,6 +171,20 @@ onMounted(async () => {
                 </el-table-column>
                 <el-table-column
                     align="center"
+                    width="130"
+                    show-overflow-tooltip
+                    label="授权状态"
+                    prop="authorization_status">
+                    <template #default="scope">
+                        <el-tooltip :content="authorizationStatusOf(scope.row.authorization_status).description">
+                            <el-tag :type="authorizationStatusOf(scope.row.authorization_status).type">
+                                {{ authorizationStatusOf(scope.row.authorization_status).label }}
+                            </el-tag>
+                        </el-tooltip>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                    align="center"
                     width="150"
                     show-overflow-tooltip
                     label="所属组织"
@@ -153,7 +200,7 @@ onMounted(async () => {
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column align="center" width="160" fixed="right" label="操作">
+                <el-table-column align="center" width="230" fixed="right" label="操作">
                     <template #default="scope">
                         <el-tooltip content="重置密码" placement="top">
                             <el-button link type="primary" @click="handleTableItemResetPassword(scope.row)">
@@ -165,6 +212,7 @@ onMounted(async () => {
                                 <ComponentsIcons name="icon-user-edit" style="width: 1.4em; height: 1.4em" />
                             </el-button>
                         </el-tooltip>
+                        <el-button link type="primary" @click="handleUserAuthorization(scope.row)">配置授权</el-button>
                     </template>
                 </el-table-column>
             </el-table>

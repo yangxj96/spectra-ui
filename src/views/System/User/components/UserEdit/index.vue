@@ -63,6 +63,7 @@ async function load(): Promise<void> {
 
         if (isEditing.value) {
             Object.assign(form, userConverter.toForm(await UserApi.detail(userId.value)));
+            if (route.query.step === "authorization") activeStep.value = 1;
         }
     } catch (error: unknown) {
         MessageUtils.error(error);

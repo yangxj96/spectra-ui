@@ -37,6 +37,8 @@ declare global {
         secret: string;
     };
 
+    type UserAuthorizationStatus = "UNCONFIGURED" | "INCOMPLETE" | "ACTIVE" | "PARTIAL";
+
     // 用户分页查询的实体
     type UserPageVO = {
         // 主键
@@ -47,6 +49,8 @@ declare global {
         avatar: string;
         // 状态
         status: number;
+        // 授权状态
+        authorization_status: UserAuthorizationStatus;
         // 真实姓名
         real_name: string;
         // 性别

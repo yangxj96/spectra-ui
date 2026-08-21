@@ -43,7 +43,9 @@ declare global {
         role_kind: string;
         role_name: string;
         role_system_managed: boolean;
+        role_state: "ACTIVE" | "DISABLED";
         role_version: number;
+        role_permission_count: number;
         version: number;
         state: "ACTIVE" | "REVOKED" | "EXPIRED";
         valid_from?: string;

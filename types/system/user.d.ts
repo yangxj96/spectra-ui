@@ -89,6 +89,7 @@ declare global {
         error_rows: number;
         skipped_rows: number;
         applied_rows: number;
+        completed_rows: number;
         assignment_count: number;
         access_boundary_count: number;
         grant_boundary_count: number;

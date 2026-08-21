@@ -20,7 +20,7 @@ export const UserImportApi = {
         return get<UserImportRowResult[]>(`/api/user/imports/${id}/errors`, undefined, USER_IMPORT_API_OPTIONS);
     },
 
-    apply(id: string, params: UserImportApplyFrom): Promise<void> {
-        return post<void>(`/api/user/imports/${id}/apply`, params, USER_IMPORT_API_OPTIONS);
+    apply(id: string, params: UserImportApplyFrom): Promise<UserImportTask> {
+        return post<UserImportTask>(`/api/user/imports/${id}/apply`, params, USER_IMPORT_API_OPTIONS);
     }
 };

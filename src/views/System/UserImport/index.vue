@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { UserImportApi } from "@/api/user/user-import-api.ts";
@@ -34,6 +34,8 @@ const parseError = ref("");
 const idempotencyKey = ref("");
 const skipExisting = ref(true);
 const errorCategory = ref<"ALL" | UserImportErrorCategory>("ALL");
+let pollingTimer: ReturnType<typeof setInterval> | null = null;
+let refreshInFlight = false;
 
 const previewReady = computed(
     () => task.value?.status === "PREVIEWED" && Boolean(task.value.preview_token) && task.value.error_rows === 0
@@ -53,17 +55,24 @@ const errorCategoryOptions = computed(() => {
         .map(([value, label]) => ({ value: value as UserImportErrorCategory, label }));
 });
 const resultTitle = computed(() => {
+    if (task.value?.status === "APPLYING") return "正在应用批量导入";
     if (task.value?.status === "SUCCEEDED") return "批量导入已完成";
     if (task.value?.status === "PARTIAL_FAILED") return "批量导入部分完成";
     return "批量导入未完成";
 });
 const resultDescription = computed(() => {
+    if (task.value?.status === "APPLYING") return "用户和授权方案正在后台处理，可以留在当前页面查看进度。";
     if (task.value?.status === "SUCCEEDED") return "用户和授权方案已经按预览结果完成处理。";
     if (task.value?.status === "PARTIAL_FAILED") return "部分行处理失败，请查看失败明细并修正后重新导入。";
     return "导入任务没有完成，请查看明细或重新开始。";
 });
+const progressPercentage = computed(() => {
+    if (!task.value || !task.value.total_rows) return 0;
+    return Math.min(100, Math.round((task.value.completed_rows / task.value.total_rows) * 100));
+});
 
 function handleBack(): void {
+    stopPolling();
     router.push({ name: "SystemUser" });
 }
 
@@ -205,10 +214,10 @@ async function handleApply(): Promise<void> {
 
     loading.value = true;
     try {
-        await UserImportApi.apply(task.value.id, { preview_token: task.value.preview_token });
-        task.value = await UserImportApi.detail(task.value.id);
-        errorRows.value = await UserImportApi.errors(task.value.id);
+        task.value = await UserImportApi.apply(task.value.id, { preview_token: task.value.preview_token });
         activeStep.value = 2;
+        await refreshTask();
+        startPolling();
     } catch (error: unknown) {
         MessageUtils.error(error);
     } finally {
@@ -216,7 +225,43 @@ async function handleApply(): Promise<void> {
     }
 }
 
+function isTerminal(status: UserImportTaskStatus): boolean {
+    return ["SUCCEEDED", "PARTIAL_FAILED", "FAILED", "EXPIRED"].includes(status);
+}
+
+async function refreshTask(): Promise<void> {
+    if (!task.value || refreshInFlight) return;
+    const taskId = task.value.id;
+    refreshInFlight = true;
+    try {
+        const latestTask = await UserImportApi.detail(taskId);
+        if (task.value?.id !== taskId) return;
+        task.value = latestTask;
+        if (isTerminal(latestTask.status)) {
+            errorRows.value = await UserImportApi.errors(taskId);
+            stopPolling();
+        }
+    } catch (error: unknown) {
+        stopPolling();
+        MessageUtils.error(error);
+    } finally {
+        refreshInFlight = false;
+    }
+}
+
+function startPolling(): void {
+    stopPolling();
+    if (!task.value || isTerminal(task.value.status)) return;
+    pollingTimer = setInterval(() => void refreshTask(), 1000);
+}
+
+function stopPolling(): void {
+    if (pollingTimer) clearInterval(pollingTimer);
+    pollingTimer = null;
+}
+
 function startOver(): void {
+    stopPolling();
     activeStep.value = 0;
     sourceText.value = "";
     fileName.value = "";
@@ -249,6 +294,8 @@ function errorTypeLabel(row: UserImportRowResult): string {
 function headerLabel(header: UserImportHeader): string {
     return USER_IMPORT_HEADER_LABELS[header];
 }
+
+onUnmounted(stopPolling);
 </script>
 
 <template>
@@ -452,10 +499,18 @@ function headerLabel(header: UserImportHeader): string {
                 </div>
 
                 <div v-if="task" class="stats-grid result-stats">
+                    <el-statistic title="已完成" :value="task.completed_rows" />
                     <el-statistic title="成功创建" :value="task.applied_rows" />
                     <el-statistic title="跳过" :value="task.skipped_rows" />
                     <el-statistic title="失败" :value="task.error_rows" />
-                    <el-statistic title="总行数" :value="task.total_rows" />
+                </div>
+
+                <div v-if="task?.status === 'APPLYING'" class="progress-section">
+                    <div class="progress-heading">
+                        <strong>正在处理</strong>
+                        <span>{{ task.completed_rows }} / {{ task.total_rows }} 行</span>
+                    </div>
+                    <el-progress :percentage="progressPercentage" :stroke-width="10" />
                 </div>
 
                 <div v-if="errorRows.length" class="error-section">
@@ -496,7 +551,7 @@ function headerLabel(header: UserImportHeader): string {
                         </el-table-column>
                     </el-table>
                 </div>
-                <el-empty v-else description="没有失败明细" />
+                <el-empty v-else-if="task?.status !== 'APPLYING'" description="没有失败明细" />
 
                 <div class="action-bar">
                     <el-button @click="handleBack">返回用户列表</el-button>
@@ -790,6 +845,19 @@ function headerLabel(header: UserImportHeader): string {
     width: min(760px, 100%);
     margin: 0 auto 28px;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.progress-section {
+    width: min(760px, 100%);
+    margin: 0 auto 28px;
+}
+
+.progress-heading {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
 }
 
 @media (max-width: 900px) {

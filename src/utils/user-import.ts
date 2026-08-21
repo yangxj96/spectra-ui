@@ -24,6 +24,39 @@ export const USER_IMPORT_HEADER_LABELS: Record<UserImportHeader, string> = {
     authorization_profile_code: "授权方案编码"
 };
 
+/** 用户批量导入模板对外展示的中文表头。 */
+export const USER_IMPORT_TEMPLATE_HEADERS = [
+    "用户名",
+    "真实姓名",
+    "手机号码",
+    "邮箱",
+    "部门编码",
+    "语言",
+    "时区",
+    "授权方案编码"
+] as const;
+
+const USER_IMPORT_HEADER_ALIASES: Record<string, UserImportHeader> = {
+    username: "username",
+    real_name: "real_name",
+    phone: "phone",
+    email: "email",
+    department_code: "department_code",
+    language: "language",
+    timezone: "timezone",
+    authorization_profile_code: "authorization_profile_code",
+    用户名: "username",
+    真实姓名: "real_name",
+    手机号码: "phone",
+    邮箱: "email",
+    部门编码: "department_code",
+    语言: "language",
+    时区: "timezone",
+    授权方案编码: "authorization_profile_code"
+};
+
+const USER_IMPORT_REFERENCE_HEADERS = new Set<UserImportHeader>(["department_code", "authorization_profile_code"]);
+
 /** 批量导入错误分类。 */
 export type UserImportErrorCategory = "REQUIRED" | "FORMAT" | "DUPLICATE" | "REFERENCE" | "AUTHORIZATION" | "OTHER";
 
@@ -53,17 +86,27 @@ export function classifyUserImportError(message: string): UserImportErrorCategor
     return "OTHER";
 }
 
+/** 将导入错误中的授权边界术语转换为中文，便于管理员阅读。 */
+export function localizeUserImportError(message: string): string {
+    return message
+        .replaceAll("Permission-specific Access Boundary", "按权限配置的访问边界")
+        .replaceAll("Access Boundary", "访问边界")
+        .replaceAll("Grant Boundary", "授权边界")
+        .replaceAll("Preview", "校验")
+        .replaceAll("Apply", "应用");
+}
+
 /** 将错误行序列化为可下载的 CSV 明细。 */
 export function serializeUserImportErrors(rows: UserImportRowResult[]): string {
     const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
-    const headers = ["row_number", "row_key", "state", "error_type", "error"];
+    const headers = ["行号", "行标识", "状态", "错误类型", "错误信息"];
     const records = rows.flatMap(row =>
-        (row.errors?.length ? row.errors : ["处理失败，请重新 Preview"]).map(error => [
+        (row.errors?.length ? row.errors : ["处理失败，请重新校验"]).map(error => [
             String(row.row_number),
             row.row_key,
             row.state,
             USER_IMPORT_ERROR_CATEGORY_LABELS[classifyUserImportError(error)],
-            error
+            localizeUserImportError(error)
         ])
     );
     return [headers.join(","), ...records.map(record => record.map(escape).join(","))].join("\n");
@@ -101,18 +144,28 @@ export async function parseUserImportFile(file: File): Promise<UserImportRow[]> 
         defval: ""
     });
     const records = values.map(record => record.map(value => String(value ?? "")));
-    return parseUserImportRecords(records);
+    const optionValues = workbook.Sheets["下拉选项"]
+        ? utils.sheet_to_json<unknown[]>(workbook.Sheets["下拉选项"], {
+              header: 1,
+              raw: false,
+              defval: ""
+          })
+        : [];
+    return parseUserImportRecords(records, readReferenceMappings(optionValues));
 }
 
-function parseUserImportRecords(records: string[][]): UserImportRow[] {
+function parseUserImportRecords(records: string[][], referenceMappings = new Map<string, string>()): UserImportRow[] {
     if (!records.length) throw new Error("CSV 文件不能为空");
 
-    const headers = records[0].map(value => value.trim().toLowerCase());
+    const headers = records[0].map(value => {
+        const header = value.trim();
+        return USER_IMPORT_HEADER_ALIASES[header] ?? USER_IMPORT_HEADER_ALIASES[header.toLowerCase()];
+    });
     if (
         headers.length !== USER_IMPORT_HEADERS.length ||
         headers.some((value, index) => value !== USER_IMPORT_HEADERS[index])
     ) {
-        throw new Error(`表头必须按模板顺序填写：${USER_IMPORT_HEADERS.join(",")}`);
+        throw new Error(`表头必须按模板顺序填写：${USER_IMPORT_TEMPLATE_HEADERS.join(",")}`);
     }
 
     const rows = records.slice(1).flatMap((record, index) => {
@@ -122,13 +175,80 @@ function parseUserImportRecords(records: string[][]): UserImportRow[] {
         }
         return [
             Object.fromEntries(
-                USER_IMPORT_HEADERS.map((header, index) => [header, record[index]?.trim() ?? ""])
+                USER_IMPORT_HEADERS.map((header, index) => {
+                    const value = record[index]?.trim() ?? "";
+                    return [
+                        header,
+                        USER_IMPORT_REFERENCE_HEADERS.has(header)
+                            ? normalizeReferenceCode(value, referenceMappings)
+                            : value
+                    ];
+                })
             ) as UserImportRow
         ];
     });
 
     if (!rows.length) throw new Error("CSV 文件至少需要一行用户数据");
     return rows;
+}
+
+/** 将 Excel 下拉项中的“名称｜编码”还原为后端使用的编码。 */
+function normalizeReferenceCode(value: string, referenceMappings: ReadonlyMap<string, string>): string {
+    const mappedCode = referenceMappings.get(value);
+    if (mappedCode) return mappedCode;
+
+    const separatorIndex = Math.max(value.lastIndexOf("｜"), value.lastIndexOf("|"));
+    return separatorIndex >= 0 ? value.slice(separatorIndex + 1).trim() : value;
+}
+
+function readReferenceMappings(records: unknown[][]): Map<string, string> {
+    const mappings = new Map<string, string>();
+    if (!records.length) return mappings;
+
+    const headers = records[0].map(value => String(value ?? "").trim());
+    addReferenceMappings(mappings, records, headers, {
+        displayHeader: "部门选项",
+        codeHeader: "部门编码",
+        nameHeader: "部门名称"
+    });
+    addReferenceMappings(mappings, records, headers, {
+        displayHeader: "授权方案选项",
+        codeHeader: "授权方案编码",
+        nameHeader: "授权方案名称"
+    });
+    return mappings;
+}
+
+type ReferenceMappingColumns = {
+    displayHeader: string;
+    codeHeader: string;
+    nameHeader: string;
+};
+
+function addReferenceMappings(
+    mappings: Map<string, string>,
+    records: unknown[][],
+    headers: string[],
+    columns: ReferenceMappingColumns
+): void {
+    const displayIndex = headers.indexOf(columns.displayHeader);
+    const codeIndex = headers.indexOf(columns.codeHeader);
+    const nameIndex = headers.indexOf(columns.nameHeader);
+    if (codeIndex < 0) return;
+
+    records.slice(1).forEach(record => {
+        const code = String(record[codeIndex] ?? "").trim();
+        const name = nameIndex >= 0 ? String(record[nameIndex] ?? "").trim() : "";
+        const display = displayIndex >= 0 ? String(record[displayIndex] ?? "").trim() : "";
+        if (!code) return;
+        if (display) mappings.set(display, code);
+        if (name) {
+            mappings.set(`${name}｜${code}`, code);
+            mappings.set(`${code}｜${name}`, code);
+            mappings.set(`${name}|${code}`, code);
+            mappings.set(`${code}|${name}`, code);
+        }
+    });
 }
 
 /** 将当前编辑后的行重新序列化，作为 Preview 的摘要输入。 */

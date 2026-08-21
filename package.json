@@ -40,6 +40,7 @@
         "@yangxj96/logicflow-plugin-flowable": "file:../logicflow-plugin-flowable",
         "echarts": "6.1.0",
         "element-plus": "2.13.2",
+        "exceljs": "4.4.0",
         "jsoneditor": "10.4.2",
         "p-queue": "9.1.0",
         "pinia": "3.0.4",

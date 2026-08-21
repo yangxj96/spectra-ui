@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { utils, write } from "xlsx";
 
 import {
+    calculateUserImportProgress,
     classifyUserImportError,
     parseUserImportCsv,
     parseUserImportFile,
@@ -11,6 +12,12 @@ import {
 } from "@/utils/user-import.ts";
 
 describe("用户批量导入工具", () => {
+    it("应将导入完成行数转换为百分比并保护边界", () => {
+        expect(calculateUserImportProgress(0, 0)).toBe(0);
+        expect(calculateUserImportProgress(3, 4)).toBe(75);
+        expect(calculateUserImportProgress(5, 4)).toBe(100);
+    });
+
     it("应解析带引号逗号和换行的 CSV 行", () => {
         const rows = parseUserImportCsv(
             [

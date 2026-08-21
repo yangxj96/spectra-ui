@@ -5,6 +5,7 @@ import { useRouter } from "vue-router";
 import { UserImportApi } from "@/api/user/user-import-api.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import {
+    calculateUserImportProgress,
     classifyUserImportError,
     createUserImportIdempotencyKey,
     MAX_USER_IMPORT_FILE_SIZE,
@@ -67,8 +68,7 @@ const resultDescription = computed(() => {
     return "导入任务没有完成，请查看明细或重新开始。";
 });
 const progressPercentage = computed(() => {
-    if (!task.value || !task.value.total_rows) return 0;
-    return Math.min(100, Math.round((task.value.completed_rows / task.value.total_rows) * 100));
+    return task.value ? calculateUserImportProgress(task.value.completed_rows, task.value.total_rows) : 0;
 });
 
 function handleBack(): void {

@@ -72,6 +72,12 @@ export function serializeUserImportErrors(rows: UserImportRowResult[]): string {
 /** 当前固定文本导入的浏览器端文件大小上限。 */
 export const MAX_USER_IMPORT_FILE_SIZE = 5 * 1024 * 1024;
 
+/** 将后台导入任务的完成行数转换为进度百分比。 */
+export function calculateUserImportProgress(completedRows: number, totalRows: number): number {
+    if (totalRows <= 0) return 0;
+    return Math.min(100, Math.round((completedRows / totalRows) * 100));
+}
+
 /**
  * 解析固定表头的 CSV 文本。
  * 支持双引号包裹字段、字段内逗号和换行；首行为固定模板表头。

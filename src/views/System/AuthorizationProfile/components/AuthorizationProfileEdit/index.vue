@@ -44,6 +44,11 @@ const profileEditSteps = [
 ] as const;
 const selectedRoleCodes = ref<string[]>([]);
 const form = reactive<ProfileForm>(createForm());
+const currentAssignmentIndex = ref(0);
+const currentAssignments = computed(() => {
+    const assignment = form.assignments[currentAssignmentIndex.value];
+    return assignment ? [assignment] : [];
+});
 
 const editingId = computed(() => String(route.params.id ?? ""));
 const editorTitle = computed(() => (editingId.value ? "编辑授权方案" : "新建授权方案"));
@@ -122,6 +127,10 @@ function scopeModeLabel(mode: ScopeMode): string {
 
 function roleName(roleCode: string): string {
     return roles.value.find(role => role.code === roleCode)?.name ?? roleCode;
+}
+
+function assignmentIndexOf(assignment: ProfileAssignmentDraft): number {
+    return form.assignments.indexOf(assignment);
 }
 
 function roleAuthorization(roleCode: string): RoleAuthorizationState | undefined {
@@ -207,6 +216,7 @@ async function load(): Promise<void> {
             await Promise.all(profile.assignments.map(assignment => ensureRoleAuthorization(assignment.role_code)));
             Object.assign(form, toDraft(profile));
             selectedRoleCodes.value = form.assignments.map(assignment => assignment.role_code);
+            currentAssignmentIndex.value = 0;
         }
     } catch (error: unknown) {
         MessageUtils.error(error);
@@ -237,6 +247,7 @@ async function handleRoleSelectionChange(roleCodes: string[]): Promise<void> {
             nextAssignments.push(assignment);
         }
         form.assignments = nextAssignments;
+        currentAssignmentIndex.value = Math.min(currentAssignmentIndex.value, Math.max(nextAssignments.length - 1, 0));
     } catch (error: unknown) {
         selectedRoleCodes.value = form.assignments.map(assignment => assignment.role_code);
         MessageUtils.error(error);
@@ -249,6 +260,14 @@ function removeAssignment(index: number): void {
     const [removedAssignment] = form.assignments.splice(index, 1);
     if (removedAssignment) {
         selectedRoleCodes.value = selectedRoleCodes.value.filter(roleCode => roleCode !== removedAssignment.role_code);
+        if (currentAssignmentIndex.value > index) {
+            currentAssignmentIndex.value -= 1;
+        } else {
+            currentAssignmentIndex.value = Math.min(
+                currentAssignmentIndex.value,
+                Math.max(form.assignments.length - 1, 0)
+            );
+        }
     }
 }
 
@@ -497,6 +516,7 @@ async function handleNextStep(): Promise<void> {
         if (!valid) return;
 
         await waitForStepTransition();
+        if (currentStep.value === 1) currentAssignmentIndex.value = 0;
         currentStep.value += 1;
         await nextTick();
     } finally {
@@ -523,6 +543,25 @@ async function handleStepNavigation(step: number): Promise<void> {
         return;
     }
     await handleNextStep();
+}
+
+async function handleAssignmentNavigation(assignmentIndex: number): Promise<void> {
+    if (
+        stepLoading.value ||
+        currentStep.value !== 2 ||
+        assignmentIndex === currentAssignmentIndex.value ||
+        !form.assignments[assignmentIndex]
+    ) {
+        return;
+    }
+    stepLoading.value = true;
+    try {
+        await waitForStepTransition();
+        currentAssignmentIndex.value = assignmentIndex;
+        await nextTick();
+    } finally {
+        stepLoading.value = false;
+    }
 }
 
 async function handleSave(): Promise<void> {
@@ -565,20 +604,39 @@ onMounted(load);
             <div class="profile-edit-workspace">
                 <aside class="profile-side profile-side-left">
                     <nav class="profile-step-nav" aria-label="授权方案编辑步骤">
-                        <button
-                            v-for="(step, index) in profileEditSteps"
-                            :key="step.title"
-                            class="profile-step"
-                            :class="{ 'is-active': currentStep === index, 'is-complete': currentStep > index }"
-                            type="button"
-                            :aria-current="currentStep === index ? 'step' : undefined"
-                            @click="handleStepNavigation(index)">
-                            <span class="profile-step-index">{{ String(index + 1).padStart(2, "0") }}</span>
-                            <span class="profile-step-content">
-                                <strong>{{ step.title }}</strong>
-                                <small>{{ step.description }}</small>
-                            </span>
-                        </button>
+                        <template v-for="(step, index) in profileEditSteps" :key="step.title">
+                            <button
+                                class="profile-step"
+                                :class="{ 'is-active': currentStep === index, 'is-complete': currentStep > index }"
+                                type="button"
+                                :aria-current="currentStep === index ? 'step' : undefined"
+                                @click="handleStepNavigation(index)">
+                                <span class="profile-step-index">{{ String(index + 1).padStart(2, "0") }}</span>
+                                <span class="profile-step-content">
+                                    <strong>{{ step.title }}</strong>
+                                    <small>{{ step.description }}</small>
+                                </span>
+                            </button>
+
+                            <div
+                                v-if="index === 2 && currentStep === 2 && form.assignments.length"
+                                class="profile-substep-nav">
+                                <button
+                                    v-for="(assignment, assignmentIndex) in form.assignments"
+                                    :key="assignment.role_code"
+                                    class="profile-substep"
+                                    :class="{ 'is-active': currentAssignmentIndex === assignmentIndex }"
+                                    type="button"
+                                    :aria-current="currentAssignmentIndex === assignmentIndex ? 'step' : undefined"
+                                    @click="handleAssignmentNavigation(assignmentIndex)">
+                                    <span class="profile-substep-index">3.{{ assignmentIndex + 1 }}</span>
+                                    <span class="profile-substep-content">
+                                        <strong>{{ roleName(assignment.role_code) }}设置</strong>
+                                        <small>{{ assignment.role_code }}</small>
+                                    </span>
+                                </button>
+                            </div>
+                        </template>
                     </nav>
                 </aside>
 
@@ -666,16 +724,24 @@ onMounted(load);
                             <template v-else>
                                 <el-empty v-if="!form.assignments.length" description="尚未配置角色" />
                                 <div
-                                    v-for="(assignment, assignmentIndex) in form.assignments"
+                                    v-for="assignment in currentAssignments"
                                     :key="assignment.role_code"
                                     class="assignment-card">
                                     <div class="assignment-header">
-                                        <div class="assignment-role">
-                                            <strong>{{ roleName(assignment.role_code) }}</strong>
-                                            <span>（{{ assignment.role_code }}）</span>
+                                        <div class="assignment-heading">
+                                            <span class="assignment-section-index">
+                                                3.{{ assignmentIndexOf(assignment) + 1 }}
+                                            </span>
+                                            <div class="assignment-role">
+                                                <strong>{{ roleName(assignment.role_code) }}权限范围设置</strong>
+                                                <span>（{{ assignment.role_code }}）</span>
+                                            </div>
                                         </div>
                                         <el-text type="info">角色版本：{{ assignment.role_version }}</el-text>
-                                        <el-button link type="danger" @click="removeAssignment(assignmentIndex)">
+                                        <el-button
+                                            link
+                                            type="danger"
+                                            @click="removeAssignment(assignmentIndexOf(assignment))">
                                             移除角色
                                         </el-button>
                                     </div>
@@ -992,7 +1058,26 @@ onMounted(load);
 
             <div class="profile-actions">
                 <el-button :disabled="stepLoading" @click="goBack">取消</el-button>
-                <el-button v-if="currentStep > 0" :disabled="stepLoading" @click="handlePreviousStep">上一步</el-button>
+                <el-button
+                    v-if="currentStep > 0 && !(currentStep === 2 && currentAssignmentIndex > 0)"
+                    :disabled="stepLoading"
+                    @click="handlePreviousStep">
+                    上一步
+                </el-button>
+                <el-button
+                    v-if="currentStep === 2 && currentAssignmentIndex > 0"
+                    :disabled="stepLoading"
+                    @click="handleAssignmentNavigation(currentAssignmentIndex - 1)">
+                    上一个角色
+                </el-button>
+                <el-button
+                    v-if="currentStep === 2 && currentAssignmentIndex < form.assignments.length - 1"
+                    type="primary"
+                    :loading="stepLoading"
+                    :disabled="stepLoading"
+                    @click="handleAssignmentNavigation(currentAssignmentIndex + 1)">
+                    下一个角色
+                </el-button>
                 <el-button
                     v-if="currentStep < 2"
                     type="primary"
@@ -1002,7 +1087,7 @@ onMounted(load);
                     下一步
                 </el-button>
                 <el-button
-                    v-else
+                    v-if="currentStep === 2 && currentAssignmentIndex === form.assignments.length - 1"
                     type="primary"
                     :loading="saving || stepLoading"
                     :disabled="stepLoading"
@@ -1140,6 +1225,83 @@ onMounted(load);
     line-height: 18px;
 }
 
+.profile-substep-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: -2px 8px 4px 28px;
+    padding: 4px 0 4px 10px;
+    border-left: 1px solid var(--el-border-color-lighter);
+}
+
+.profile-substep {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 7px;
+    outline: none;
+    background: transparent;
+    color: var(--el-text-color-secondary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.profile-substep:hover {
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-primary);
+}
+
+.profile-substep:focus-visible {
+    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
+}
+
+.profile-substep.is-active {
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+}
+
+.profile-substep-index {
+    flex: 0 0 auto;
+    min-width: 28px;
+    color: inherit;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 18px;
+}
+
+.profile-substep-content {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.profile-substep-content strong {
+    overflow: hidden;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-substep-content small {
+    overflow: hidden;
+    color: var(--el-text-color-secondary);
+    font-size: 11px;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .profile-side-right {
     grid-column: 3;
     min-width: 0;
@@ -1226,11 +1388,6 @@ onMounted(load);
     background: var(--el-fill-color-light);
 }
 
-.profile-steps {
-    flex: 0 0 auto;
-    margin: 0;
-}
-
 .profile-edit-content {
     flex: 1 1 auto;
     min-height: 0;
@@ -1312,11 +1469,36 @@ onMounted(load);
     justify-content: space-between;
 }
 
+.assignment-heading {
+    display: flex;
+    align-items: flex-start;
+    min-width: 0;
+    gap: 10px;
+    margin-right: auto;
+}
+
+.assignment-section-index {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--el-color-primary-light-5);
+    border-radius: 7px;
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
 .assignment-role {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 4px;
-    margin-right: auto;
 }
 
 .assignment-role strong {
@@ -1503,11 +1685,29 @@ onMounted(load);
     }
 
     .profile-step-nav {
+        flex-wrap: wrap;
         flex-direction: row;
     }
 
     .profile-step {
+        flex: 1 1 0;
+    }
+
+    .profile-substep-nav {
+        flex: 1 0 100%;
+        flex-direction: row;
+        margin: 0;
+        padding: 6px 0 0;
+        border-top: 1px solid var(--el-border-color-lighter);
+        border-left: 0;
+    }
+
+    .profile-substep {
         flex: 1;
+    }
+
+    .profile-substep-content small {
+        display: none;
     }
 
     .profile-edit-section {

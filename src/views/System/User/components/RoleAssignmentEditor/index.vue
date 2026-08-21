@@ -286,6 +286,8 @@ const handleSave = async () => {
     }
 };
 
+defineExpose({ save: handleSave });
+
 onMounted(load);
 </script>
 
@@ -470,19 +472,13 @@ onMounted(load);
             </el-card>
 
             <el-empty v-if="!boundaries.length" description="尚未配置权限访问范围" />
-            <div class="assignment-actions">
-                <el-button type="primary" :loading="saving" :disabled="!boundaries.length" @click="handleSave">
-                    预览并应用
-                </el-button>
-            </div>
         </template>
     </template>
 </template>
 
 <style scoped lang="scss">
 .boundary-add-row,
-.boundary-header,
-.assignment-actions {
+.boundary-header {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -604,11 +600,6 @@ onMounted(load);
 
 .boundary-card :deep(.el-checkbox) {
     margin-left: 10px;
-}
-
-.assignment-actions {
-    justify-content: flex-end;
-    margin-top: 16px;
 }
 
 @media (max-width: 768px) {

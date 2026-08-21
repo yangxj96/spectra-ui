@@ -37,6 +37,11 @@ const saving = ref(false);
 const roleSelectionLoading = ref(false);
 const stepLoading = ref(false);
 const currentStep = ref(0);
+const profileEditSteps = [
+    { title: "基本信息", description: "填写方案基本资料" },
+    { title: "选择角色", description: "选择一个或多个角色" },
+    { title: "权限范围设置", description: "配置每个角色的权限范围" }
+] as const;
 const selectedRoleCodes = ref<string[]>([]);
 const form = reactive<ProfileForm>(createForm());
 
@@ -511,6 +516,15 @@ async function handlePreviousStep(): Promise<void> {
     }
 }
 
+async function handleStepNavigation(step: number): Promise<void> {
+    if (step === currentStep.value) return;
+    if (step < currentStep.value) {
+        await handlePreviousStep();
+        return;
+    }
+    await handleNextStep();
+}
+
 async function handleSave(): Promise<void> {
     if (currentStep.value !== 2) return;
     try {
@@ -550,11 +564,22 @@ onMounted(load);
         <div class="profile-edit-shell">
             <div class="profile-edit-workspace">
                 <aside class="profile-side profile-side-left">
-                    <el-steps :active="currentStep" direction="vertical" finish-status="success" class="profile-steps">
-                        <el-step title="基本信息" description="填写方案基本资料" />
-                        <el-step title="选择角色" description="选择一个或多个角色" />
-                        <el-step title="权限范围设置" description="配置每个角色的权限范围" />
-                    </el-steps>
+                    <nav class="profile-step-nav" aria-label="授权方案编辑步骤">
+                        <button
+                            v-for="(step, index) in profileEditSteps"
+                            :key="step.title"
+                            class="profile-step"
+                            :class="{ 'is-active': currentStep === index, 'is-complete': currentStep > index }"
+                            type="button"
+                            :aria-current="currentStep === index ? 'step' : undefined"
+                            @click="handleStepNavigation(index)">
+                            <span class="profile-step-index">{{ String(index + 1).padStart(2, "0") }}</span>
+                            <span class="profile-step-content">
+                                <strong>{{ step.title }}</strong>
+                                <small>{{ step.description }}</small>
+                            </span>
+                        </button>
+                    </nav>
                 </aside>
 
                 <section class="profile-edit-section">
@@ -1002,7 +1027,7 @@ onMounted(load);
 .profile-edit-shell {
     display: flex;
     flex-direction: column;
-    width: min(1440px, 100%);
+    width: min(1600px, 100%);
     height: 100%;
     min-height: 0;
     margin: 0 auto;
@@ -1011,7 +1036,7 @@ onMounted(load);
 .profile-edit-workspace {
     display: grid;
     flex: 1 1 auto;
-    grid-template-columns: minmax(180px, 1fr) minmax(0, 960px) minmax(180px, 1fr);
+    grid-template-columns: max-content minmax(0, 1fr) minmax(220px, 280px);
     min-height: 0;
     gap: 24px;
 }
@@ -1023,33 +1048,101 @@ onMounted(load);
 
 .profile-side-left {
     grid-column: 1;
+    width: max-content;
+    max-width: 260px;
 }
 
-.profile-side-left :deep(.el-step.is-vertical) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 24px;
-    column-gap: 12px;
+.profile-step-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--el-border-color-extra-light);
+    border-radius: 12px;
+    background: var(--el-fill-color-lighter);
 }
 
-.profile-side-left :deep(.el-step.is-vertical .el-step__main) {
-    grid-column: 1;
-    grid-row: 1;
-    min-width: 0;
-    padding-left: 0;
+.profile-step {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    gap: 12px;
+    padding: 12px;
+    border: 0;
+    border-radius: 8px;
+    outline: none;
+    background: transparent;
+    color: var(--el-text-color-secondary);
+    font: inherit;
     text-align: left;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
-.profile-side-left :deep(.el-step.is-vertical .el-step__head) {
-    grid-column: 2;
-    grid-row: 1;
+.profile-step:hover {
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-primary);
 }
 
-.profile-side-left :deep(.el-step.is-vertical .el-step__description) {
-    padding-right: 0;
+.profile-step:focus-visible {
+    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
+}
+
+.profile-step.is-active {
+    background: var(--el-bg-color);
+    color: var(--el-text-color-primary);
+    box-shadow: 0 4px 12px rgb(15 23 42 / 6%);
+}
+
+.profile-step-index {
+    display: inline-flex;
+    flex: 0 0 30px;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--el-border-color);
+    border-radius: 8px;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.profile-step.is-active .profile-step-index,
+.profile-step.is-complete .profile-step-index {
+    border-color: var(--el-color-primary-light-5);
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+}
+
+.profile-step-content {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: 1px;
+}
+
+.profile-step-content strong {
+    color: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+}
+
+.profile-step-content small {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    line-height: 18px;
 }
 
 .profile-side-right {
     grid-column: 3;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1104,6 +1197,7 @@ onMounted(load);
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
+    min-width: 0;
     min-height: 0;
     background: var(--el-bg-color);
 }
@@ -1335,7 +1429,7 @@ onMounted(load);
 
 .profile-actions {
     flex: 0 0 auto;
-    width: min(960px, 100%);
+    width: 100%;
     margin: 0 auto;
     justify-content: flex-end;
     padding: 16px 0 4px;
@@ -1404,6 +1498,16 @@ onMounted(load);
 
     .profile-side-left {
         order: 0;
+        width: 100%;
+        max-width: none;
+    }
+
+    .profile-step-nav {
+        flex-direction: row;
+    }
+
+    .profile-step {
+        flex: 1;
     }
 
     .profile-edit-section {

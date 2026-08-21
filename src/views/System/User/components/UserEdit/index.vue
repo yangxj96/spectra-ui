@@ -16,6 +16,10 @@ import { email, mobile } from "@/utils/verify-rules.ts";
 
 import RoleAssignmentEditor from "../RoleAssignmentEditor/index.vue";
 
+interface RoleAssignmentEditorExpose {
+    save: () => Promise<void>;
+}
+
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
@@ -24,6 +28,10 @@ const userId = computed(() => String(route.params.id ?? ""));
 const isEditing = computed(() => Boolean(userId.value));
 const editorTitle = computed(() => (isEditing.value ? "编辑用户" : "新建用户"));
 const activeStep = ref(0);
+const userEditSteps = [
+    { title: "基本信息", description: "填写用户基础资料" },
+    { title: "角色授权", description: "配置角色和数据访问范围" }
+] as const;
 const form = reactive<UserForm>(
     userConverter.createForm({
         language: appStore.system.default_locale,
@@ -34,7 +42,9 @@ const departmentTree = ref<DepartmentTreeVO[]>([]);
 const emailSuffixes = ref<string[]>([]);
 const loading = ref(false);
 const saving = ref(false);
+const authorizationSaving = ref(false);
 const formRef = useTemplateRef<FormInstance>("formRef");
+const roleAssignmentEditor = useTemplateRef<RoleAssignmentEditorExpose>("roleAssignmentEditor");
 
 const rules: FormRules<UserForm> = {
     username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
@@ -110,6 +120,18 @@ async function handleUserSave(): Promise<void> {
     }
 }
 
+async function handleAuthorizationSave(): Promise<void> {
+    if (!roleAssignmentEditor.value) return;
+    authorizationSaving.value = true;
+    try {
+        await roleAssignmentEditor.value.save();
+    } catch (error: unknown) {
+        if (error !== "cancel" && error !== "close") MessageUtils.error(error);
+    } finally {
+        authorizationSaving.value = false;
+    }
+}
+
 function handleEmailSuggestions(query: string, callback: (results: AutocompleteData) => void): void {
     if (!query) {
         callback([]);
@@ -144,16 +166,22 @@ onMounted(load);
         <div class="user-edit-shell">
             <div class="user-edit-workspace">
                 <aside class="user-edit-side user-edit-side-left">
-                    <el-steps
-                        class="user-edit-steps"
-                        :active="activeStep"
-                        direction="vertical"
-                        finish-status="success"
-                        process-status="process"
-                        @change="handleStepChange">
-                        <el-step title="基本信息" description="填写用户基础资料" />
-                        <el-step title="角色授权" description="配置角色和数据访问范围" />
-                    </el-steps>
+                    <nav class="user-edit-step-nav" aria-label="用户编辑步骤">
+                        <button
+                            v-for="(step, index) in userEditSteps"
+                            :key="step.title"
+                            class="user-edit-step"
+                            :class="{ 'is-active': activeStep === index, 'is-complete': activeStep > index }"
+                            type="button"
+                            :aria-current="activeStep === index ? 'step' : undefined"
+                            @click="handleStepChange(index)">
+                            <span class="user-edit-step-index">{{ String(index + 1).padStart(2, "0") }}</span>
+                            <span class="user-edit-step-content">
+                                <strong>{{ step.title }}</strong>
+                                <small>{{ step.description }}</small>
+                            </span>
+                        </button>
+                    </nav>
                 </aside>
 
                 <section class="user-edit-section">
@@ -286,7 +314,7 @@ onMounted(load);
                         </template>
 
                         <template v-else-if="form.id">
-                            <RoleAssignmentEditor :user-id="form.id" />
+                            <RoleAssignmentEditor ref="roleAssignmentEditor" :user-id="form.id" />
                         </template>
 
                         <el-alert
@@ -332,7 +360,12 @@ onMounted(load);
                 <template v-if="activeStep === 0">
                     <el-button type="primary" :loading="saving" @click="handleUserSave">保存并继续授权</el-button>
                 </template>
-                <el-button v-else @click="activeStep = 0">上一步</el-button>
+                <template v-else>
+                    <el-button @click="activeStep = 0">上一步</el-button>
+                    <el-button type="primary" :loading="authorizationSaving" @click="handleAuthorizationSave">
+                        预览并应用
+                    </el-button>
+                </template>
             </div>
         </div>
     </div>
@@ -351,7 +384,7 @@ onMounted(load);
 .user-edit-shell {
     display: flex;
     flex-direction: column;
-    width: min(1440px, 100%);
+    width: min(1600px, 100%);
     height: 100%;
     min-height: 0;
     margin: 0 auto;
@@ -360,7 +393,7 @@ onMounted(load);
 .user-edit-workspace {
     display: grid;
     flex: 1 1 auto;
-    grid-template-columns: minmax(180px, 1fr) minmax(0, 960px) minmax(180px, 1fr);
+    grid-template-columns: max-content minmax(0, 1fr) minmax(220px, 280px);
     min-height: 0;
     gap: 24px;
 }
@@ -372,33 +405,13 @@ onMounted(load);
 
 .user-edit-side-left {
     grid-column: 1;
-}
-
-.user-edit-side-left :deep(.el-step.is-vertical) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 24px;
-    column-gap: 12px;
-}
-
-.user-edit-side-left :deep(.el-step.is-vertical .el-step__main) {
-    grid-column: 1;
-    grid-row: 1;
-    min-width: 0;
-    padding-left: 0;
-    text-align: left;
-}
-
-.user-edit-side-left :deep(.el-step.is-vertical .el-step__head) {
-    grid-column: 2;
-    grid-row: 1;
-}
-
-.user-edit-side-left :deep(.el-step.is-vertical .el-step__description) {
-    padding-right: 0;
+    width: max-content;
+    max-width: 240px;
 }
 
 .user-edit-side-right {
     grid-column: 3;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -427,9 +440,92 @@ onMounted(load);
     scrollbar-gutter: stable;
 }
 
-.user-edit-steps {
-    flex: 0 0 auto;
-    margin: 0;
+.user-edit-step-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--el-border-color-extra-light);
+    border-radius: 12px;
+    background: var(--el-fill-color-lighter);
+}
+
+.user-edit-step {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    gap: 12px;
+    padding: 12px;
+    border: 0;
+    border-radius: 8px;
+    outline: none;
+    background: transparent;
+    color: var(--el-text-color-secondary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.user-edit-step:hover {
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-primary);
+}
+
+.user-edit-step:focus-visible {
+    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
+}
+
+.user-edit-step.is-active {
+    background: var(--el-bg-color);
+    color: var(--el-text-color-primary);
+    box-shadow: 0 4px 12px rgb(15 23 42 / 6%);
+}
+
+.user-edit-step-index {
+    display: inline-flex;
+    flex: 0 0 30px;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--el-border-color);
+    border-radius: 8px;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.user-edit-step.is-active .user-edit-step-index,
+.user-edit-step.is-complete .user-edit-step-index {
+    border-color: var(--el-color-primary-light-5);
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+}
+
+.user-edit-step-content {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: 1px;
+}
+
+.user-edit-step-content strong {
+    color: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+}
+
+.user-edit-step-content small {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    line-height: 18px;
 }
 
 .section-title,
@@ -555,7 +651,7 @@ onMounted(load);
 
 .user-edit-actions {
     flex: 0 0 auto;
-    width: min(960px, 100%);
+    width: 100%;
     margin: 0 auto;
     justify-content: flex-end;
     padding: 16px 0 4px;
@@ -594,6 +690,14 @@ onMounted(load);
         order: 0;
     }
 
+    .user-edit-step-nav {
+        flex-direction: row;
+    }
+
+    .user-edit-step {
+        flex: 1;
+    }
+
     .user-edit-section {
         order: 1;
         min-height: 0;
@@ -612,6 +716,21 @@ onMounted(load);
     .section-title {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .user-edit-step-nav {
+        padding: 6px;
+    }
+
+    .user-edit-step {
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 8px;
+    }
+
+    .user-edit-step-content small {
+        display: none;
     }
 
     :deep(.el-col) {

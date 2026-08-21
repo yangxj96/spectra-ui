@@ -34,6 +34,17 @@ export default [
                 }
             },
             {
+                path: "user/import",
+                name: "SystemUserImport",
+                component: () => import("@/views/System/UserImport/index.vue"),
+                meta: {
+                    title: "批量导入用户",
+                    requiresAuth: true,
+                    requiredMenu: "SystemUser",
+                    activeMenu: "SystemUser"
+                }
+            },
+            {
                 path: "RBAC",
                 name: "SystemRBAC",
                 component: () => import("@/views/System/RBAC/index.vue"),

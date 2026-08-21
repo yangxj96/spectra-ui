@@ -1,0 +1,115 @@
+/** 用户批量导入固定 CSV 模板字段。 */
+export const USER_IMPORT_HEADERS = [
+    "username",
+    "real_name",
+    "phone",
+    "email",
+    "department_code",
+    "language",
+    "timezone",
+    "authorization_profile_code"
+] as const;
+
+export type UserImportHeader = (typeof USER_IMPORT_HEADERS)[number];
+
+/** 用户批量导入页面展示字段。 */
+export const USER_IMPORT_HEADER_LABELS: Record<UserImportHeader, string> = {
+    username: "用户名",
+    real_name: "真实姓名",
+    phone: "手机号码",
+    email: "邮箱",
+    department_code: "部门编码",
+    language: "语言",
+    timezone: "时区",
+    authorization_profile_code: "授权方案编码"
+};
+
+/**
+ * 解析固定表头的 CSV 文本。
+ * 支持双引号包裹字段、字段内逗号和换行；首行为固定模板表头。
+ */
+export function parseUserImportCsv(text: string): UserImportRow[] {
+    const records = parseCsvRecords(text);
+    if (!records.length) throw new Error("CSV 文件不能为空");
+
+    const headers = records[0].map(value => value.trim().toLowerCase());
+    if (
+        headers.length !== USER_IMPORT_HEADERS.length ||
+        headers.some((value, index) => value !== USER_IMPORT_HEADERS[index])
+    ) {
+        throw new Error(`表头必须按模板顺序填写：${USER_IMPORT_HEADERS.join(",")}`);
+    }
+
+    const rows = records
+        .slice(1)
+        .filter(record => record.some(value => value.trim()))
+        .map(record => {
+            if (record.length !== USER_IMPORT_HEADERS.length) {
+                throw new Error(`第 ${records.indexOf(record) + 1} 行字段数量不正确`);
+            }
+            return Object.fromEntries(
+                USER_IMPORT_HEADERS.map((header, index) => [header, record[index]?.trim() ?? ""])
+            ) as UserImportRow;
+        });
+
+    if (!rows.length) throw new Error("CSV 文件至少需要一行用户数据");
+    return rows;
+}
+
+/** 将当前编辑后的行重新序列化，作为 Preview 的摘要输入。 */
+export function serializeUserImportRows(rows: UserImportRow[]): string {
+    const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
+    return [
+        USER_IMPORT_HEADERS.join(","),
+        ...rows.map(row => USER_IMPORT_HEADERS.map(header => escape(row[header])).join(","))
+    ].join("\n");
+}
+
+/** 计算文本 UTF-8 字节的 SHA-256 十六进制摘要。 */
+export async function sha256Text(text: string): Promise<string> {
+    const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return [...new Uint8Array(buffer)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** 创建一次新的导入幂等键。 */
+export function createUserImportIdempotencyKey(): string {
+    return crypto.randomUUID();
+}
+
+function parseCsvRecords(text: string): string[][] {
+    const records: string[][] = [];
+    let record: string[] = [];
+    let value = "";
+    let quoted = false;
+
+    for (let index = 0; index < text.length; index++) {
+        const character = text[index];
+        const next = text[index + 1];
+        if (character === '"') {
+            if (quoted && next === '"') {
+                value += '"';
+                index++;
+            } else {
+                quoted = !quoted;
+            }
+        } else if (character === "," && !quoted) {
+            record.push(value);
+            value = "";
+        } else if ((character === "\n" || character === "\r") && !quoted) {
+            if (character === "\r" && next === "\n") index++;
+            record.push(value);
+            records.push(record);
+            record = [];
+            value = "";
+        } else {
+            value += character;
+        }
+    }
+
+    if (quoted) throw new Error("CSV 文件存在未闭合的引号");
+    if (value || record.length) {
+        record.push(value);
+        records.push(record);
+    }
+    return records;
+}

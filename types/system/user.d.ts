@@ -39,6 +39,72 @@ declare global {
 
     type UserAuthorizationStatus = "UNCONFIGURED" | "INCOMPLETE" | "ACTIVE" | "PARTIAL";
 
+    /** 批量导入用户的一行固定模板数据。 */
+    type UserImportRow = {
+        username: string;
+        real_name: string;
+        phone: string;
+        email: string;
+        department_code: string;
+        language: string;
+        timezone: string;
+        authorization_profile_code: string;
+    };
+
+    /** 批量导入 Preview 请求。 */
+    type UserImportPreviewFrom = {
+        idempotency_key: string;
+        file_name: string;
+        file_hash: string;
+        skip_existing: boolean;
+        rows: UserImportRow[];
+    };
+
+    /** 批量导入 Apply 请求。 */
+    type UserImportApplyFrom = {
+        preview_token: string;
+    };
+
+    type UserImportTaskStatus =
+        | "UPLOADED"
+        | "VALIDATING"
+        | "PREVIEWED"
+        | "APPLYING"
+        | "SUCCEEDED"
+        | "PARTIAL_FAILED"
+        | "FAILED"
+        | "EXPIRED";
+
+    /** 批量导入任务和 Preview 汇总。 */
+    type UserImportTask = {
+        id: string;
+        file_name: string;
+        file_hash: string;
+        skip_existing: boolean;
+        status: UserImportTaskStatus;
+        expires_at: string;
+        preview_expires_at: string;
+        total_rows: number;
+        valid_rows: number;
+        error_rows: number;
+        skipped_rows: number;
+        applied_rows: number;
+        assignment_count: number;
+        access_boundary_count: number;
+        grant_boundary_count: number;
+        preview_token?: string;
+    };
+
+    /** 批量导入行结果。 */
+    type UserImportRowResult = {
+        id: string;
+        row_number: number;
+        row_key: string;
+        state: string;
+        user_id?: string;
+        errors: string[];
+    };
+
     // 用户分页查询的实体
     type UserPageVO = {
         // 主键

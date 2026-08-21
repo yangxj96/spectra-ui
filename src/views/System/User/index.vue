@@ -36,6 +36,10 @@ const handleUserAdd = () => {
     router.push({ name: "SystemUserCreate" });
 };
 
+const handleUserImport = () => {
+    router.push({ name: "SystemUserImport" });
+};
+
 const handleUserEdit = (row: UserPageVO) => {
     router.push({ name: "SystemUserEdit", params: { id: row.id } });
 };
@@ -123,6 +127,7 @@ onMounted(async () => {
                     <ComponentsIcons name="icon-user-add" style="width: 1.1em; height: 1.1em" />
                     &nbsp;新增用户
                 </el-button>
+                <el-button @click="handleUserImport">批量导入</el-button>
             </el-form-item>
         </el-form>
     </el-row>

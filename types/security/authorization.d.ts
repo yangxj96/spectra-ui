@@ -127,4 +127,47 @@ declare global {
 
     /** 新部门 Apply 请求。部门主键由后端 MyBatis-Plus 插入时生成。 */
     type OrganizationCreateApply = OrganizationChangeApply;
+
+    /** 可复用授权方案中的 Scope 配置。部门使用稳定业务编码。 */
+    type AuthorizationProfileScope = {
+        mode: "NONE" | "ALL" | "SELF" | "RULES";
+        resource_code?: string;
+        department_codes: string[];
+        include_descendants: boolean;
+    };
+
+    /** 可复用授权方案中的 Permission Boundary。 */
+    type AuthorizationProfileBoundary = {
+        permission: string;
+        access: AuthorizationProfileScope;
+        grant?: AuthorizationProfileScope;
+    };
+
+    /** 可复用授权方案中的 Role 配置。 */
+    type AuthorizationProfileAssignment = {
+        role_code: string;
+        role_version: number;
+        boundaries: AuthorizationProfileBoundary[];
+    };
+
+    /** 可复用授权方案。 */
+    type AuthorizationProfile = {
+        id: string;
+        code: string;
+        name: string;
+        description?: string;
+        state: "ACTIVE" | "DISABLED";
+        version: number;
+        assignments: AuthorizationProfileAssignment[];
+    };
+
+    /** 授权方案创建和修改请求。 */
+    type AuthorizationProfileSave = {
+        id?: string;
+        code: string;
+        name: string;
+        description?: string;
+        expected_version?: number;
+        assignments: AuthorizationProfileAssignment[];
+    };
 }

@@ -1,4 +1,4 @@
-import { get, post } from "@/plugin/request/api.ts";
+import { del, get, post, put } from "@/plugin/request/api.ts";
 
 const AUTHORIZATION_API_OPTIONS = {
     headers: {
@@ -8,6 +8,34 @@ const AUTHORIZATION_API_OPTIONS = {
 
 /** 目标 Role 授权状态与 Preview/Apply 接口。 */
 export const AuthorizationApi = {
+    profiles(): Promise<AuthorizationProfile[]> {
+        return get<AuthorizationProfile[]>(
+            "/api/security/authorization/profiles",
+            undefined,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
+    profile(id: string): Promise<AuthorizationProfile> {
+        return get<AuthorizationProfile>(
+            `/api/security/authorization/profiles/${id}`,
+            undefined,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
+    createProfile(params: AuthorizationProfileSave): Promise<void> {
+        return post<void>("/api/security/authorization/profiles", params, AUTHORIZATION_API_OPTIONS);
+    },
+
+    updateProfile(id: string, params: AuthorizationProfileSave): Promise<void> {
+        return put<void>(`/api/security/authorization/profiles/${id}`, params, AUTHORIZATION_API_OPTIONS);
+    },
+
+    disableProfile(id: string): Promise<void> {
+        return del<void>(`/api/security/authorization/profiles/${id}`, undefined, AUTHORIZATION_API_OPTIONS);
+    },
+
     assignments(userId: string): Promise<AuthorizationAssignment[]> {
         return get<AuthorizationAssignment[]>(
             `/api/security/authorization/users/${userId}/assignments`,

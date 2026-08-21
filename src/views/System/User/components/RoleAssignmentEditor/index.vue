@@ -32,15 +32,18 @@ const scopeModeOptions: { value: ScopeMode; label: string }[] = [
 
 const assignments = ref<AuthorizationAssignment[]>([]);
 const roles = ref<RolePageVO[]>([]);
+const profiles = ref<AuthorizationProfile[]>([]);
 const authorityTree = ref<AuthorityTree[]>([]);
 const departmentTree = ref<DepartmentTreeVO[]>([]);
 const selectedAssignmentId = ref("");
+const selectedProfileId = ref("");
 const selectedRoleId = ref("");
 const permissionToAdd = ref("");
 const roleAuthorization = ref<RoleAuthorizationState>();
 const boundaries = ref<BoundaryForm[]>([]);
 const loading = ref(false);
 const saving = ref(false);
+const applyingProfile = ref(false);
 
 const activeAssignments = computed(() => assignments.value.filter(assignment => assignment.state === "ACTIVE"));
 
@@ -49,6 +52,14 @@ const selectedAssignment = computed(() =>
 );
 
 const permissionCatalog = computed(() => flattenPermissions(authorityTree.value));
+
+const departmentByCode = computed(() => {
+    const result = new Map<string, DepartmentTreeVO>();
+    flattenDepartments(departmentTree.value).forEach(department => result.set(department.code, department));
+    return result;
+});
+
+const activeProfiles = computed(() => profiles.value.filter(profile => profile.state === "ACTIVE"));
 
 const rolePermissionOptions = computed(() => {
     const permissionCodes = new Set(roleAuthorization.value?.permission_codes ?? []);
@@ -61,6 +72,9 @@ const editable = computed(() => !selectedAssignment.value || selectedAssignment.
 
 const flattenPermissions = (nodes: AuthorityTree[]): AuthorityTree[] =>
     nodes.flatMap(node => (node.children?.length ? flattenPermissions(node.children) : [node]));
+
+const flattenDepartments = (nodes: DepartmentTreeVO[]): DepartmentTreeVO[] =>
+    nodes.flatMap(node => (node.children?.length ? [node, ...flattenDepartments(node.children)] : [node]));
 
 const createScope = (mode: ScopeMode = "NONE"): ScopeForm => ({
     mode,
@@ -110,14 +124,16 @@ const assignmentBoundaries = (assignment: AuthorizationAssignment): BoundaryForm
 const load = async () => {
     loading.value = true;
     try {
-        const [nextAssignments, nextRoles, nextAuthorityTree, nextDepartmentTree] = await Promise.all([
+        const [nextAssignments, nextRoles, nextProfiles, nextAuthorityTree, nextDepartmentTree] = await Promise.all([
             AuthorizationApi.assignments(props.userId),
             RoleApi.list(),
+            AuthorizationApi.profiles().catch(() => []),
             AuthorityApi.tree(),
             DepartmentApi.tree()
         ]);
         assignments.value = nextAssignments ?? [];
         roles.value = (nextRoles ?? []).filter(role => role.state);
+        profiles.value = nextProfiles ?? [];
         authorityTree.value = nextAuthorityTree ?? [];
         departmentTree.value = nextDepartmentTree ?? [];
         const firstAssignment = activeAssignments.value[0] ?? assignments.value[0];
@@ -135,6 +151,7 @@ const load = async () => {
 
 const resetEditor = () => {
     selectedAssignmentId.value = "";
+    selectedProfileId.value = "";
     selectedRoleId.value = "";
     permissionToAdd.value = "";
     roleAuthorization.value = undefined;
@@ -161,6 +178,79 @@ const handleRoleChange = async () => {
         : undefined;
     permissionToAdd.value = "";
     boundaries.value = [];
+};
+
+const scopeFromProfile = (scope: AuthorizationProfileScope): ScopeForm | undefined => {
+    const departmentIds = (scope.department_codes ?? [])
+        .map(code => departmentByCode.value.get(code)?.id)
+        .filter((id): id is string => Boolean(id));
+    if (departmentIds.length !== (scope.department_codes ?? []).length) return undefined;
+    return {
+        mode: scope.mode,
+        department_ids: departmentIds,
+        include_descendants: scope.include_descendants
+    };
+};
+
+const boundariesFromProfile = (assignment: AuthorizationProfileAssignment): BoundaryForm[] | undefined => {
+    const result: BoundaryForm[] = [];
+    for (const boundary of assignment.boundaries) {
+        const access = scopeFromProfile(boundary.access);
+        const grant = boundary.grant ? scopeFromProfile(boundary.grant) : undefined;
+        if (!access || (boundary.grant && !grant)) return undefined;
+        result.push({
+            permission: boundary.permission,
+            access,
+            grantEnabled: Boolean(grant),
+            grant: grant ?? createScope()
+        });
+    }
+    return result;
+};
+
+const applyProfile = async () => {
+    const profile = profiles.value.find(item => item.id === selectedProfileId.value);
+    if (!profile) return;
+    if (profile.state !== "ACTIVE") {
+        MessageUtils.warning("已停用的授权方案不能套用");
+        return;
+    }
+    if (profile.assignments.length !== 1) {
+        MessageUtils.warning("当前用户授权步骤一次配置一个 RoleAssignment，包含多个 Role 的方案请在批量授权流程中使用");
+        return;
+    }
+    const profileAssignment = profile.assignments[0];
+    const role = roles.value.find(item => item.code === profileAssignment.role_code);
+    if (!role) {
+        MessageUtils.warning(`方案依赖的 Role 不存在或已停用：${profileAssignment.role_code}`);
+        return;
+    }
+    applyingProfile.value = true;
+    try {
+        const nextRoleAuthorization = await AuthorizationApi.currentRole(role.id);
+        if (nextRoleAuthorization.version !== profileAssignment.role_version) {
+            MessageUtils.warning("授权方案依赖的 Role version 已变化，请先刷新或更新授权方案");
+            return;
+        }
+        const rolePermissionCodes = new Set(nextRoleAuthorization.permission_codes);
+        if (profileAssignment.boundaries.some(boundary => !rolePermissionCodes.has(boundary.permission))) {
+            MessageUtils.warning("授权方案中的 Permission 已不属于当前 Role，请先更新授权方案");
+            return;
+        }
+        const nextBoundaries = boundariesFromProfile(profileAssignment);
+        if (!nextBoundaries) {
+            MessageUtils.warning("授权方案引用了不存在的部门编码，请先更新授权方案");
+            return;
+        }
+        selectedRoleId.value = role.id;
+        roleAuthorization.value = nextRoleAuthorization;
+        boundaries.value = nextBoundaries;
+        permissionToAdd.value = "";
+        selectedProfileId.value = "";
+        MessageUtils.success(`已套用授权方案：${profile.name}，提交前仍可调整当前用户的授权范围`);
+    } finally {
+        applyingProfile.value = false;
+    }
 };
 
 const addBoundary = () => {
@@ -273,6 +363,33 @@ onMounted(load);
 
     <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
+        <div class="profile-toolbar">
+            <div class="profile-intro">
+                <strong>快速套用授权方案</strong>
+                <span>方案只填充当前编辑内容，不会绕过后续 Preview/Apply。</span>
+            </div>
+            <el-select v-model="selectedProfileId" placeholder="选择可复用授权方案" clearable filterable>
+                <el-option
+                    v-for="profile in activeProfiles"
+                    :key="profile.id"
+                    :label="`${profile.name}（${profile.code}）`"
+                    :value="profile.id">
+                    <div class="profile-option">
+                        <span>{{ profile.name }}（{{ profile.code }}）</span>
+                        <el-tag size="small" type="info">v{{ profile.version }}</el-tag>
+                    </div>
+                </el-option>
+            </el-select>
+            <el-button
+                type="primary"
+                plain
+                :loading="applyingProfile"
+                :disabled="!selectedProfileId"
+                @click="applyProfile">
+                套用方案
+            </el-button>
+        </div>
+
         <div class="assignment-toolbar">
             <el-select
                 v-model="selectedAssignmentId"
@@ -435,6 +552,36 @@ onMounted(load);
     margin: 12px 0;
 }
 
+.profile-toolbar {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(280px, 2fr) auto;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+    padding: 16px;
+    border: 1px solid var(--el-color-primary-light-7);
+    border-radius: 10px;
+    background: var(--el-color-primary-light-9);
+}
+
+.profile-intro {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.profile-intro span {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+}
+
+.profile-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .assignment-toolbar .el-select,
 .boundary-add-row .el-select {
     flex: 1;
@@ -461,5 +608,11 @@ onMounted(load);
 .assignment-actions {
     justify-content: flex-end;
     margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+    .profile-toolbar {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

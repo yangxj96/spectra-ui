@@ -77,7 +77,28 @@ export const MAX_USER_IMPORT_FILE_SIZE = 5 * 1024 * 1024;
  * 支持双引号包裹字段、字段内逗号和换行；首行为固定模板表头。
  */
 export function parseUserImportCsv(text: string): UserImportRow[] {
-    const records = parseCsvRecords(text);
+    return parseUserImportRecords(parseCsvRecords(text));
+}
+
+/** 解析 CSV 或 Excel 文件，Excel 只读取第一个工作表。 */
+export async function parseUserImportFile(file: File): Promise<UserImportRow[]> {
+    if (/\.(csv|txt)$/i.test(file.name)) return parseUserImportCsv(await file.text());
+
+    const { read, utils } = await import("xlsx");
+    const workbook = read(await file.arrayBuffer(), { type: "array", cellText: true, cellDates: false });
+    const [sheetName] = workbook.SheetNames;
+    if (!sheetName) throw new Error("Excel 文件没有可读取的工作表");
+
+    const values = utils.sheet_to_json<unknown[]>(workbook.Sheets[sheetName], {
+        header: 1,
+        raw: false,
+        defval: ""
+    });
+    const records = values.map(record => record.map(value => String(value ?? "")));
+    return parseUserImportRecords(records);
+}
+
+function parseUserImportRecords(records: string[][]): UserImportRow[] {
     if (!records.length) throw new Error("CSV 文件不能为空");
 
     const headers = records[0].map(value => value.trim().toLowerCase());
@@ -88,17 +109,17 @@ export function parseUserImportCsv(text: string): UserImportRow[] {
         throw new Error(`表头必须按模板顺序填写：${USER_IMPORT_HEADERS.join(",")}`);
     }
 
-    const rows = records
-        .slice(1)
-        .filter(record => record.some(value => value.trim()))
-        .map(record => {
-            if (record.length !== USER_IMPORT_HEADERS.length) {
-                throw new Error(`第 ${records.indexOf(record) + 1} 行字段数量不正确`);
-            }
-            return Object.fromEntries(
+    const rows = records.slice(1).flatMap((record, index) => {
+        if (!record.some(value => value.trim())) return [];
+        if (record.length !== USER_IMPORT_HEADERS.length) {
+            throw new Error(`第 ${index + 2} 行字段数量不正确`);
+        }
+        return [
+            Object.fromEntries(
                 USER_IMPORT_HEADERS.map((header, index) => [header, record[index]?.trim() ?? ""])
-            ) as UserImportRow;
-        });
+            ) as UserImportRow
+        ];
+    });
 
     if (!rows.length) throw new Error("CSV 文件至少需要一行用户数据");
     return rows;

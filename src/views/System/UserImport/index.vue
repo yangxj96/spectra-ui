@@ -9,6 +9,7 @@ import {
     createUserImportIdempotencyKey,
     MAX_USER_IMPORT_FILE_SIZE,
     parseUserImportCsv,
+    parseUserImportFile,
     serializeUserImportRows,
     serializeUserImportErrors,
     sha256Text,
@@ -85,16 +86,24 @@ async function handleFileChange(file: UploadFile): Promise<void> {
         MessageUtils.warning("导入文件不能超过 5 MB");
         return;
     }
-    if (!/\.(csv|txt)$/i.test(file.name)) {
-        MessageUtils.warning("当前仅支持 CSV 或 TXT 文件，Excel 解析将在后续版本接入");
+    if (!/\.(csv|txt|xlsx|xls)$/i.test(file.name)) {
+        MessageUtils.warning("当前仅支持 CSV、TXT 或 Excel 文件");
         return;
     }
 
     try {
+        parseError.value = "";
         fileName.value = file.name;
-        sourceText.value = await file.raw.text();
-        parseSource();
+        sourceText.value = /\.(csv|txt)$/i.test(file.name) ? await file.raw.text() : "";
+        rows.value = /\.(csv|txt)$/i.test(file.name)
+            ? parseUserImportCsv(sourceText.value)
+            : await parseUserImportFile(file.raw);
+        task.value = null;
+        errorRows.value = [];
+        activeStep.value = 0;
+        MessageUtils.success(`已解析 ${rows.value.length} 行用户数据`);
     } catch (error: unknown) {
+        rows.value = [];
         parseError.value = error instanceof Error ? error.message : "读取文件失败";
     }
 }
@@ -264,7 +273,7 @@ function headerLabel(header: UserImportHeader): string {
                 <div class="section-heading">
                     <div>
                         <h2>准备导入数据</h2>
-                        <p>当前支持固定 CSV/TXT 模板；Excel 文件解析将在后续版本接入。</p>
+                        <p>支持固定 CSV、TXT 和 Excel 模板；Excel 文件默认读取第一个工作表。</p>
                     </div>
                     <el-button plain @click="downloadTemplate">下载导入模板</el-button>
                 </div>
@@ -281,11 +290,11 @@ function headerLabel(header: UserImportHeader): string {
                         <el-upload
                             class="upload-area"
                             drag
-                            accept=".csv,.txt"
+                            accept=".csv,.txt,.xlsx,.xls"
                             :auto-upload="false"
                             :show-file-list="false"
                             :on-change="handleFileChange">
-                            <div class="upload-title">拖拽 CSV/TXT 文件到这里</div>
+                            <div class="upload-title">拖拽 CSV、TXT 或 Excel 文件到这里</div>
                             <div class="upload-hint">或点击选择文件，文件不会在 Preview 前写入用户数据</div>
                         </el-upload>
                         <el-input

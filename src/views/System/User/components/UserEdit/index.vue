@@ -94,9 +94,11 @@ async function handleUserSave(): Promise<void> {
             MessageUtils.success("修改用户成功，继续配置角色授权");
             activeStep.value = 1;
         } else {
-            await UserApi.create(userConverter.toDTO(form));
-            MessageUtils.success("新增用户成功");
-            await handleBack();
+            const createdUser = await UserApi.create(userConverter.toDTO(form));
+            form.id = createdUser.id;
+            await router.replace({ name: "SystemUserEdit", params: { id: createdUser.id } });
+            MessageUtils.success("新增用户成功，继续配置角色授权");
+            activeStep.value = 1;
         }
     } catch (error: unknown) {
         console.error(error);
@@ -263,9 +265,7 @@ onMounted(load);
         <div class="user-edit-actions">
             <el-button @click="handleBack">取消</el-button>
             <template v-if="activeStep === 0">
-                <el-button type="primary" :loading="saving" @click="handleUserSave">
-                    {{ isEditing ? "保存修改" : "保存用户" }}
-                </el-button>
+                <el-button type="primary" :loading="saving" @click="handleUserSave">保存并继续授权</el-button>
             </template>
             <el-button v-else @click="activeStep = 0">上一步</el-button>
         </div>

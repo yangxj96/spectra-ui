@@ -75,6 +75,12 @@ declare global {
         created_at: string;
     };
 
+    // 用户创建成功响应
+    type UserCreatedVO = {
+        id: string;
+        username: string;
+    };
+
     // 用户表单相关使用的
     type UserForm = {
         // 主键

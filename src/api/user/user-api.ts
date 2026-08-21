@@ -24,10 +24,10 @@ export const UserApi = {
     },
     /**
      * 新增用户
-     * @param params 角色入参
+     * @param params 用户入参
      */
-    async create(params: UserDTO): Promise<void> {
-        return post<void>("/api/user", params);
+    async create(params: UserDTO): Promise<UserCreatedVO> {
+        return post<UserCreatedVO>("/api/user", params);
     },
     /**
      * 修改用户

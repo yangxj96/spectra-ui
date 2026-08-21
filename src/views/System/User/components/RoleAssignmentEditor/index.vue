@@ -290,68 +290,74 @@ onMounted(load);
 </script>
 
 <template>
-    <el-divider content-position="left">RoleAssignment 授权实例</el-divider>
-    <el-alert
-        title="每个 Permission 都必须显式配置 Access Boundary；Grant Boundary 独立管理，缺失不会自动扩大为 ALL。"
-        type="warning"
-        :closable="false"
-        show-icon />
-
     <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-        <div class="profile-toolbar">
-            <div class="profile-intro">
-                <strong>快速套用授权方案</strong>
-                <span>方案只填充当前编辑内容，不会绕过后续 Preview/Apply。</span>
+        <div class="authorization-toolbar-grid">
+            <div class="authorization-tool">
+                <strong class="authorization-tool-title">快速套用授权方案</strong>
+                <div class="authorization-tool-controls">
+                    <el-select v-model="selectedProfileId" placeholder="选择可复用授权方案" clearable filterable>
+                        <el-option
+                            v-for="profile in activeProfiles"
+                            :key="profile.id"
+                            :label="`${profile.name}（${profile.code}）`"
+                            :value="profile.id">
+                            <div class="profile-option">
+                                <span>{{ profile.name }}（{{ profile.code }}）</span>
+                                <el-tag size="small" type="info">v{{ profile.version }}</el-tag>
+                            </div>
+                        </el-option>
+                    </el-select>
+                    <el-button
+                        type="primary"
+                        plain
+                        :loading="applyingProfile"
+                        :disabled="!selectedProfileId"
+                        @click="applyProfile">
+                        套用方案
+                    </el-button>
+                </div>
             </div>
-            <el-select v-model="selectedProfileId" placeholder="选择可复用授权方案" clearable filterable>
-                <el-option
-                    v-for="profile in activeProfiles"
-                    :key="profile.id"
-                    :label="`${profile.name}（${profile.code}）`"
-                    :value="profile.id">
-                    <div class="profile-option">
-                        <span>{{ profile.name }}（{{ profile.code }}）</span>
-                        <el-tag size="small" type="info">v{{ profile.version }}</el-tag>
-                    </div>
-                </el-option>
-            </el-select>
-            <el-button
-                type="primary"
-                plain
-                :loading="applyingProfile"
-                :disabled="!selectedProfileId"
-                @click="applyProfile">
-                套用方案
-            </el-button>
+
+            <div class="authorization-tool">
+                <strong class="authorization-tool-title">编辑已有角色授权</strong>
+                <div class="authorization-tool-controls">
+                    <el-select
+                        v-model="selectedAssignmentId"
+                        placeholder="选择要编辑的角色授权"
+                        clearable
+                        filterable
+                        @change="selectAssignment">
+                        <el-option
+                            v-for="assignment in assignments"
+                            :key="assignment.assignment_id"
+                            :label="`${roleName(assignment.role_id)} · ${stateLabel(assignment.state)}`"
+                            :value="assignment.assignment_id">
+                            <span>{{ assignment.role_name }}（{{ assignment.role_code }}）</span>
+                            <el-tag size="small" :type="assignment.state === 'ACTIVE' ? 'success' : 'info'">
+                                {{ stateLabel(assignment.state) }}
+                            </el-tag>
+                        </el-option>
+                    </el-select>
+                    <el-button @click="resetEditor">新建角色授权</el-button>
+                </div>
+            </div>
         </div>
 
-        <div class="assignment-toolbar">
-            <el-select
-                v-model="selectedAssignmentId"
-                placeholder="选择已有授权实例"
-                clearable
-                filterable
-                @change="selectAssignment">
-                <el-option
-                    v-for="assignment in assignments"
-                    :key="assignment.assignment_id"
-                    :label="`${roleName(assignment.role_id)} · ${stateLabel(assignment.state)}`"
-                    :value="assignment.assignment_id">
-                    <span>{{ assignment.role_name }}（{{ assignment.role_code }}）</span>
-                    <el-tag size="small" :type="assignment.state === 'ACTIVE' ? 'success' : 'info'">
-                        {{ stateLabel(assignment.state) }}
-                    </el-tag>
-                </el-option>
-            </el-select>
-            <el-button @click="resetEditor">新建 RoleAssignment</el-button>
-        </div>
-
-        <el-form label-width="110px" class="assignment-form">
-            <el-form-item label="Role" required>
+        <div class="role-boundary-toolbar" :class="{ 'has-boundary': selectedRoleId && editable }">
+            <div class="assignment-form">
+                <div class="role-field-label">
+                    <strong class="authorization-tool-title">
+                        角色
+                        <span class="required-mark">*</span>
+                    </strong>
+                    <el-text v-if="selectedAssignment" class="role-version" type="info" size="small">
+                        授权实例版本：{{ selectedAssignment.version }}；角色版本：{{ selectedAssignment.role_version }}
+                    </el-text>
+                </div>
                 <el-select
                     v-model="selectedRoleId"
-                    placeholder="请选择 Role"
+                    placeholder="请选择角色"
                     filterable
                     :disabled="!editable"
                     @change="handleRoleChange">
@@ -364,13 +370,27 @@ onMounted(load);
                         <el-tag v-if="role.builtin" size="small" type="info">系统托管</el-tag>
                     </el-option>
                 </el-select>
-                <el-text v-if="selectedAssignment" type="info" size="small">
-                    Assignment version：{{ selectedAssignment.version }}；Role version：{{
-                        selectedAssignment.role_version
-                    }}
-                </el-text>
-            </el-form-item>
-        </el-form>
+            </div>
+
+            <template v-if="selectedRoleId && editable">
+                <div class="boundary-add-row">
+                    <strong class="authorization-tool-title">添加访问范围</strong>
+                    <div class="boundary-add-controls">
+                        <el-select v-model="permissionToAdd" placeholder="选择角色已声明的权限" filterable>
+                            <el-option
+                                v-for="permission in rolePermissionOptions"
+                                :key="permission.code"
+                                :label="`${permission.name}（${permission.code}）`"
+                                :value="permission.code"
+                                :disabled="boundaries.some(boundary => boundary.permission === permission.code)" />
+                        </el-select>
+                        <el-button type="primary" plain :disabled="!permissionToAdd" @click="addBoundary">
+                            添加访问范围
+                        </el-button>
+                    </div>
+                </div>
+            </template>
+        </div>
 
         <el-alert
             v-if="selectedAssignment && !editable"
@@ -379,23 +399,9 @@ onMounted(load);
             :closable="false" />
 
         <template v-if="selectedRoleId && editable">
-            <div class="boundary-add-row">
-                <el-select v-model="permissionToAdd" placeholder="选择 Role 已声明的 Permission" filterable>
-                    <el-option
-                        v-for="permission in rolePermissionOptions"
-                        :key="permission.code"
-                        :label="`${permission.name}（${permission.code}）`"
-                        :value="permission.code"
-                        :disabled="boundaries.some(boundary => boundary.permission === permission.code)" />
-                </el-select>
-                <el-button type="primary" plain :disabled="!permissionToAdd" @click="addBoundary">
-                    添加 Access Boundary
-                </el-button>
-            </div>
-
             <el-alert
                 v-if="!rolePermissionOptions.length"
-                title="当前 Role 没有可配置的 Permission，不能提交空 Boundary。"
+                title="当前角色没有可配置的权限，不能提交空的访问范围。"
                 type="error"
                 :closable="false" />
 
@@ -408,7 +414,7 @@ onMounted(load);
                 </template>
 
                 <el-form label-width="110px">
-                    <el-form-item label="Access Scope">
+                    <el-form-item label="访问范围">
                         <el-select v-model="boundary.access.mode">
                             <el-option
                                 v-for="mode in scopeModesFor(boundary.permission)"
@@ -417,7 +423,7 @@ onMounted(load);
                                 :value="mode" />
                         </el-select>
                     </el-form-item>
-                    <el-form-item v-if="boundary.access.mode === 'RULES'" label="Access 组织">
+                    <el-form-item v-if="boundary.access.mode === 'RULES'" label="访问组织">
                         <el-tree-select
                             v-model="boundary.access.department_ids"
                             :data="departmentTree"
@@ -429,16 +435,16 @@ onMounted(load);
                             placeholder="选择组织规则" />
                         <el-checkbox v-model="boundary.access.include_descendants">包含子部门</el-checkbox>
                     </el-form-item>
-                    <el-form-item label="Grant Boundary">
+                    <el-form-item label="授权范围">
                         <el-checkbox v-model="boundary.grantEnabled" :disabled="!isGrantable(boundary.permission)">
-                            允许向下授权此 Permission
+                            允许向下授权此权限
                         </el-checkbox>
                         <el-text v-if="!isGrantable(boundary.permission)" type="info" size="small">
-                            当前 Role 未声明 GrantablePermission
+                            当前角色未声明可授权权限
                         </el-text>
                     </el-form-item>
                     <template v-if="boundary.grantEnabled">
-                        <el-form-item label="Grant Scope">
+                        <el-form-item label="授权范围模式">
                             <el-select v-model="boundary.grant.mode">
                                 <el-option
                                     v-for="mode in scopeModesFor(boundary.permission)"
@@ -447,7 +453,7 @@ onMounted(load);
                                     :value="mode" />
                             </el-select>
                         </el-form-item>
-                        <el-form-item v-if="boundary.grant.mode === 'RULES'" label="Grant 组织">
+                        <el-form-item v-if="boundary.grant.mode === 'RULES'" label="授权组织">
                             <el-tree-select
                                 v-model="boundary.grant.department_ids"
                                 :data="departmentTree"
@@ -463,10 +469,10 @@ onMounted(load);
                 </el-form>
             </el-card>
 
-            <el-empty v-if="!boundaries.length" description="尚未配置 Permission Boundary" />
+            <el-empty v-if="!boundaries.length" description="尚未配置权限访问范围" />
             <div class="assignment-actions">
                 <el-button type="primary" :loading="saving" :disabled="!boundaries.length" @click="handleSave">
-                    Preview 并 Apply
+                    预览并应用
                 </el-button>
             </div>
         </template>
@@ -474,7 +480,6 @@ onMounted(load);
 </template>
 
 <style scoped lang="scss">
-.assignment-toolbar,
 .boundary-add-row,
 .boundary-header,
 .assignment-actions {
@@ -483,30 +488,95 @@ onMounted(load);
     gap: 10px;
 }
 
-.assignment-toolbar,
 .boundary-add-row {
     margin: 12px 0;
 }
 
-.profile-toolbar {
+.authorization-toolbar-grid {
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(280px, 2fr) auto;
-    align-items: center;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     margin: 16px 0;
-    padding: 16px;
-    border: 1px solid var(--el-color-primary-light-7);
-    border-radius: 10px;
-    background: var(--el-color-primary-light-9);
 }
 
-.profile-intro {
+.authorization-tool {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     gap: 4px;
+    padding: 14px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 10px;
+    background: var(--el-fill-color-light);
 }
 
-.profile-intro span {
+.authorization-tool-title {
+    color: var(--el-text-color-primary);
+    font-size: 13px;
+    line-height: 20px;
+}
+
+.authorization-tool-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.authorization-tool-controls .el-select,
+.boundary-add-controls .el-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.role-boundary-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.role-boundary-toolbar:not(.has-boundary) .assignment-form {
+    grid-column: 1 / -1;
+}
+
+.role-boundary-toolbar .assignment-form,
+.role-boundary-toolbar .boundary-add-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+    box-sizing: border-box;
+    gap: 4px;
+    margin: 0;
+    padding: 14px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 10px;
+    background: var(--el-fill-color-light);
+}
+
+.boundary-add-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    width: 100%;
+}
+
+.role-field-label {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.required-mark {
+    margin-left: 2px;
+    color: var(--el-color-danger);
+}
+
+.role-version {
     color: var(--el-text-color-secondary);
     font-size: 12px;
 }
@@ -516,11 +586,6 @@ onMounted(load);
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-}
-
-.assignment-toolbar .el-select,
-.boundary-add-row .el-select {
-    flex: 1;
 }
 
 .assignment-form,
@@ -547,8 +612,26 @@ onMounted(load);
 }
 
 @media (max-width: 768px) {
-    .profile-toolbar {
+    .authorization-toolbar-grid {
         grid-template-columns: 1fr;
+    }
+
+    .role-boundary-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .role-boundary-toolbar:not(.has-boundary) .assignment-form {
+        grid-column: auto;
+    }
+
+    .boundary-add-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .boundary-add-controls {
+        align-items: stretch;
+        flex-direction: column;
     }
 }
 </style>

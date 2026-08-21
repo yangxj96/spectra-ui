@@ -22,6 +22,7 @@ const appStore = useAppStore();
 const dictStore = useDictStore();
 const userId = computed(() => String(route.params.id ?? ""));
 const isEditing = computed(() => Boolean(userId.value));
+const editorTitle = computed(() => (isEditing.value ? "编辑用户" : "新建用户"));
 const activeStep = ref(0);
 const form = reactive<UserForm>(
     userConverter.createForm({
@@ -140,176 +141,306 @@ onMounted(load);
 
 <template>
     <div v-loading="loading" class="user-edit-page">
-        <el-steps
-            class="user-edit-steps"
-            :active="activeStep"
-            align-center
-            finish-status="success"
-            process-status="process"
-            @change="handleStepChange">
-            <el-step title="基本信息" description="填写用户基础资料" />
-            <el-step title="角色授权" description="配置角色和数据访问范围" />
-        </el-steps>
+        <div class="user-edit-shell">
+            <div class="user-edit-workspace">
+                <aside class="user-edit-side user-edit-side-left">
+                    <el-steps
+                        class="user-edit-steps"
+                        :active="activeStep"
+                        direction="vertical"
+                        finish-status="success"
+                        process-status="process"
+                        @change="handleStepChange">
+                        <el-step title="基本信息" description="填写用户基础资料" />
+                        <el-step title="角色授权" description="配置角色和数据访问范围" />
+                    </el-steps>
+                </aside>
 
-        <section v-if="activeStep === 0" class="user-edit-section">
-            <div class="section-title">
-                <div>
-                    <span>基本信息</span>
-                    <small>用于登录、身份识别和组织归属</small>
-                </div>
-                <el-text type="info">带 * 的字段为必填项</el-text>
+                <section class="user-edit-section">
+                    <div class="user-step-header">
+                        <template v-if="activeStep === 0">
+                            <div class="user-step-section-title">
+                                <div>
+                                    <span>基本信息</span>
+                                    <small>用于登录、身份识别和组织归属，保存后进入角色授权</small>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template v-else>
+                            <div class="user-step-section-title">
+                                <div>
+                                    <span>角色授权</span>
+                                    <small>配置当前用户的角色、权限和数据访问范围</small>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="user-edit-content">
+                        <template v-if="activeStep === 0">
+                            <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" @submit.prevent>
+                                <el-row :gutter="24">
+                                    <el-col :span="12">
+                                        <el-form-item label="名称" prop="username">
+                                            <el-input v-model="form.username" clearable placeholder="请输入名称" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="真实名称" prop="real_name">
+                                            <el-input v-model="form.real_name" clearable placeholder="请输入真实名称" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="状态" prop="status">
+                                            <DictSelect
+                                                v-model="form.status"
+                                                dict_code="sys_user_state"
+                                                placeholder="请选择状态" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="性别" prop="gender">
+                                            <DictSelect
+                                                v-model="form.gender"
+                                                dict_code="sys_user_gender"
+                                                placeholder="请选择性别" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="生日" prop="birthday">
+                                            <el-date-picker
+                                                v-model="form.birthday"
+                                                type="date"
+                                                placeholder="请选择生日"
+                                                value-format="YYYY-MM-DD"
+                                                style="width: 100%" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="手机号码" prop="phone">
+                                            <el-input v-model="form.phone" clearable placeholder="请输入手机号码" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="邮箱" prop="email">
+                                            <el-autocomplete
+                                                v-model="form.email"
+                                                :fetch-suggestions="handleEmailSuggestions"
+                                                clearable
+                                                placeholder="请输入邮箱">
+                                                <template #suffix>
+                                                    <el-tooltip
+                                                        effect="dark"
+                                                        content="同时也作为默认登录账号"
+                                                        placement="right">
+                                                        <ComponentsIcons
+                                                            name="icon-hint"
+                                                            style="margin-left: 10px; width: 1.4em; height: 1.4em" />
+                                                    </el-tooltip>
+                                                </template>
+                                            </el-autocomplete>
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="所属组织" prop="department_id">
+                                            <el-tree-select
+                                                v-model="form.department_id"
+                                                :data="departmentTree"
+                                                node-key="id"
+                                                clearable
+                                                check-strictly
+                                                default-expand-all
+                                                :props="treeDefaultProps"
+                                                placeholder="请选择所属组织" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="国家" prop="country">
+                                            <el-input v-model="form.country" clearable placeholder="请输入国家" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="城市" prop="city">
+                                            <el-input v-model="form.city" clearable placeholder="请输入城市" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="语言" prop="language">
+                                            <DictSelect
+                                                v-model="form.language"
+                                                dict_code="sys_language"
+                                                placeholder="请选择语言" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="时区" prop="timezone">
+                                            <DictSelect
+                                                v-model="form.timezone"
+                                                dict_code="sys_timezone"
+                                                placeholder="请选择时区" />
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                            </el-form>
+                        </template>
+
+                        <template v-else-if="form.id">
+                            <RoleAssignmentEditor :user-id="form.id" />
+                        </template>
+
+                        <el-alert
+                            v-else
+                            class="authorization-tip"
+                            title="用户保存后可以继续配置角色授权和数据访问范围。"
+                            type="info"
+                            :closable="false"
+                            show-icon />
+                    </div>
+                </section>
+
+                <aside class="user-edit-side user-edit-side-right">
+                    <div class="section-title user-heading">
+                        <div>
+                            <span>{{ editorTitle }}</span>
+                            <small>用于维护用户身份信息并完成角色授权配置</small>
+                        </div>
+                        <el-text type="info">带 * 的字段为必填项</el-text>
+                    </div>
+                    <el-alert class="user-tip" title="授权提示" type="info" :closable="false" show-icon>
+                        <template #default>
+                            <div class="user-tip-content">
+                                <p>
+                                    每个权限都必须显式配置访问范围；向下授权范围独立管理，未配置时不会自动扩大为全部数据。
+                                </p>
+                                <p>
+                                    <strong>快速套用授权方案：</strong>
+                                    授权方案只填充当前编辑内容，不会直接创建或修改授权实例。
+                                </p>
+                                <p>
+                                    <strong>编辑已有角色授权：</strong>
+                                    可修改已有实例，或新建一个角色授权。
+                                </p>
+                            </div>
+                        </template>
+                    </el-alert>
+                </aside>
             </div>
 
-            <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" @submit.prevent>
-                <el-row :gutter="24">
-                    <el-col :span="12">
-                        <el-form-item label="名称" prop="username">
-                            <el-input v-model="form.username" clearable placeholder="请输入名称" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="真实名称" prop="real_name">
-                            <el-input v-model="form.real_name" clearable placeholder="请输入真实名称" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="状态" prop="status">
-                            <DictSelect v-model="form.status" dict_code="sys_user_state" placeholder="请选择状态" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="性别" prop="gender">
-                            <DictSelect v-model="form.gender" dict_code="sys_user_gender" placeholder="请选择性别" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="生日" prop="birthday">
-                            <el-date-picker
-                                v-model="form.birthday"
-                                type="date"
-                                placeholder="请选择生日"
-                                value-format="YYYY-MM-DD"
-                                style="width: 100%" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="手机号码" prop="phone">
-                            <el-input v-model="form.phone" clearable placeholder="请输入手机号码" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="邮箱" prop="email">
-                            <el-autocomplete
-                                v-model="form.email"
-                                :fetch-suggestions="handleEmailSuggestions"
-                                clearable
-                                placeholder="请输入邮箱">
-                                <template #suffix>
-                                    <el-tooltip effect="dark" content="同时也作为默认登录账号" placement="right">
-                                        <ComponentsIcons
-                                            name="icon-hint"
-                                            style="margin-left: 10px; width: 1.4em; height: 1.4em" />
-                                    </el-tooltip>
-                                </template>
-                            </el-autocomplete>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="所属组织" prop="department_id">
-                            <el-tree-select
-                                v-model="form.department_id"
-                                :data="departmentTree"
-                                node-key="id"
-                                clearable
-                                check-strictly
-                                default-expand-all
-                                :props="treeDefaultProps"
-                                placeholder="请选择所属组织" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="国家" prop="country">
-                            <el-input v-model="form.country" clearable placeholder="请输入国家" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="城市" prop="city">
-                            <el-input v-model="form.city" clearable placeholder="请输入城市" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="语言" prop="language">
-                            <DictSelect v-model="form.language" dict_code="sys_language" placeholder="请选择语言" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="时区" prop="timezone">
-                            <DictSelect v-model="form.timezone" dict_code="sys_timezone" placeholder="请选择时区" />
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-            </el-form>
-        </section>
-
-        <section v-else-if="form.id" class="user-edit-section authorization-section">
-            <RoleAssignmentEditor :user-id="form.id" />
-        </section>
-
-        <el-alert
-            v-else
-            class="authorization-tip"
-            title="用户保存后可以继续配置角色授权和数据访问范围。"
-            type="info"
-            :closable="false"
-            show-icon />
-
-        <div class="user-edit-actions">
-            <el-button @click="handleBack">取消</el-button>
-            <template v-if="activeStep === 0">
-                <el-button type="primary" :loading="saving" @click="handleUserSave">保存并继续授权</el-button>
-            </template>
-            <el-button v-else @click="activeStep = 0">上一步</el-button>
+            <div class="user-edit-actions">
+                <el-button @click="handleBack">取消</el-button>
+                <template v-if="activeStep === 0">
+                    <el-button type="primary" :loading="saving" @click="handleUserSave">保存并继续授权</el-button>
+                </template>
+                <el-button v-else @click="activeStep = 0">上一步</el-button>
+            </div>
         </div>
     </div>
 </template>
 
 <style scoped lang="scss">
 .user-edit-page {
-    min-height: 100%;
     height: 100%;
-    padding: 28px 32px 32px;
-    overflow-y: auto;
+    min-height: 0;
+    padding: 20px 32px 24px;
+    overflow: hidden;
     background: var(--el-bg-color);
+    box-sizing: border-box;
 }
 
-.user-edit-section,
-.authorization-tip,
-.user-edit-actions {
-    width: min(1120px, 100%);
-    margin-right: auto;
-    margin-left: auto;
+.user-edit-shell {
+    display: flex;
+    flex-direction: column;
+    width: min(1440px, 100%);
+    height: 100%;
+    min-height: 0;
+    margin: 0 auto;
 }
 
-.user-edit-steps {
-    width: min(880px, 100%);
-    margin: 28px auto 24px;
-    padding: 0 24px;
+.user-edit-workspace {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(180px, 1fr) minmax(0, 960px) minmax(180px, 1fr);
+    min-height: 0;
+    gap: 24px;
+}
+
+.user-edit-side {
+    min-width: 0;
+    padding-top: 4px;
+}
+
+.user-edit-side-left {
+    grid-column: 1;
+}
+
+.user-edit-side-left :deep(.el-step.is-vertical) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 24px;
+    column-gap: 12px;
+}
+
+.user-edit-side-left :deep(.el-step.is-vertical .el-step__main) {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    padding-left: 0;
+    text-align: left;
+}
+
+.user-edit-side-left :deep(.el-step.is-vertical .el-step__head) {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.user-edit-side-left :deep(.el-step.is-vertical .el-step__description) {
+    padding-right: 0;
+}
+
+.user-edit-side-right {
+    grid-column: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .user-edit-section {
-    margin-bottom: 18px;
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
     background: var(--el-bg-color);
 }
 
-.authorization-section {
-    min-height: 420px;
+.user-step-header {
+    flex: 0 0 auto;
+    min-height: 0;
+}
+
+.user-edit-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0 4px 12px;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+.user-edit-steps {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.section-title,
+.user-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .section-title {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 12px;
     margin-bottom: 24px;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--el-border-color-lighter);
@@ -333,29 +464,106 @@ onMounted(load);
     font-weight: 400;
 }
 
+.user-step-section-title {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.user-step-section-title > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-step-section-title span {
+    color: var(--el-text-color-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.user-step-section-title small {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+}
+
+.user-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    margin: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--el-border-color-extra-light);
+    border-left: 3px solid var(--el-color-primary-light-5);
+    border-radius: 0 10px 10px 0;
+    background: var(--el-fill-color-light);
+}
+
+.user-tip {
+    flex: 0 0 auto;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border: 1px solid var(--el-color-info-light-7);
+    border-radius: 10px;
+    background: var(--el-color-info-light-9);
+}
+
+.user-tip :deep(.el-alert__icon) {
+    flex: 0 0 auto;
+    margin-top: 2px;
+}
+
+.user-tip :deep(.el-alert__content) {
+    min-width: 0;
+    gap: 4px;
+}
+
+.user-tip :deep(.el-alert__title) {
+    color: var(--el-text-color-primary);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+}
+
+.user-tip :deep(.el-alert__description) {
+    color: var(--el-text-color-regular);
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.user-tip-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: var(--el-text-color-regular);
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.user-tip-content p {
+    margin: 0;
+}
+
+.user-tip-content strong {
+    color: var(--el-text-color-primary);
+    font-weight: 600;
+}
+
 .authorization-tip {
     margin-bottom: 18px;
     border-radius: 10px;
 }
 
 .user-edit-actions {
-    display: flex;
+    flex: 0 0 auto;
+    width: min(960px, 100%);
+    margin: 0 auto;
     justify-content: flex-end;
-    gap: 12px;
     padding: 16px 0 4px;
     border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .user-edit-actions .el-button {
     min-width: 88px;
-}
-
-:deep(.el-step__title) {
-    font-weight: 500;
-}
-
-:deep(.el-step__description) {
-    font-size: 12px;
 }
 
 :deep(.el-form-item) {
@@ -369,13 +577,36 @@ onMounted(load);
     width: 100%;
 }
 
+@media (max-width: 1200px) {
+    .user-edit-workspace {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow: hidden;
+    }
+
+    .user-edit-side {
+        flex: 0 0 auto;
+        padding-top: 0;
+    }
+
+    .user-edit-side-left {
+        order: 0;
+    }
+
+    .user-edit-section {
+        order: 1;
+        min-height: 0;
+    }
+
+    .user-edit-side-right {
+        order: 2;
+    }
+}
+
 @media (max-width: 768px) {
     .user-edit-page {
         padding: 20px 16px 24px;
-    }
-
-    .user-edit-steps {
-        padding: 0;
     }
 
     .section-title {

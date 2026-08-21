@@ -62,6 +62,30 @@ export default [
                 }
             },
             {
+                path: "authorization-profiles/create",
+                name: "SystemAuthorizationProfileCreate",
+                component: () =>
+                    import("@/views/System/AuthorizationProfile/components/AuthorizationProfileEdit/index.vue"),
+                meta: {
+                    title: "新建授权方案",
+                    requiresAuth: true,
+                    requiredMenu: "SystemRBAC",
+                    activeMenu: "SystemRBAC"
+                }
+            },
+            {
+                path: "authorization-profiles/:id/edit",
+                name: "SystemAuthorizationProfileEdit",
+                component: () =>
+                    import("@/views/System/AuthorizationProfile/components/AuthorizationProfileEdit/index.vue"),
+                meta: {
+                    title: "编辑授权方案",
+                    requiresAuth: true,
+                    requiredMenu: "SystemRBAC",
+                    activeMenu: "SystemRBAC"
+                }
+            },
+            {
                 path: "dept",
                 name: "SystemDept",
                 component: () => import("@/views/System/Dept/index.vue"),

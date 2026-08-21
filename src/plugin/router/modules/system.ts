@@ -40,6 +40,17 @@ export default [
                 meta: { title: "访问控制", requiresAuth: true, requiredMenu: "SystemRBAC" }
             },
             {
+                path: "authorization-profiles",
+                name: "SystemAuthorizationProfiles",
+                component: () => import("@/views/System/AuthorizationProfile/index.vue"),
+                meta: {
+                    title: "授权方案",
+                    requiresAuth: true,
+                    requiredMenu: "SystemRBAC",
+                    activeMenu: "SystemRBAC"
+                }
+            },
+            {
                 path: "dept",
                 name: "SystemDept",
                 component: () => import("@/views/System/Dept/index.vue"),

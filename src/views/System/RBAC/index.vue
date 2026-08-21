@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { ElTree } from "element-plus";
 import { onMounted, reactive, ref, useTemplateRef } from "vue";
+import { useRouter } from "vue-router";
 
 import { AuthorityApi } from "@/api/auth/authority-api.ts";
 import { AuthorizationApi } from "@/api/auth/authorization-api.ts";
@@ -18,6 +19,7 @@ import RoleEdit from "./components/RoleEdit/index.vue";
 const powerRef = useTemplateRef<InstanceType<typeof ElTree>>("powerRef");
 const grantablePowerRef = useTemplateRef<InstanceType<typeof ElTree>>("grantablePowerRef");
 const menuRef = useTemplateRef<InstanceType<typeof ElTree>>("menuRef");
+const router = useRouter();
 
 // 数据
 const menu_tree = ref<Menu[]>();
@@ -56,6 +58,10 @@ const handleRoleAdd = () => {
     setTimeout(() => {
         edit.dialog = true;
     }, 0);
+};
+
+const handleAuthorizationProfiles = () => {
+    router.push({ name: "SystemAuthorizationProfiles" });
 };
 
 const handleRoleEdit = (row: RolePageVO) => {
@@ -209,6 +215,7 @@ const handleSaveRoleMenu = async () => {
                     <el-form-item>
                         <el-button type="primary" @click="handleRoleConditionQuery()">查询</el-button>
                         <el-button @click="handleRoleAdd()">新增</el-button>
+                        <el-button @click="handleAuthorizationProfiles">授权方案</el-button>
                     </el-form-item>
                 </el-form>
             </el-row>

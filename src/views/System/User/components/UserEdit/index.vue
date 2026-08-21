@@ -22,6 +22,7 @@ const appStore = useAppStore();
 const dictStore = useDictStore();
 const userId = computed(() => String(route.params.id ?? ""));
 const isEditing = computed(() => Boolean(userId.value));
+const activeStep = ref(0);
 const form = reactive<UserForm>(
     userConverter.createForm({
         language: appStore.system.default_locale,
@@ -75,6 +76,14 @@ async function handleBack(): Promise<void> {
     await router.push({ name: "SystemUser" });
 }
 
+function handleStepChange(step: number): void {
+    if (step === 1 && !form.id) {
+        MessageUtils.warning("请先保存用户基本信息");
+        return;
+    }
+    activeStep.value = step;
+}
+
 async function handleUserSave(): Promise<void> {
     if (!formRef.value) return;
     saving.value = true;
@@ -82,11 +91,13 @@ async function handleUserSave(): Promise<void> {
         await formRef.value.validate();
         if (isEditing.value) {
             await UserApi.update(userConverter.toDTO(form));
+            MessageUtils.success("修改用户成功，继续配置角色授权");
+            activeStep.value = 1;
         } else {
             await UserApi.create(userConverter.toDTO(form));
+            MessageUtils.success("新增用户成功");
+            await handleBack();
         }
-        MessageUtils.success(isEditing.value ? "修改用户成功" : "新增用户成功");
-        await handleBack();
     } catch (error: unknown) {
         console.error(error);
         MessageUtils.error(error);
@@ -126,7 +137,18 @@ onMounted(load);
 
 <template>
     <div v-loading="loading" class="user-edit-page">
-        <section class="user-edit-section">
+        <el-steps
+            class="user-edit-steps"
+            :active="activeStep"
+            align-center
+            finish-status="success"
+            process-status="process"
+            @change="handleStepChange">
+            <el-step title="基本信息" description="填写用户基础资料" />
+            <el-step title="角色授权" description="配置角色和数据访问范围" />
+        </el-steps>
+
+        <section v-if="activeStep === 0" class="user-edit-section">
             <div class="section-title">
                 <div>
                     <span>基本信息</span>
@@ -226,7 +248,7 @@ onMounted(load);
             </el-form>
         </section>
 
-        <section v-if="form.id" class="user-edit-section authorization-section">
+        <section v-else-if="form.id" class="user-edit-section authorization-section">
             <RoleAssignmentEditor :user-id="form.id" />
         </section>
 
@@ -240,9 +262,12 @@ onMounted(load);
 
         <div class="user-edit-actions">
             <el-button @click="handleBack">取消</el-button>
-            <el-button type="primary" :loading="saving" @click="handleUserSave">
-                {{ isEditing ? "保存修改" : "保存用户" }}
-            </el-button>
+            <template v-if="activeStep === 0">
+                <el-button type="primary" :loading="saving" @click="handleUserSave">
+                    {{ isEditing ? "保存修改" : "保存用户" }}
+                </el-button>
+            </template>
+            <el-button v-else @click="activeStep = 0">上一步</el-button>
         </div>
     </div>
 </template>
@@ -262,6 +287,12 @@ onMounted(load);
     width: min(1120px, 100%);
     margin-right: auto;
     margin-left: auto;
+}
+
+.user-edit-steps {
+    width: min(880px, 100%);
+    margin: 28px auto 24px;
+    padding: 0 24px;
 }
 
 .user-edit-section {
@@ -318,6 +349,14 @@ onMounted(load);
     min-width: 88px;
 }
 
+:deep(.el-step__title) {
+    font-weight: 500;
+}
+
+:deep(.el-step__description) {
+    font-size: 12px;
+}
+
 :deep(.el-form-item) {
     margin-bottom: 22px;
 }
@@ -332,6 +371,10 @@ onMounted(load);
 @media (max-width: 768px) {
     .user-edit-page {
         padding: 20px 16px 24px;
+    }
+
+    .user-edit-steps {
+        padding: 0;
     }
 
     .section-title {

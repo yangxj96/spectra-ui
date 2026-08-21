@@ -20,7 +20,7 @@ export const AuthenticationIdentityApi = {
 
     /** 发送绑定手机号验证码。 */
     async sendBindingPhoneCode(phone: string): Promise<void> {
-        return post<void>("/api/auth/bind/sms", { phone });
+        return post<void>("/api/security/authentication/bind/sms", { phone });
     },
 
     /** 绑定邮箱认证身份。 */
@@ -30,7 +30,7 @@ export const AuthenticationIdentityApi = {
 
     /** 发送绑定邮箱验证码。 */
     async sendBindingEmailCode(email: string): Promise<void> {
-        return post<void>("/api/auth/bind/email", { email });
+        return post<void>("/api/security/authentication/bind/email", { email });
     },
 
     /** 撤销单个认证身份。 */

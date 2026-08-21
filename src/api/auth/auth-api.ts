@@ -12,7 +12,7 @@ export const AuthApi = {
      * 用户登录
      */
     login(form: LoginForm): Promise<Token> {
-        return post<Token>("/api/auth/login", form, {
+        return post<Token>("/api/security/authentication/login", form, {
             priority: "high",
             fetchPriority: "high"
         });
@@ -35,17 +35,25 @@ export const AuthApi = {
     },
     /** 校验已有 MFA 并签发正式会话。 */
     verifyMfa(challengeId: string, code: string): Promise<Token> {
-        return post<Token>("/api/auth/mfa/verify", { challenge_id: challengeId, code }, { skipAuth: true });
+        return post<Token>(
+            "/api/security/authentication/mfa/verify",
+            { challenge_id: challengeId, code },
+            { skipAuth: true }
+        );
     },
     /** 完成首次 MFA 登记并签发正式会话。 */
     completeMfaEnrollment(challengeId: string): Promise<Token> {
-        return post<Token>("/api/auth/mfa/complete", { challenge_id: challengeId }, { skipAuth: true });
+        return post<Token>(
+            "/api/security/authentication/mfa/complete",
+            { challenge_id: challengeId },
+            { skipAuth: true }
+        );
     },
     /**
      * 退出登录
      */
     logout(): Promise<void> {
-        return post<void>("/api/auth/logout", undefined, {
+        return post<void>("/api/security/authentication/logout", undefined, {
             // Logout 是终止会话的请求，401 时不能再触发 Refresh。
             _skipRefresh: true,
             noBody: true
@@ -55,9 +63,13 @@ export const AuthApi = {
      * 刷新token
      */
     refresh(refreshToken?: string): Promise<Token> {
-        return post<Token>("/api/auth/refresh", refreshToken ? { refresh_token: refreshToken } : undefined, {
-            skipAuth: true,
-            _skipRefresh: true
-        });
+        return post<Token>(
+            "/api/security/authentication/refresh",
+            refreshToken ? { refresh_token: refreshToken } : undefined,
+            {
+                skipAuth: true,
+                _skipRefresh: true
+            }
+        );
     }
 };

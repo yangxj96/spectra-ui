@@ -18,7 +18,7 @@ describe("HTTP 空响应处理", () => {
         vi.stubGlobal("fetch", fetchMock);
 
         await expect(
-            request<void>("/api/auth/logout", {
+            request<void>("/api/security/authentication/logout", {
                 method: "POST",
                 loading: false,
                 noBody: true

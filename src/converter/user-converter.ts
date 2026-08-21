@@ -7,7 +7,7 @@
  */
 export const userConverter = {
     /** 创建空白用户表单（新增时使用） */
-    createForm(): UserForm {
+    createForm(defaults: Partial<Pick<UserForm, "language" | "timezone">> = {}): UserForm {
         return {
             id: "",
             username: "",
@@ -19,8 +19,8 @@ export const userConverter = {
             email: "",
             country: "",
             city: "",
-            language: "",
-            timezone: "",
+            language: defaults.language ?? "",
+            timezone: defaults.timezone ?? "",
             department_id: ""
         };
     },

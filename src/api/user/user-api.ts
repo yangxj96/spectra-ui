@@ -16,6 +16,13 @@ export const UserApi = {
         return get<Page<UserPageVO>>("/api/user/page", params);
     },
     /**
+     * 获取管理员用户详情
+     * @param id 用户ID
+     */
+    async detail(id: string): Promise<UserPageVO> {
+        return get<UserPageVO>(`/api/user/${id}`);
+    },
+    /**
      * 新增用户
      * @param params 角色入参
      */

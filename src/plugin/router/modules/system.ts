@@ -12,6 +12,28 @@ export default [
                 meta: { title: "用户管理", requiresAuth: true, requiredMenu: "SystemUser" }
             },
             {
+                path: "user/create",
+                name: "SystemUserCreate",
+                component: () => import("@/views/System/User/components/UserEdit/index.vue"),
+                meta: {
+                    title: "新增用户",
+                    requiresAuth: true,
+                    requiredMenu: "SystemUser",
+                    activeMenu: "SystemUser"
+                }
+            },
+            {
+                path: "user/:id/edit",
+                name: "SystemUserEdit",
+                component: () => import("@/views/System/User/components/UserEdit/index.vue"),
+                meta: {
+                    title: "编辑用户",
+                    requiresAuth: true,
+                    requiredMenu: "SystemUser",
+                    activeMenu: "SystemUser"
+                }
+            },
+            {
                 path: "RBAC",
                 name: "SystemRBAC",
                 component: () => import("@/views/System/RBAC/index.vue"),

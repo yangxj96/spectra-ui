@@ -1,23 +1,15 @@
 ﻿<script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import { UserApi } from "@/api/user/user-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictTag from "@/components/DictTag/index.vue";
-import { userConverter } from "@/converter/user-converter.ts";
 import useTable from "@/hooks/use-table.ts";
 import { useDictStore } from "@/plugin/store/modules/use-dict-store.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
-
-import UserEdit from "./components/UserEdit/index.vue";
-
-// 编辑组件
-const dialog_edit = reactive({
-    form: userConverter.createForm(),
-    open: false
-});
 
 // 查询条件
 const condition = ref<UserPageParams>({
@@ -28,6 +20,7 @@ const condition = ref<UserPageParams>({
 const organizationTree = ref<DepartmentTreeVO[]>([]);
 
 const dictStore = useDictStore();
+const router = useRouter();
 
 // table分页请求
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<UserPageVO>(
@@ -40,19 +33,11 @@ const handleInitData = async () => {
 };
 
 const handleUserAdd = () => {
-    dialog_edit.form = userConverter.createForm();
-    dialog_edit.open = false;
-    setTimeout(() => {
-        dialog_edit.open = true;
-    }, 0);
+    router.push({ name: "SystemUserCreate" });
 };
 
 const handleUserEdit = (row: UserPageVO) => {
-    dialog_edit.form = userConverter.toForm(row);
-    dialog_edit.open = false;
-    setTimeout(() => {
-        dialog_edit.open = true;
-    }, 0);
+    router.push({ name: "SystemUserEdit", params: { id: row.id } });
 };
 
 // 用户重置密码
@@ -69,16 +54,6 @@ const handleTableItemResetPassword = (row: UserPageVO) => {
 // 组织机构树节点被单击
 const handleOrganizationTreeNodeClick = (row: DepartmentTreeVO) => {
     condition.value.department_id = row.id;
-    handlerConditionQuery();
-};
-
-// 处理dialog框关闭,如果有其他的dialog也在这里处理关闭
-const handleDialogClose = () => {
-    if (dialog_edit.open) {
-        dialog_edit.open = false;
-        dialog_edit.form = userConverter.createForm();
-    }
-    // 最后重新获取下列表数据
     handlerConditionQuery();
 };
 
@@ -204,8 +179,6 @@ onMounted(async () => {
                 @current-change="handleCurrentChange" />
         </el-col>
     </el-row>
-    <!-- 用户组件区 -->
-    <UserEdit v-if="dialog_edit.open" :show="dialog_edit.open" :form="dialog_edit.form" @close="handleDialogClose" />
 </template>
 
 <style scoped lang="scss">

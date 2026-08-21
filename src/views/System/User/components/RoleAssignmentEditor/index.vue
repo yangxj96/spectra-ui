@@ -5,6 +5,16 @@ import { AuthorityApi } from "@/api/auth/authority-api.ts";
 import { AuthorizationApi } from "@/api/auth/authorization-api.ts";
 import { RoleApi } from "@/api/auth/role-api.ts";
 import { DepartmentApi } from "@/api/user/department-api.ts";
+import {
+    authorizationAssignmentBoundaries,
+    authorizationBoundariesFromProfile,
+    createAuthorizationScope,
+    flattenAuthorityPermissions,
+    flattenDepartmentTree,
+    toAuthorizationScopeChange,
+    type AuthorizationBoundaryForm,
+    type AuthorizationScopeForm
+} from "@/utils/authorization-boundary.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -12,16 +22,7 @@ const props = defineProps<{
     userId: string;
 }>();
 
-type ScopeMode = AuthorizationScopeChange["mode"];
-
-type ScopeForm = AuthorizationScopeChange;
-
-type BoundaryForm = {
-    permission: string;
-    access: ScopeForm;
-    grantEnabled: boolean;
-    grant: ScopeForm;
-};
+type ScopeMode = AuthorizationScopeForm["mode"];
 
 const scopeModeOptions: { value: ScopeMode; label: string }[] = [
     { value: "NONE", label: "NONE（仅能力，不限定数据范围）" },
@@ -40,7 +41,7 @@ const selectedProfileId = ref("");
 const selectedRoleId = ref("");
 const permissionToAdd = ref("");
 const roleAuthorization = ref<RoleAuthorizationState>();
-const boundaries = ref<BoundaryForm[]>([]);
+const boundaries = ref<AuthorizationBoundaryForm[]>([]);
 const loading = ref(false);
 const saving = ref(false);
 const applyingProfile = ref(false);
@@ -51,11 +52,11 @@ const selectedAssignment = computed(() =>
     assignments.value.find(assignment => assignment.assignment_id === selectedAssignmentId.value)
 );
 
-const permissionCatalog = computed(() => flattenPermissions(authorityTree.value));
+const permissionCatalog = computed(() => flattenAuthorityPermissions(authorityTree.value));
 
 const departmentByCode = computed(() => {
     const result = new Map<string, DepartmentTreeVO>();
-    flattenDepartments(departmentTree.value).forEach(department => result.set(department.code, department));
+    flattenDepartmentTree(departmentTree.value).forEach(department => result.set(department.code, department));
     return result;
 });
 
@@ -69,18 +70,6 @@ const rolePermissionOptions = computed(() => {
 const grantablePermissionCodes = computed(() => new Set(roleAuthorization.value?.grantable_permission_codes ?? []));
 
 const editable = computed(() => !selectedAssignment.value || selectedAssignment.value.state === "ACTIVE");
-
-const flattenPermissions = (nodes: AuthorityTree[]): AuthorityTree[] =>
-    nodes.flatMap(node => (node.children?.length ? flattenPermissions(node.children) : [node]));
-
-const flattenDepartments = (nodes: DepartmentTreeVO[]): DepartmentTreeVO[] =>
-    nodes.flatMap(node => (node.children?.length ? [node, ...flattenDepartments(node.children)] : [node]));
-
-const createScope = (mode: ScopeMode = "NONE"): ScopeForm => ({
-    mode,
-    department_ids: [],
-    include_descendants: false
-});
 
 const scopeModesFor = (permission: string): ScopeMode[] => {
     const configured = permissionCatalog.value.find(item => item.code === permission)?.allowed_scope_modes;
@@ -101,25 +90,6 @@ const stateLabel = (state: AuthorizationAssignment["state"]) => {
 };
 
 const isGrantable = (permission: string) => grantablePermissionCodes.value.has(permission);
-
-const scopeFromBoundary = (boundary: AuthorizationBoundary): ScopeForm => ({
-    mode: boundary.scope_mode,
-    department_ids: (boundary.rules ?? []).map(rule => rule.department_id).filter((id): id is string => Boolean(id)),
-    include_descendants: (boundary.rules ?? []).some(rule => rule.include_descendants)
-});
-
-const assignmentBoundaries = (assignment: AuthorizationAssignment): BoundaryForm[] => {
-    const grants = new Map(assignment.grant_boundaries.map(boundary => [boundary.permission_code, boundary]));
-    return assignment.access_boundaries.map(access => {
-        const grant = grants.get(access.permission_code);
-        return {
-            permission: access.permission_code,
-            access: scopeFromBoundary(access),
-            grantEnabled: Boolean(grant),
-            grant: grant ? scopeFromBoundary(grant) : createScope()
-        };
-    });
-};
 
 const load = async () => {
     loading.value = true;
@@ -169,7 +139,7 @@ const selectAssignment = async (assignmentId: string) => {
     selectedRoleId.value = assignment.role_id;
     permissionToAdd.value = "";
     roleAuthorization.value = await AuthorizationApi.currentRole(assignment.role_id);
-    boundaries.value = assignmentBoundaries(assignment);
+    boundaries.value = authorizationAssignmentBoundaries(assignment);
 };
 
 const handleRoleChange = async () => {
@@ -178,34 +148,6 @@ const handleRoleChange = async () => {
         : undefined;
     permissionToAdd.value = "";
     boundaries.value = [];
-};
-
-const scopeFromProfile = (scope: AuthorizationProfileScope): ScopeForm | undefined => {
-    const departmentIds = (scope.department_codes ?? [])
-        .map(code => departmentByCode.value.get(code)?.id)
-        .filter((id): id is string => Boolean(id));
-    if (departmentIds.length !== (scope.department_codes ?? []).length) return undefined;
-    return {
-        mode: scope.mode,
-        department_ids: departmentIds,
-        include_descendants: scope.include_descendants
-    };
-};
-
-const boundariesFromProfile = (assignment: AuthorizationProfileAssignment): BoundaryForm[] | undefined => {
-    const result: BoundaryForm[] = [];
-    for (const boundary of assignment.boundaries) {
-        const access = scopeFromProfile(boundary.access);
-        const grant = boundary.grant ? scopeFromProfile(boundary.grant) : undefined;
-        if (!access || (boundary.grant && !grant)) return undefined;
-        result.push({
-            permission: boundary.permission,
-            access,
-            grantEnabled: Boolean(grant),
-            grant: grant ?? createScope()
-        });
-    }
-    return result;
 };
 
 const applyProfile = async () => {
@@ -237,7 +179,7 @@ const applyProfile = async () => {
             MessageUtils.warning("授权方案中的 Permission 已不属于当前 Role，请先更新授权方案");
             return;
         }
-        const nextBoundaries = boundariesFromProfile(profileAssignment);
+        const nextBoundaries = authorizationBoundariesFromProfile(profileAssignment, departmentByCode.value);
         if (!nextBoundaries) {
             MessageUtils.warning("授权方案引用了不存在的部门编码，请先更新授权方案");
             return;
@@ -259,9 +201,9 @@ const addBoundary = () => {
     const [defaultMode = "NONE"] = scopeModesFor(permissionToAdd.value);
     boundaries.value.push({
         permission: permissionToAdd.value,
-        access: createScope(defaultMode),
+        access: createAuthorizationScope(defaultMode),
         grantEnabled: false,
-        grant: createScope(defaultMode)
+        grant: createAuthorizationScope(defaultMode)
     });
     permissionToAdd.value = "";
 };
@@ -311,20 +253,14 @@ const validateEditor = () => {
     return true;
 };
 
-const toScopeChange = (scope: ScopeForm): AuthorizationScopeChange => ({
-    mode: scope.mode,
-    department_ids: scope.mode === "RULES" ? scope.department_ids : [],
-    include_descendants: scope.mode === "RULES" && scope.include_descendants
-});
-
 const buildRequest = (): AuthorizationAssignmentChange => ({
     assignment_id: selectedAssignmentId.value || undefined,
     role_id: selectedRoleId.value,
     expected_version: selectedAssignment.value?.version ?? 0,
     boundaries: boundaries.value.map(boundary => ({
         permission: boundary.permission,
-        access: toScopeChange(boundary.access),
-        grant: boundary.grantEnabled ? toScopeChange(boundary.grant) : undefined
+        access: toAuthorizationScopeChange(boundary.access),
+        grant: boundary.grantEnabled ? toAuthorizationScopeChange(boundary.grant) : undefined
     }))
 });
 

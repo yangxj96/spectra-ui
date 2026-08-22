@@ -19,16 +19,12 @@ const activeTab = ref(route.query.tab === "password" ? "password" : "info");
 
 const userInfo = ref<UserProfileVO>({
     id: "",
-    username: "",
+    employee_no: "",
     real_name: "",
     avatar: "",
-    status: 1,
-    gender: 0,
-    birthday: "",
+    status: "ACTIVE",
     phone: "",
     email: "",
-    country: "",
-    city: "",
     language: "",
     timezone: "",
     department_id: "",
@@ -57,7 +53,7 @@ onMounted(() => {
             <el-card class="avatar-card">
                 <div class="avatar-section">
                     <el-avatar :src="userInfo.avatar || avatar" :size="100" class="avatar-image" />
-                    <h3 class="username">{{ userInfo.real_name || userInfo.username }}</h3>
+                    <h3 class="username">{{ userInfo.real_name }}</h3>
                     <p class="department">{{ userInfo.department_name }}</p>
                     <div class="role-tags">
                         <el-tag v-for="role in userInfo.roles" :key="role.id" size="small" type="info">
@@ -67,8 +63,8 @@ onMounted(() => {
                     <el-divider />
                     <div class="info-list">
                         <div class="info-item">
-                            <span class="info-label">用户名</span>
-                            <span class="info-value">{{ userInfo.username }}</span>
+                            <span class="info-label">工号</span>
+                            <span class="info-value">{{ userInfo.employee_no }}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">邮箱</span>

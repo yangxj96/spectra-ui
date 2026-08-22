@@ -39,9 +39,10 @@ declare global {
 
     // 用户分页请求参数定义
     type UserPageParams = BasePageParams & {
-        username?: string;
+        real_name?: string;
+        employee_no?: string;
         email?: string;
-        status?: boolean;
+        status?: UserStatus;
         department_id?: string;
     };
 

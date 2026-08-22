@@ -41,17 +41,25 @@ declare global {
 
     type UserAuthorizationStatus = "UNCONFIGURED" | "INCOMPLETE" | "ACTIVE" | "PARTIAL";
 
-    /** 批量导入用户的一行固定模板数据。 */
+    type UserStatus = "ACTIVE" | "LOCKED" | "DISABLED" | "DEPARTED";
+
+    /** 批量导入 Excel/CSV 中的一行用户数据。 */
     type UserImportRow = {
-        username: string;
         real_name: string;
         phone: string;
         email: string;
+    };
+
+    /** 批量导入本次任务固定使用的配置。 */
+    type UserImportSettings = {
         department_code: string;
         language: string;
         timezone: string;
         authorization_profile_code: string;
     };
+
+    /** 发往后端 Preview 的完整结构化行。 */
+    type UserImportPreviewRow = UserImportRow & UserImportSettings;
 
     /** 批量导入 Preview 请求。 */
     type UserImportPreviewFrom = {
@@ -59,7 +67,7 @@ declare global {
         file_name: string;
         file_hash: string;
         skip_existing: boolean;
-        rows: UserImportRow[];
+        rows: UserImportPreviewRow[];
     };
 
     /** 批量导入 Apply 请求。 */
@@ -112,28 +120,24 @@ declare global {
     type UserPageVO = {
         // 主键
         id: string;
-        // 用户名
-        username: string;
+        // 工号
+        employee_no: string;
         // 头像
         avatar: string;
         // 状态
-        status: number;
+        status: UserStatus;
+        // 状态说明
+        status_reason?: string;
+        // 离职时间
+        departed_at?: string;
         // 授权状态
         authorization_status: UserAuthorizationStatus;
         // 真实姓名
         real_name: string;
-        // 性别
-        gender: number;
-        // 生日
-        birthday: string;
         // 手机号码
         phone: string;
         // 邮箱
         email: string;
-        // 国家
-        country: string;
-        // 城市
-        city: string;
         // 语言
         language: string;
         // 时区
@@ -151,7 +155,7 @@ declare global {
     /** 用户资料与角色授权一次性提交响应。 */
     type UserOnboardingVO = {
         id: string;
-        username: string;
+        real_name: string;
     };
 
     /** 管理员重置密码后的一次性临时凭证。 */
@@ -165,24 +169,16 @@ declare global {
     type UserForm = {
         // 主键
         id: string;
-        // 用户名
-        username: string;
+        // 工号
+        employee_no: string;
         // 真实姓名
         real_name: string;
         // 状态
-        status: number | undefined;
-        // 性别
-        gender: number | undefined;
-        // 生日
-        birthday: string;
+        status: UserStatus | undefined;
         // 手机号码
         phone: string;
         // 邮箱
         email: string;
-        // 国家
-        country: string;
-        // 城市
-        city: string;
         // 语言
         language: string;
         // 时区
@@ -195,24 +191,16 @@ declare global {
     type UserDTO = {
         // 主键
         id?: string;
-        // 用户名
-        username: string;
+        // 工号
+        employee_no: string;
         // 真实姓名
         real_name: string;
         // 状态
-        status: number | undefined;
-        // 性别
-        gender: number | undefined;
-        // 生日
-        birthday: string;
+        status: UserStatus | undefined;
         // 手机号码
         phone: string;
         // 邮箱
         email: string;
-        // 国家
-        country: string;
-        // 城市
-        city: string;
         // 语言
         language: string;
         // 时区
@@ -231,26 +219,18 @@ declare global {
     type UserProfileVO = {
         /** 用户ID */
         id: string;
-        /** 用户名 */
-        username: string;
+        /** 工号 */
+        employee_no: string;
         /** 真实姓名 */
         real_name: string;
         /** 头像 */
         avatar: string;
         /** 状态 */
-        status: number;
-        /** 性别 */
-        gender: number;
-        /** 生日 */
-        birthday: string;
+        status: UserStatus;
         /** 手机号 */
         phone: string;
         /** 邮箱 */
         email: string;
-        /** 国家 */
-        country: string;
-        /** 城市 */
-        city: string;
         /** 语言 */
         language: string;
         /** 时区 */
@@ -277,18 +257,10 @@ declare global {
     type UserProfileFrom = {
         /** 真实姓名 */
         real_name: string;
-        /** 性别 */
-        gender: number;
-        /** 生日 */
-        birthday: string;
         /** 手机号 */
         phone: string;
         /** 邮箱 */
         email: string;
-        /** 国家 */
-        country: string;
-        /** 城市 */
-        city: string;
         /** 语言 */
         language: string;
         /** 时区 */

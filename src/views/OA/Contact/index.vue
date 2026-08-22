@@ -22,7 +22,7 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
                         v-model="condition.keyword"
                         :prefix-icon="Search"
                         clearable
-                        placeholder="姓名、账号、电话或邮箱"
+                        placeholder="姓名、工号、电话或邮箱"
                         style="width: 280px" />
                 </el-form-item>
                 <el-form-item><el-button type="primary" @click="handlerConditionQuery">查询</el-button></el-form-item>
@@ -31,9 +31,9 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
         <el-table :data="table_data" stripe>
             <el-table-column type="index" width="60" align="center" />
             <el-table-column label="姓名" min-width="130">
-                <template #default="scope">{{ scope.row.real_name || scope.row.username }}</template>
+                <template #default="scope">{{ scope.row.real_name }}</template>
             </el-table-column>
-            <el-table-column label="账号" prop="username" min-width="140" />
+            <el-table-column label="工号" prop="employee_no" min-width="140" />
             <el-table-column label="部门" prop="department_name" min-width="220" show-overflow-tooltip />
             <el-table-column label="手机号" prop="phone" min-width="140" />
             <el-table-column label="邮箱" prop="email" min-width="220" show-overflow-tooltip />

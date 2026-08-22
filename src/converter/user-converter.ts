@@ -10,15 +10,11 @@ export const userConverter = {
     createForm(defaults: Partial<Pick<UserForm, "language" | "timezone">> = {}): UserForm {
         return {
             id: "",
-            username: "",
+            employee_no: "",
             real_name: "",
             status: undefined,
-            gender: undefined,
-            birthday: "",
             phone: "",
             email: "",
-            country: "",
-            city: "",
             language: defaults.language ?? "",
             timezone: defaults.timezone ?? "",
             department_id: ""
@@ -29,15 +25,11 @@ export const userConverter = {
         return {
             // 基础字段
             id: datum.id ?? "",
-            username: datum.username ?? "",
+            employee_no: datum.employee_no ?? "",
             real_name: datum.real_name ?? "",
             status: datum.status ?? undefined,
-            gender: datum.gender ?? undefined,
-            birthday: datum.birthday ?? "",
             phone: datum.phone ?? "",
             email: datum.email ?? "",
-            country: datum.country ?? "",
-            city: datum.city ?? "",
             language: datum.language ?? "",
             timezone: datum.timezone ?? "",
             department_id: datum.department_id ?? ""
@@ -47,15 +39,11 @@ export const userConverter = {
     toDTO(form: UserForm): UserDTO {
         return {
             id: form.id || undefined,
-            username: form.username,
+            employee_no: form.employee_no,
             real_name: form.real_name,
             status: form.status ?? undefined,
-            gender: form.gender ?? undefined,
-            birthday: form.birthday ?? undefined,
             phone: form.phone,
             email: form.email,
-            country: form.country,
-            city: form.city,
             language: form.language,
             timezone: form.timezone,
             department_id: form.department_id

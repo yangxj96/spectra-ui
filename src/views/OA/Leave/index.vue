@@ -22,7 +22,7 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     LeaveApi.page,
     condition.value
 );
-const approverUsername = ref("");
+const approverEmail = ref("");
 const router = useRouter();
 
 function openCreate(): void {
@@ -34,11 +34,11 @@ function openEdit(row: LeaveVO): void {
 }
 
 async function submit(row: LeaveVO): Promise<void> {
-    if (!approverUsername.value) {
+    if (!approverEmail.value) {
         ElMessage.warning("请先选择审批人");
         return;
     }
-    await LeaveApi.submit(row.id, { approver_username: approverUsername.value });
+    await LeaveApi.submit(row.id, { approver_email: approverEmail.value });
     ElMessage.success("已提交审批");
     handlerConditionQuery();
 }
@@ -82,7 +82,7 @@ function statusType(status: string): "success" | "warning" | "danger" | "info" {
                     <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                     <el-button @click="openCreate">新建请假</el-button>
                 </el-form-item>
-                <el-form-item label="审批人"><OAApproverSelect v-model="approverUsername" /></el-form-item>
+                <el-form-item label="审批人"><OAApproverSelect v-model="approverEmail" /></el-form-item>
             </el-form>
         </template>
         <el-table :data="table_data" stripe>

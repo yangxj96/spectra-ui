@@ -20,7 +20,7 @@ const statusMap: Record<string, [string, "success" | "warning" | "danger" | "inf
 const condition = ref<ReimbursementPageParams>({ page_num: 1, page_size: 15 });
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } =
     useTable<ReimbursementVO>(ReimbursementApi.page, condition.value);
-const approverUsername = ref("");
+const approverEmail = ref("");
 const router = useRouter();
 
 function statusLabel(status: string): string {
@@ -40,11 +40,11 @@ function openEdit(row: ReimbursementVO): void {
 }
 
 async function submit(row: ReimbursementVO): Promise<void> {
-    if (!approverUsername.value) {
+    if (!approverEmail.value) {
         ElMessage.warning("请先选择审批人");
         return;
     }
-    await ReimbursementApi.submit(row.id, { approver_username: approverUsername.value });
+    await ReimbursementApi.submit(row.id, { approver_email: approverEmail.value });
     ElMessage.success("已提交审批");
     handlerConditionQuery();
 }
@@ -94,7 +94,7 @@ async function markPaid(row: ReimbursementVO): Promise<void> {
                     <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                     <el-button @click="openCreate">新建报销</el-button>
                 </el-form-item>
-                <el-form-item label="审批人"><OAApproverSelect v-model="approverUsername" /></el-form-item>
+                <el-form-item label="审批人"><OAApproverSelect v-model="approverEmail" /></el-form-item>
             </el-form>
         </template>
         <el-table :data="table_data" stripe>

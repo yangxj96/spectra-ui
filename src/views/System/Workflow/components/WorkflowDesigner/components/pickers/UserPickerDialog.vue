@@ -35,7 +35,7 @@ const loadData = async () => {
             page_num: pageNum.value,
             page_size: pageSize.value
         };
-        if (keyword.value) params.username = keyword.value;
+        if (keyword.value) params.real_name = keyword.value;
         const result = await UserApi.page(params);
         tableData.value = result?.records || [];
         total.value = result?.total || 0;
@@ -51,7 +51,7 @@ const syncTableSelection = () => {
     nextTick(() => {
         tableData.value.forEach(row => {
             if (selectedMap.value.has(row.id)) {
-                selectedMap.value.set(row.id, row.real_name || row.username);
+                selectedMap.value.set(row.id, row.real_name);
                 tableRef.value?.toggleRowSelection(row, true);
             }
         });
@@ -81,7 +81,7 @@ watch(
 // 用户手动勾选单行（不受翻页/程序化选中干扰）
 const handleSelect = (selection: UserPageVO[], row: UserPageVO) => {
     if (selection.some(r => r.id === row.id)) {
-        selectedMap.value.set(row.id, row.real_name || row.username);
+        selectedMap.value.set(row.id, row.real_name);
     } else {
         selectedMap.value.delete(row.id);
     }
@@ -90,7 +90,7 @@ const handleSelect = (selection: UserPageVO[], row: UserPageVO) => {
 // 用户点击表头全选
 const handleSelectAll = (selection: UserPageVO[]) => {
     if (selection.length > 0) {
-        tableData.value.forEach(row => selectedMap.value.set(row.id, row.real_name || row.username));
+        tableData.value.forEach(row => selectedMap.value.set(row.id, row.real_name));
     } else {
         tableData.value.forEach(row => selectedMap.value.delete(row.id));
     }
@@ -106,7 +106,7 @@ const handleConfirm = () => {
         emit("confirm", [...selectedMap.value.keys()].join(","), [...selectedMap.value.values()].join(","));
     } else {
         if (!currentRow.value) return;
-        emit("confirm", currentRow.value.id, currentRow.value.real_name || currentRow.value.username);
+        emit("confirm", currentRow.value.id, currentRow.value.real_name);
     }
     visible.value = false;
 };
@@ -119,7 +119,7 @@ const hasSelection = () => (props.multiple ? selectedMap.value.size > 0 : !!curr
         <div style="margin-bottom: 12px">
             <el-input
                 v-model="keyword"
-                placeholder="搜索用户名"
+                placeholder="搜索姓名"
                 clearable
                 style="width: 240px"
                 @keyup.enter="loadData" />
@@ -135,7 +135,7 @@ const hasSelection = () => (props.multiple ? selectedMap.value.size > 0 : !!curr
             @select-all="handleSelectAll"
             @row-click="handleRowClick">
             <el-table-column v-if="multiple" type="selection" width="50" />
-            <el-table-column label="用户名" prop="username" width="140" />
+            <el-table-column label="工号" prop="employee_no" width="140" />
             <el-table-column label="姓名" prop="real_name" width="120" />
             <el-table-column label="部门" prop="department_name" />
             <el-table-column label="手机号" prop="phone" width="140" />

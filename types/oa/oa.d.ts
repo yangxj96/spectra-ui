@@ -55,7 +55,7 @@ declare global {
     };
 
     type LeaveSubmitParams = {
-        approver_username?: string;
+        approver_email?: string;
     };
 
     type ApplicationTypeVO = {
@@ -168,7 +168,7 @@ declare global {
     };
 
     type ReimbursementSubmitParams = {
-        approver_username?: string;
+        approver_email?: string;
     };
 
     type ReimbursementPaymentParams = {
@@ -256,7 +256,7 @@ declare global {
     };
 
     type PurchaseSubmitParams = {
-        approver_username?: string;
+        approver_email?: string;
     };
 
     type PurchaseExecuteParams = {
@@ -500,7 +500,7 @@ declare global {
 
     type ContactVO = {
         id: string;
-        username: string;
+        employee_no: string;
         real_name?: string;
         avatar?: string;
         phone?: string;

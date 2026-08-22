@@ -30,7 +30,7 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     PurchaseApi.page,
     condition.value
 );
-const approverUsername = ref("");
+const approverEmail = ref("");
 const receiveVisible = ref(false);
 const receivedDate = ref(toLocalDateString());
 const receiveItems = ref<Array<PurchaseReceiptItemParams & { item_name: string; max: number }>>([]);
@@ -58,11 +58,11 @@ function openEdit(row: PurchaseVO): void {
 }
 
 async function submit(row: PurchaseVO): Promise<void> {
-    if (!approverUsername.value) {
+    if (!approverEmail.value) {
         ElMessage.warning("请先选择审批人");
         return;
     }
-    await PurchaseApi.submit(row.id, { approver_username: approverUsername.value });
+    await PurchaseApi.submit(row.id, { approver_email: approverEmail.value });
     ElMessage.success("已提交审批");
     handlerConditionQuery();
 }
@@ -145,7 +145,7 @@ async function saveReceipt(): Promise<void> {
                     <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                     <el-button @click="openCreate">新建采购申请</el-button>
                 </el-form-item>
-                <el-form-item label="审批人"><OAApproverSelect v-model="approverUsername" /></el-form-item>
+                <el-form-item label="审批人"><OAApproverSelect v-model="approverEmail" /></el-form-item>
             </el-form>
         </template>
         <el-table :data="table_data" stripe>

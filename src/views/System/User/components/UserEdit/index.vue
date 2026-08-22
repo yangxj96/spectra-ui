@@ -49,6 +49,12 @@ const userEditSteps = [
     { title: "授权方案", description: "选择方案或新增多个角色" },
     { title: "角色授权", description: "分别配置每个角色的访问范围" }
 ] as const;
+const userStatusOptions: Array<{ label: string; value: UserStatus }> = [
+    { label: "正常", value: "ACTIVE" },
+    { label: "锁定", value: "LOCKED" },
+    { label: "禁用", value: "DISABLED" },
+    { label: "离职", value: "DEPARTED" }
+];
 const form = reactive<UserForm>(
     userConverter.createForm({
         language: appStore.system.default_locale,
@@ -69,7 +75,8 @@ const formRef = useTemplateRef<FormInstance>("formRef");
 const roleAssignmentEditor = useTemplateRef<RoleAssignmentEditorExpose>("roleAssignmentEditor");
 
 const rules: FormRules<UserForm> = {
-    username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
+    employee_no: [{ required: true, message: "请输入工号", trigger: "blur" }],
+    real_name: [{ required: true, message: "请输入姓名", trigger: "blur" }],
     email: [
         { required: true, message: "请输入邮箱", trigger: "blur" },
         { validator: email, trigger: "blur" }
@@ -294,39 +301,24 @@ onMounted(load);
                             @submit.prevent>
                             <el-row :gutter="24">
                                 <el-col :span="12">
-                                    <el-form-item label="名称" prop="username">
-                                        <el-input v-model="form.username" clearable placeholder="请输入名称" />
+                                    <el-form-item label="工号" prop="employee_no">
+                                        <el-input v-model="form.employee_no" clearable placeholder="请输入工号" />
                                     </el-form-item>
                                 </el-col>
                                 <el-col :span="12">
-                                    <el-form-item label="真实名称" prop="real_name">
-                                        <el-input v-model="form.real_name" clearable placeholder="请输入真实名称" />
+                                    <el-form-item label="姓名" prop="real_name">
+                                        <el-input v-model="form.real_name" clearable placeholder="请输入姓名" />
                                     </el-form-item>
                                 </el-col>
                                 <el-col :span="12">
                                     <el-form-item label="状态" prop="status">
-                                        <DictSelect
-                                            v-model="form.status"
-                                            dict_code="sys_user_state"
-                                            placeholder="请选择状态" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item label="性别" prop="gender">
-                                        <DictSelect
-                                            v-model="form.gender"
-                                            dict_code="sys_user_gender"
-                                            placeholder="请选择性别" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item label="生日" prop="birthday">
-                                        <el-date-picker
-                                            v-model="form.birthday"
-                                            type="date"
-                                            placeholder="请选择生日"
-                                            value-format="YYYY-MM-DD"
-                                            style="width: 100%" />
+                                        <el-select v-model="form.status" clearable placeholder="请选择状态">
+                                            <el-option
+                                                v-for="option in userStatusOptions"
+                                                :key="option.value"
+                                                :label="option.label"
+                                                :value="option.value" />
+                                        </el-select>
                                     </el-form-item>
                                 </el-col>
                                 <el-col :span="12">
@@ -365,16 +357,6 @@ onMounted(load);
                                             default-expand-all
                                             :props="treeDefaultProps"
                                             placeholder="请选择所属组织" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item label="国家" prop="country">
-                                        <el-input v-model="form.country" clearable placeholder="请输入国家" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item label="城市" prop="city">
-                                        <el-input v-model="form.city" clearable placeholder="请输入城市" />
                                     </el-form-item>
                                 </el-col>
                                 <el-col :span="12">

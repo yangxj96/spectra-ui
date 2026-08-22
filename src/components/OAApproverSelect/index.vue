@@ -37,9 +37,10 @@ onMounted(() => load());
         <el-option
             v-for="item in options"
             :key="item.id"
-            :label="`${item.real_name || item.username}（${item.username}）`"
-            :value="item.username">
-            <span>{{ item.real_name || item.username }}</span>
+            :label="`${item.real_name}（${item.employee_no || item.email}）`"
+            :value="item.email">
+            <span>{{ item.real_name }}</span>
+            <span class="employee-no">{{ item.employee_no || item.email }}</span>
             <span class="department">{{ item.department_name }}</span>
         </el-option>
     </el-select>
@@ -49,6 +50,12 @@ onMounted(() => load());
 .department {
     float: right;
     margin-left: 16px;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+}
+
+.employee-no {
+    margin-left: 8px;
     color: var(--el-text-color-secondary);
     font-size: 12px;
 }

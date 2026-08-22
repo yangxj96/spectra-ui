@@ -1,61 +1,26 @@
-/** 用户批量导入固定 CSV 模板字段。 */
-export const USER_IMPORT_HEADERS = [
-    "username",
-    "real_name",
-    "phone",
-    "email",
-    "department_code",
-    "language",
-    "timezone",
-    "authorization_profile_code"
-] as const;
+/** 用户批量导入 Excel/CSV 模板字段；工号由后端生成，组织和授权配置在页面上统一选择。 */
+export const USER_IMPORT_HEADERS = ["real_name", "phone", "email"] as const;
 
 export type UserImportHeader = (typeof USER_IMPORT_HEADERS)[number];
 
 /** 用户批量导入页面展示字段。 */
 export const USER_IMPORT_HEADER_LABELS: Record<UserImportHeader, string> = {
-    username: "用户名",
     real_name: "真实姓名",
     phone: "手机号码",
-    email: "邮箱",
-    department_code: "部门编码",
-    language: "语言",
-    timezone: "时区",
-    authorization_profile_code: "授权方案编码"
+    email: "邮箱"
 };
 
 /** 用户批量导入模板对外展示的中文表头。 */
-export const USER_IMPORT_TEMPLATE_HEADERS = [
-    "用户名",
-    "真实姓名",
-    "手机号码",
-    "邮箱",
-    "部门编码",
-    "语言",
-    "时区",
-    "授权方案编码"
-] as const;
+export const USER_IMPORT_TEMPLATE_HEADERS = ["真实姓名", "手机号码", "邮箱"] as const;
 
 const USER_IMPORT_HEADER_ALIASES: Record<string, UserImportHeader> = {
-    username: "username",
     real_name: "real_name",
     phone: "phone",
     email: "email",
-    department_code: "department_code",
-    language: "language",
-    timezone: "timezone",
-    authorization_profile_code: "authorization_profile_code",
-    用户名: "username",
     真实姓名: "real_name",
     手机号码: "phone",
-    邮箱: "email",
-    部门编码: "department_code",
-    语言: "language",
-    时区: "timezone",
-    授权方案编码: "authorization_profile_code"
+    邮箱: "email"
 };
-
-const USER_IMPORT_REFERENCE_HEADERS = new Set<UserImportHeader>(["department_code", "authorization_profile_code"]);
 
 /** 批量导入错误分类。 */
 export type UserImportErrorCategory = "REQUIRED" | "FORMAT" | "DUPLICATE" | "REFERENCE" | "AUTHORIZATION" | "OTHER";
@@ -144,17 +109,10 @@ export async function parseUserImportFile(file: File): Promise<UserImportRow[]> 
         defval: ""
     });
     const records = values.map(record => record.map(value => String(value ?? "")));
-    const optionValues = workbook.Sheets["下拉选项"]
-        ? utils.sheet_to_json<unknown[]>(workbook.Sheets["下拉选项"], {
-              header: 1,
-              raw: false,
-              defval: ""
-          })
-        : [];
-    return parseUserImportRecords(records, readReferenceMappings(optionValues));
+    return parseUserImportRecords(records);
 }
 
-function parseUserImportRecords(records: string[][], referenceMappings = new Map<string, string>()): UserImportRow[] {
+function parseUserImportRecords(records: string[][]): UserImportRow[] {
     if (!records.length) throw new Error("CSV 文件不能为空");
 
     const headers = records[0].map(value => {
@@ -177,12 +135,7 @@ function parseUserImportRecords(records: string[][], referenceMappings = new Map
             Object.fromEntries(
                 USER_IMPORT_HEADERS.map((header, index) => {
                     const value = record[index]?.trim() ?? "";
-                    return [
-                        header,
-                        USER_IMPORT_REFERENCE_HEADERS.has(header)
-                            ? normalizeReferenceCode(value, referenceMappings)
-                            : value
-                    ];
+                    return [header, value];
                 })
             ) as UserImportRow
         ];
@@ -190,65 +143,6 @@ function parseUserImportRecords(records: string[][], referenceMappings = new Map
 
     if (!rows.length) throw new Error("CSV 文件至少需要一行用户数据");
     return rows;
-}
-
-/** 将 Excel 下拉项中的“名称｜编码”还原为后端使用的编码。 */
-function normalizeReferenceCode(value: string, referenceMappings: ReadonlyMap<string, string>): string {
-    const mappedCode = referenceMappings.get(value);
-    if (mappedCode) return mappedCode;
-
-    const separatorIndex = Math.max(value.lastIndexOf("｜"), value.lastIndexOf("|"));
-    return separatorIndex >= 0 ? value.slice(separatorIndex + 1).trim() : value;
-}
-
-function readReferenceMappings(records: unknown[][]): Map<string, string> {
-    const mappings = new Map<string, string>();
-    if (!records.length) return mappings;
-
-    const headers = records[0].map(value => String(value ?? "").trim());
-    addReferenceMappings(mappings, records, headers, {
-        displayHeader: "部门选项",
-        codeHeader: "部门编码",
-        nameHeader: "部门名称"
-    });
-    addReferenceMappings(mappings, records, headers, {
-        displayHeader: "授权方案选项",
-        codeHeader: "授权方案编码",
-        nameHeader: "授权方案名称"
-    });
-    return mappings;
-}
-
-type ReferenceMappingColumns = {
-    displayHeader: string;
-    codeHeader: string;
-    nameHeader: string;
-};
-
-function addReferenceMappings(
-    mappings: Map<string, string>,
-    records: unknown[][],
-    headers: string[],
-    columns: ReferenceMappingColumns
-): void {
-    const displayIndex = headers.indexOf(columns.displayHeader);
-    const codeIndex = headers.indexOf(columns.codeHeader);
-    const nameIndex = headers.indexOf(columns.nameHeader);
-    if (codeIndex < 0) return;
-
-    records.slice(1).forEach(record => {
-        const code = String(record[codeIndex] ?? "").trim();
-        const name = nameIndex >= 0 ? String(record[nameIndex] ?? "").trim() : "";
-        const display = displayIndex >= 0 ? String(record[displayIndex] ?? "").trim() : "";
-        if (!code) return;
-        if (display) mappings.set(display, code);
-        if (name) {
-            mappings.set(`${name}｜${code}`, code);
-            mappings.set(`${code}｜${name}`, code);
-            mappings.set(`${name}|${code}`, code);
-            mappings.set(`${code}|${name}`, code);
-        }
-    });
 }
 
 /** 将当前编辑后的行重新序列化，作为 Preview 的摘要输入。 */

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { AuthorizationApi } from "@/api/auth/authorization-api.ts";
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import { UserImportApi } from "@/api/user/user-import-api.ts";
+import DictSelect from "@/components/DictSelect/index.vue";
+import { formatDateTime } from "@/utils/date-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import {
     calculateUserImportProgress,
@@ -43,7 +45,16 @@ const errorRows = ref<UserImportRowResult[]>([]);
 const parseError = ref("");
 const idempotencyKey = ref("");
 const skipExisting = ref(true);
+const referenceLoading = ref(false);
+const departmentOptions = ref<DepartmentTreeVO[]>([]);
+const profileOptions = ref<AuthorizationProfile[]>([]);
+const importSettings = ref<UserImportSettings>(emptyImportSettings());
 const errorCategory = ref<"ALL" | UserImportErrorCategory>("ALL");
+const departmentTreeProps = {
+    value: "code",
+    label: "name",
+    children: "children"
+};
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
 let refreshInFlight = false;
 
@@ -55,6 +66,7 @@ const canViewApplyResult = computed(() =>
 const previewReady = computed(
     () => task.value?.status === "PREVIEWED" && Boolean(task.value.preview_token) && task.value.error_rows === 0
 );
+const importSettingsReady = computed(() => Object.values(importSettings.value).every(value => Boolean(value.trim())));
 const filteredErrorRows = computed(() => {
     if (errorCategory.value === "ALL") return errorRows.value;
     return errorRows.value.filter(row =>
@@ -113,10 +125,14 @@ function handleStepChange(step: number): void {
 
 function emptyRow(): UserImportRow {
     return {
-        username: "",
         real_name: "",
         phone: "",
-        email: "",
+        email: ""
+    };
+}
+
+function emptyImportSettings(): UserImportSettings {
+    return {
         department_code: "",
         language: "",
         timezone: "",
@@ -145,6 +161,7 @@ async function handleFileChange(file: UploadFile): Promise<void> {
     rows.value = [];
     task.value = null;
     errorRows.value = [];
+    importSettings.value = emptyImportSettings();
     activeStep.value = 0;
     await parseSelectedFile();
 }
@@ -179,44 +196,38 @@ function removeRow(index: number): void {
     rows.value.splice(index, 1);
 }
 
-function flattenDepartments(nodes: DepartmentTreeVO[]): DepartmentTreeVO[] {
-    return nodes.flatMap(node => [node, ...flattenDepartments(node.children ?? [])]);
-}
-
 function formatReferenceOption(code: string, name?: string): string {
     const displayName = name?.trim();
     return displayName ? `${displayName}｜${code}` : code;
 }
 
+async function loadImportOptions(): Promise<void> {
+    referenceLoading.value = true;
+    try {
+        const [departmentTree, profiles] = await Promise.all([DepartmentApi.tree(), AuthorizationApi.profiles()]);
+        departmentOptions.value = departmentTree ?? [];
+        profileOptions.value = (profiles ?? []).filter(profile => profile.state === "ACTIVE" && profile.code);
+    } catch (error: unknown) {
+        MessageUtils.error(error);
+    } finally {
+        referenceLoading.value = false;
+    }
+}
+
 async function downloadTemplate(): Promise<void> {
     templateLoading.value = true;
     try {
-        const [departmentTree, profiles] = await Promise.all([DepartmentApi.tree(), AuthorizationApi.profiles()]);
-        const departments = flattenDepartments(departmentTree ?? []).filter(department => department.code);
-        const activeProfiles = (profiles ?? []).filter(profile => profile.state === "ACTIVE" && profile.code);
-        if (!departments.length || !activeProfiles.length) {
-            MessageUtils.warning("当前没有可用于导入的部门或启用授权方案");
-            return;
-        }
-
         const { default: ExcelJS } = await import("exceljs");
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet("用户导入");
-        const optionsSheet = workbook.addWorksheet("下拉选项");
         const templateHeaders = [...USER_IMPORT_TEMPLATE_HEADERS];
-        const templateRows = 2000;
 
         sheet.addRow(templateHeaders);
         sheet.views = [{ state: "frozen", ySplit: 1 }];
         sheet.columns = [
-            { key: "username", width: 20 },
             { key: "real_name", width: 18 },
             { key: "phone", width: 18 },
-            { key: "email", width: 28 },
-            { key: "department_code", width: 22 },
-            { key: "language", width: 14 },
-            { key: "timezone", width: 24 },
-            { key: "authorization_profile_code", width: 26 }
+            { key: "email", width: 28 }
         ];
 
         const headerRow = sheet.getRow(1);
@@ -226,62 +237,6 @@ async function downloadTemplate(): Promise<void> {
             cell.alignment = { horizontal: "center", vertical: "middle" };
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF409EFF" } };
         });
-
-        optionsSheet.addRow(["部门选项", "部门编码", "部门名称"]);
-        departments.forEach(department =>
-            optionsSheet.addRow([
-                formatReferenceOption(department.code, department.name),
-                department.code,
-                department.name
-            ])
-        );
-        optionsSheet.getCell("E1").value = "授权方案选项";
-        optionsSheet.getCell("F1").value = "授权方案编码";
-        optionsSheet.getCell("G1").value = "授权方案名称";
-        activeProfiles.forEach((profile, index) => {
-            optionsSheet.getCell(index + 2, 5).value = formatReferenceOption(profile.code, profile.name);
-            optionsSheet.getCell(index + 2, 6).value = profile.code;
-            optionsSheet.getCell(index + 2, 7).value = profile.name;
-        });
-        optionsSheet.columns = [
-            { width: 42 },
-            { width: 24 },
-            { width: 28 },
-            { width: 4 },
-            { width: 42 },
-            { width: 28 },
-            { width: 32 }
-        ];
-        optionsSheet.views = [{ state: "frozen", ySplit: 1 }];
-        optionsSheet.getRow(1).eachCell(cell => {
-            cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-            cell.alignment = { horizontal: "center", vertical: "middle" };
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF409EFF" } };
-        });
-
-        const departmentEndRow = departments.length + 1;
-        const profileEndRow = activeProfiles.length + 1;
-        workbook.definedNames.add(`'下拉选项'!$A$2:$A$${departmentEndRow}`, "部门编码选项");
-        workbook.definedNames.add(`'下拉选项'!$E$2:$E$${profileEndRow}`, "授权方案编码选项");
-
-        for (let row = 2; row <= templateRows + 1; row++) {
-            sheet.getCell(row, 5).dataValidation = {
-                type: "list",
-                allowBlank: false,
-                formulae: ["=部门编码选项"],
-                showErrorMessage: true,
-                errorTitle: "部门编码无效",
-                error: "请从下拉列表中选择系统中已有的部门编码。"
-            };
-            sheet.getCell(row, 8).dataValidation = {
-                type: "list",
-                allowBlank: false,
-                formulae: ["=授权方案编码选项"],
-                showErrorMessage: true,
-                errorTitle: "授权方案编码无效",
-                error: "请从下拉列表中选择启用状态的授权方案编码。"
-            };
-        }
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], {
@@ -321,17 +276,28 @@ async function handlePreview(): Promise<void> {
         MessageUtils.warning("请先选择文件并解析数据");
         return;
     }
+    if (!importSettingsReady.value) {
+        MessageUtils.warning("请先选择本次导入的部门、语言、时区和授权方案");
+        return;
+    }
 
     loading.value = true;
     parseError.value = "";
     try {
-        const normalizedText = serializeUserImportRows(rows.value);
+        const previewRows: UserImportPreviewRow[] = rows.value.map(row => ({
+            ...row,
+            ...importSettings.value
+        }));
+        const normalizedText = [
+            serializeUserImportRows(rows.value),
+            ...Object.entries(importSettings.value).map(([key, value]) => `${key}=${value}`)
+        ].join("\n");
         const nextTask = await UserImportApi.preview({
             idempotency_key: idempotencyKey.value || (idempotencyKey.value = createUserImportIdempotencyKey()),
             file_name: fileName.value || "用户批量导入.csv",
             file_hash: await sha256Text(normalizedText),
             skip_existing: skipExisting.value,
-            rows: rows.value
+            rows: previewRows
         });
         task.value = nextTask;
         errorRows.value = await UserImportApi.errors(nextTask.id);
@@ -420,6 +386,7 @@ function startOver(): void {
     errorRows.value = [];
     parseError.value = "";
     idempotencyKey.value = "";
+    importSettings.value = emptyImportSettings();
 }
 
 function stateLabel(state: string): string {
@@ -446,6 +413,7 @@ function headerLabel(header: UserImportHeader): string {
 }
 
 onUnmounted(stopPolling);
+onMounted(() => void loadImportOptions());
 </script>
 
 <template>
@@ -512,6 +480,58 @@ onUnmounted(stopPolling);
 
                             <el-alert v-if="parseError" :title="parseError" type="error" :closable="false" show-icon />
 
+                            <section class="import-settings">
+                                <div class="import-settings-heading">
+                                    <div>
+                                        <strong>本次导入固定配置</strong>
+                                        <span>以下配置会应用到本次导入的全部用户，Excel 中不再填写这些内容。</span>
+                                    </div>
+                                    <el-tag :type="importSettingsReady ? 'success' : 'info'">
+                                        {{ importSettingsReady ? "配置完成" : "待选择" }}
+                                    </el-tag>
+                                </div>
+                                <el-form :model="importSettings" class="import-settings-form" label-position="top">
+                                    <el-form-item label="部门" required>
+                                        <el-tree-select
+                                            v-model="importSettings.department_code"
+                                            :data="departmentOptions"
+                                            :props="departmentTreeProps"
+                                            node-key="code"
+                                            filterable
+                                            clearable
+                                            check-strictly
+                                            default-expand-all
+                                            placeholder="请选择部门" />
+                                    </el-form-item>
+                                    <el-form-item label="语言" required>
+                                        <DictSelect
+                                            v-model="importSettings.language"
+                                            dict_code="sys_language"
+                                            placeholder="请选择语言" />
+                                    </el-form-item>
+                                    <el-form-item label="时区" required>
+                                        <DictSelect
+                                            v-model="importSettings.timezone"
+                                            dict_code="sys_timezone"
+                                            placeholder="请选择时区" />
+                                    </el-form-item>
+                                    <el-form-item label="授权方案" required>
+                                        <el-select
+                                            v-model="importSettings.authorization_profile_code"
+                                            filterable
+                                            clearable
+                                            :loading="referenceLoading"
+                                            placeholder="请选择授权方案">
+                                            <el-option
+                                                v-for="profile in profileOptions"
+                                                :key="profile.id"
+                                                :label="formatReferenceOption(profile.code, profile.name)"
+                                                :value="profile.code" />
+                                        </el-select>
+                                    </el-form-item>
+                                </el-form>
+                            </section>
+
                             <div class="data-toolbar">
                                 <div>
                                     <strong>数据预览</strong>
@@ -526,7 +546,7 @@ onUnmounted(stopPolling);
                                     v-for="header in USER_IMPORT_HEADERS"
                                     :key="header"
                                     :label="headerLabel(header)"
-                                    :min-width="header === 'authorization_profile_code' ? 190 : 150">
+                                    min-width="150">
                                     <template #default="scope">
                                         <el-input
                                             v-model="scope.row[header]"
@@ -575,7 +595,7 @@ onUnmounted(stopPolling);
                             <div class="preview-note">
                                 <span>文件：{{ task.file_name }}</span>
                                 <span>已存在用户：{{ task.skip_existing ? "跳过" : "报错" }}</span>
-                                <span>校验有效期：{{ task.preview_expires_at }}</span>
+                                <span>校验有效期：{{ formatDateTime(task.preview_expires_at) }}</span>
                             </div>
 
                             <div v-if="errorRows.length" class="error-section">
@@ -699,10 +719,13 @@ onUnmounted(stopPolling);
                             <div class="user-tip-content">
                                 <p><strong>准备导入数据</strong></p>
                                 <p>支持固定 CSV、TXT 和 Excel 模板；Excel 文件默认读取第一个工作表。</p>
-                                <p>必填字段：用户名、真实姓名、手机号码、邮箱、部门编码、语言、时区和授权方案编码。</p>
-                                <p>下载 Excel 模板后直接填写中文表头，部门编码和授权方案编码可从下拉列表中选择。</p>
                                 <p>
-                                    授权方案编码必须是启用状态的方案；一个方案可以包含多个角色，导入时会为每个用户一次应用方案中的全部角色。
+                                    Excel
+                                    只填写真实姓名、手机号码和邮箱，工号由系统自动生成，部门、语言、时区和授权方案在数据预览上方统一选择。
+                                </p>
+                                <p>固定配置会应用到本次导入的全部用户，提交前请确认选择内容正确。</p>
+                                <p>
+                                    授权方案必须是启用状态的方案；一个方案可以包含多个角色，导入时会为每个用户一次应用方案中的全部角色。
                                 </p>
                                 <p>校验步骤只做数据和影响预览，确认应用后才会创建用户并写入授权。</p>
                             </div>
@@ -1073,6 +1096,58 @@ onUnmounted(stopPolling);
     gap: 14px;
 }
 
+.import-settings {
+    padding: 16px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 10px;
+    background: var(--el-fill-color-blank);
+}
+
+.import-settings-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.import-settings-heading > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.import-settings-heading strong {
+    color: var(--el-text-color-primary);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.import-settings-heading span {
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+}
+
+.import-settings-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+    margin-top: 14px;
+}
+
+.import-settings-form :deep(.el-form-item) {
+    margin-right: 0;
+    margin-bottom: 12px;
+}
+
+.import-settings-form :deep(.el-select) {
+    width: 100%;
+}
+
+.import-settings-form :deep(.el-tree-select) {
+    width: 100%;
+}
+
 .upload-control {
     display: inline-flex;
 }
@@ -1290,6 +1365,10 @@ onUnmounted(stopPolling);
     .import-file-toolbar {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .import-settings-form {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .import-file-actions {

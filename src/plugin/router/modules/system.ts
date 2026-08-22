@@ -45,10 +45,10 @@ export default [
                 }
             },
             {
-                path: "RBAC",
-                name: "SystemRBAC",
+                path: "roles",
+                name: "SystemRoleManagement",
                 component: () => import("@/views/System/RBAC/index.vue"),
-                meta: { title: "访问控制", requiresAuth: true, requiredMenu: "SystemRBAC" }
+                meta: { title: "角色管理", requiresAuth: true, requiredMenu: "SystemRoleManagement" }
             },
             {
                 path: "authorization-profiles",
@@ -57,8 +57,8 @@ export default [
                 meta: {
                     title: "授权方案",
                     requiresAuth: true,
-                    requiredMenu: "SystemRBAC",
-                    activeMenu: "SystemRBAC"
+                    requiredMenu: "SystemAuthorizationProfiles",
+                    activeMenu: "SystemAuthorizationProfiles"
                 }
             },
             {
@@ -69,8 +69,8 @@ export default [
                 meta: {
                     title: "新建授权方案",
                     requiresAuth: true,
-                    requiredMenu: "SystemRBAC",
-                    activeMenu: "SystemRBAC"
+                    requiredMenu: "SystemAuthorizationProfiles",
+                    activeMenu: "SystemAuthorizationProfiles"
                 }
             },
             {
@@ -81,8 +81,8 @@ export default [
                 meta: {
                     title: "编辑授权方案",
                     requiresAuth: true,
-                    requiredMenu: "SystemRBAC",
-                    activeMenu: "SystemRBAC"
+                    requiredMenu: "SystemAuthorizationProfiles",
+                    activeMenu: "SystemAuthorizationProfiles"
                 }
             },
             {

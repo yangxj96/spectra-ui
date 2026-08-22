@@ -10,13 +10,13 @@ const router = useRouter();
 const profiles = ref<AuthorizationProfile[]>([]);
 const roles = ref<RolePageVO[]>([]);
 const keyword = ref("");
-const state = ref<"ALL" | AuthorizationProfile["state"]>("ALL");
+const state = ref<AuthorizationProfile["state"] | "">("");
 const loading = ref(false);
 
 const filteredProfiles = computed(() => {
     const normalizedKeyword = keyword.value.trim().toLowerCase();
     return profiles.value.filter(profile => {
-        const matchesState = !state.value || state.value === "ALL" || profile.state === state.value;
+        const matchesState = !state.value || profile.state === state.value;
         if (!matchesState || !normalizedKeyword) return matchesState;
         return [profile.name, profile.code, profile.description ?? ""].some(value =>
             value.toLowerCase().includes(normalizedKeyword)
@@ -52,7 +52,7 @@ async function load(): Promise<void> {
 
 function resetSearch(): void {
     keyword.value = "";
-    state.value = "ALL";
+    state.value = "";
 }
 
 function openCreate(): void {
@@ -86,10 +86,14 @@ onMounted(load);
         <el-row class="box__search">
             <el-form :inline="true" @submit.prevent>
                 <el-form-item label="方案名称">
-                    <el-input v-model="keyword" placeholder="请输入方案名称、编码或说明" clearable />
+                    <el-input
+                        v-model="keyword"
+                        placeholder="请输入方案名称、编码或说明"
+                        clearable
+                        style="width: 240px" />
                 </el-form-item>
                 <el-form-item label="状态">
-                    <el-select v-model="state" placeholder="请选择状态" clearable style="width: 140px">
+                    <el-select v-model="state" placeholder="请选择状态" clearable style="width: 240px">
                         <el-option label="启用" value="ACTIVE" />
                         <el-option label="停用" value="DISABLED" />
                     </el-select>

@@ -52,22 +52,6 @@ export const AuthorizationApi = {
         );
     },
 
-    previewRole(roleId: string, params: RoleAuthorizationChange): Promise<RoleAuthorizationPreview> {
-        return post<RoleAuthorizationPreview>(
-            `/api/security/authorization/roles/${roleId}/impact-preview`,
-            params,
-            AUTHORIZATION_API_OPTIONS
-        );
-    },
-
-    applyRole(roleId: string, params: RoleAuthorizationApply): Promise<void> {
-        return post<void>(
-            `/api/security/authorization/roles/${roleId}/impact-apply`,
-            params,
-            AUTHORIZATION_API_OPTIONS
-        );
-    },
-
     organizationVersion(): Promise<number> {
         return get<number>(
             "/api/security/authorization/departments/organization-version",

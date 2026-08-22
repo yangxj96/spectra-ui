@@ -369,7 +369,7 @@ onMounted(load);
                         :label="`${role.name}（${role.code}）`"
                         :value="role.id">
                         <span>{{ role.name }}（{{ role.code }}）</span>
-                        <el-tag v-if="role.builtin" size="small" type="info">系统托管</el-tag>
+                        <el-tag v-if="role.builtin" size="small" type="info">内置</el-tag>
                     </el-option>
                 </el-select>
             </div>

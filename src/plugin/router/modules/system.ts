@@ -51,6 +51,28 @@ export default [
                 meta: { title: "角色管理", requiresAuth: true, requiredMenu: "SystemRoleManagement" }
             },
             {
+                path: "roles/create",
+                name: "SystemRoleCreate",
+                component: () => import("@/views/System/RBAC/components/RoleEdit/index.vue"),
+                meta: {
+                    title: "新增角色",
+                    requiresAuth: true,
+                    requiredMenu: "SystemRoleManagement",
+                    activeMenu: "SystemRoleManagement"
+                }
+            },
+            {
+                path: "roles/:id/edit",
+                name: "SystemRoleEdit",
+                component: () => import("@/views/System/RBAC/components/RoleEdit/index.vue"),
+                meta: {
+                    title: "编辑角色",
+                    requiresAuth: true,
+                    requiredMenu: "SystemRoleManagement",
+                    activeMenu: "SystemRoleManagement"
+                }
+            },
+            {
                 path: "authorization-profiles",
                 name: "SystemAuthorizationProfiles",
                 component: () => import("@/views/System/AuthorizationProfile/index.vue"),

@@ -1,7 +1,5 @@
 import { del, get, post, put } from "@/plugin/request/api";
 
-import type { TreeKey } from "element-plus";
-
 /**
  * 角色相关接口
  *
@@ -11,11 +9,25 @@ import type { TreeKey } from "element-plus";
  */
 export const RoleApi = {
     /**
-     * 创建角色
-     * @param params 角色入参
+     * 提交角色编辑器内容，兼容新增和编辑。
+     * @param params 角色编辑器提交参数
      */
-    create(params: RoleForm): Promise<void> {
-        return post<void>("/api/role", params);
+    saveEditor(params: RoleEditorSave): Promise<RolePageVO> {
+        return post<RolePageVO>("/api/role/editor", params);
+    },
+    /**
+     * 启用角色
+     * @param id 角色ID
+     */
+    enable(id: string): Promise<void> {
+        return put<void>(`/api/role/${id}/enable`);
+    },
+    /**
+     * 禁用角色
+     * @param id 角色ID
+     */
+    disable(id: string): Promise<void> {
+        return put<void>(`/api/role/${id}/disable`);
     },
     /**
      * 根据ID删除角色
@@ -23,13 +35,6 @@ export const RoleApi = {
      */
     delete(id: string): Promise<void> {
         return del<void>("/api/role/" + id);
-    },
-    /**
-     * 修改角色
-     * @param params 角色入参
-     */
-    update(params: RoleForm): Promise<void> {
-        return put<void>("/api/role", params);
     },
     /**
      * 分页查询
@@ -45,17 +50,17 @@ export const RoleApi = {
         return get<RolePageVO[]>("/api/role/list");
     },
     /**
+     * 查询角色详情
+     * @param id 角色ID
+     */
+    detail(id: string): Promise<RolePageVO> {
+        return get<RolePageVO>(`/api/role/${id}`);
+    },
+    /**
      * 根据角色ID获取角色下有哪些菜单
      * @param roleId 角色ID
      */
     getRoleMenu(roleId: string): Promise<Menu[]> {
         return get<Menu[]>(`/api/role/${roleId}/menu`);
-    },
-    /**
-     * 管理角色-菜单
-     * @param params 角色ID和菜单列表
-     */
-    saveRoleMenu(params: { role_id: string; menu_ids: TreeKey[] | undefined }): Promise<void> {
-        return put<void>(`/api/role/${params.role_id}/menus`, params);
     }
 };

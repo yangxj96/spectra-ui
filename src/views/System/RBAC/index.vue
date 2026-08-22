@@ -1,353 +1,208 @@
-﻿<script setup lang="ts">
-import { ElTree } from "element-plus";
-import { onMounted, reactive, ref, useTemplateRef } from "vue";
+<script setup lang="ts">
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
-import { AuthorityApi } from "@/api/auth/authority-api.ts";
-import { AuthorizationApi } from "@/api/auth/authorization-api.ts";
 import { RoleApi } from "@/api/auth/role-api.ts";
-import { MenuApi } from "@/api/system/menu-api.ts";
-import { roleConverter } from "@/converter/role-converter.ts";
 import useTable from "@/hooks/use-table.ts";
-import { treeDefaultProps } from "@/utils/default-config.ts";
-import { collectMenuIds } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-import RoleEdit from "./components/RoleEdit/index.vue";
-
-// refs
-const powerRef = useTemplateRef<InstanceType<typeof ElTree>>("powerRef");
-const grantablePowerRef = useTemplateRef<InstanceType<typeof ElTree>>("grantablePowerRef");
-const menuRef = useTemplateRef<InstanceType<typeof ElTree>>("menuRef");
-
-// 数据
-const menu_tree = ref<Menu[]>();
-const authority_tree = ref<AuthorityTree[]>();
+const router = useRouter();
 const condition = ref<RolePageParams>({
     page_num: 1,
     page_size: 15
 });
-const edit = reactive<{
-    dialog: boolean;
-    form: RoleForm;
-}>({
-    dialog: false,
-    form: roleConverter.createForm()
-});
-const currentRow = ref<RolePageVO>();
 
 const { handlerConditionQuery, handleCurrentChange, handleSizeChange, pagination, table_data } = useTable<RolePageVO>(
     RoleApi.page,
     condition.value
 );
 
-onMounted(() => {
-    handleInitData();
-});
-
-// 初始化数据
-const handleInitData = async () => {
-    menu_tree.value = await MenuApi.tree();
-    authority_tree.value = await AuthorityApi.tree();
+const roleKindLabels: Record<string, string> = {
+    BUSINESS: "业务角色",
+    DEV_OPS: "运维角色",
+    SYSTEM_ADMIN: "系统管理员",
+    AUDITOR: "审计角色"
 };
 
-const handleRoleAdd = () => {
-    edit.form = roleConverter.createForm();
-    edit.dialog = false;
-    setTimeout(() => {
-        edit.dialog = true;
-    }, 0);
-};
+function roleKindLabel(roleKind: string | undefined): string {
+    return roleKindLabels[roleKind ?? ""] ?? roleKind ?? "业务角色";
+}
 
-const handleRoleEdit = (row: RolePageVO) => {
-    edit.form = roleConverter.toForm(row);
-    edit.dialog = false;
-    setTimeout(() => {
-        edit.dialog = true;
-    }, 0);
-};
+function openCreate(): void {
+    void router.push({ name: "SystemRoleCreate" });
+}
 
-// 角色删除
-const handleRoleDelete = (row: RolePageVO) => {
-    MessageUtils.box.confirm(`是否要删除[${row.name}]`, "提示").then(async () => {
-        await RoleApi.delete(row.id);
-        MessageUtils.success("删除成功");
+function openEdit(row: RolePageVO): void {
+    void router.push({ name: "SystemRoleEdit", params: { id: row.id } });
+}
+
+async function handleRoleConditionQuery(): Promise<void> {
+    condition.value.page_num = 1;
+    pagination.value.page = 1;
+    await handlerConditionQuery();
+}
+
+async function refreshRoleList(): Promise<void> {
+    await handlerConditionQuery();
+    if (table_data.value.length === 0 && pagination.value.page > 1) {
+        pagination.value.page -= 1;
+        condition.value.page_num = pagination.value.page;
         await handlerConditionQuery();
-    });
-};
-
-// 条件查询
-const handleRoleConditionQuery = () => {
-    cleanTreeCheckState();
-    handlerConditionQuery();
-};
-
-// 清理右边两棵树的选中状态
-const cleanTreeCheckState = () => {
-    currentRow.value = undefined;
-    powerRef.value?.setCheckedKeys([]);
-    grantablePowerRef.value?.setCheckedKeys([]);
-    menuRef.value?.setCheckedKeys([]);
-};
-
-const authorityLeaves = (nodes: AuthorityTree[]): AuthorityTree[] => {
-    const leaves: AuthorityTree[] = [];
-    for (const node of nodes) {
-        if (node.children?.length) {
-            leaves.push(...authorityLeaves(node.children));
-        } else {
-            leaves.push(node);
-        }
     }
-    return leaves;
-};
+}
 
-const checkedPermissionCodes = (treeRef: typeof powerRef): string[] => {
-    const checkedKeys = new Set((treeRef.value?.getCheckedKeys() ?? []).map(key => String(key)));
-    return authorityLeaves(authority_tree.value ?? [])
-        .filter(node => checkedKeys.has(String(node.id)))
-        .map(node => node.code);
-};
-
-const setCheckedPermissionCodes = (treeRef: typeof powerRef, codes: string[]) => {
-    const selectedCodes = new Set(codes);
-    const selectedIds = authorityLeaves(authority_tree.value ?? [])
-        .filter(node => selectedCodes.has(node.code))
-        .map(node => String(node.id));
-    treeRef.value?.setCheckedKeys(selectedIds);
-};
-
-// 角色列表行被单机
-const handleRoleTableRowClick = async (row: RolePageVO) => {
-    if (currentRow.value && currentRow.value.id && currentRow.value.id === row.id) return;
+async function handleRoleEnable(row: RolePageVO): Promise<void> {
     try {
-        cleanTreeCheckState();
-        const [roleAuthorization, roleMenu] = await Promise.all([
-            AuthorizationApi.currentRole(row.id),
-            RoleApi.getRoleMenu(row.id)
-        ]);
-        currentRow.value = {
-            ...row,
-            version: roleAuthorization.version,
-            authority_level: roleAuthorization.authority_level
-        };
-        setCheckedPermissionCodes(powerRef, roleAuthorization.permission_codes);
-        setCheckedPermissionCodes(grantablePowerRef, roleAuthorization.grantable_permission_codes);
-        menuRef.value?.setCheckedKeys(roleMenu.map(i => i.id));
+        await MessageUtils.box.confirm(`是否启用角色[${row.name}]`, "提示");
+        await RoleApi.enable(row.id);
+        MessageUtils.success("角色已启用");
+        await refreshRoleList();
     } catch (error: unknown) {
-        console.error("未知错误", error);
+        if (error !== "cancel" && error !== "close") MessageUtils.error(error);
     }
-};
+}
 
-// 角色-权限关联关系保存
-const handleSaveRoleAuthority = async () => {
-    if (!currentRow.value) {
-        MessageUtils.warning("请先选中一个角色");
-        return;
+async function handleRoleDisable(row: RolePageVO): Promise<void> {
+    try {
+        await MessageUtils.box.confirm(`是否禁用角色[${row.name}]`, "提示");
+        await RoleApi.disable(row.id);
+        MessageUtils.success("角色已禁用");
+        await refreshRoleList();
+    } catch (error: unknown) {
+        if (error !== "cancel" && error !== "close") MessageUtils.error(error);
     }
-    const roleAuthorization: RoleAuthorizationChange = {
-        expected_version: currentRow.value.version,
-        authority_level: currentRow.value.authority_level ?? 1,
-        permission_codes: checkedPermissionCodes(powerRef),
-        grantable_permission_codes: checkedPermissionCodes(grantablePowerRef)
-    };
-    const preview = await AuthorizationApi.previewRole(currentRow.value.id, roleAuthorization);
-    await MessageUtils.box.confirm(
-        `本次授权变更将影响 ${preview.affected_user_count} 个用户、${preview.affected_assignment_count} 个授权实例，是否继续提交？`,
-        "确认授权变更"
-    );
-    await AuthorizationApi.applyRole(currentRow.value.id, {
-        ...roleAuthorization,
-        expected_version: preview.expected_version,
-        preview_token: preview.preview_token
-    });
-    currentRow.value = {
-        ...currentRow.value,
-        version: preview.expected_version + 1
-    };
-    MessageUtils.success("角色授权已提交");
-};
+}
 
-// 角色-菜单 关联关系保存
-const handleSaveRoleMenu = async () => {
-    if (!currentRow.value) {
-        MessageUtils.warning("请先选中一个角色");
-        return;
+async function handleRoleDelete(row: RolePageVO): Promise<void> {
+    try {
+        await MessageUtils.box.confirm(`删除后角色将从角色目录中移除，是否继续删除[${row.name}]？`, "提示");
+        await RoleApi.delete(row.id);
+        MessageUtils.success("角色已删除");
+        await refreshRoleList();
+    } catch (error: unknown) {
+        if (error !== "cancel" && error !== "close") MessageUtils.error(error);
     }
-    const params = {
-        role_id: currentRow.value.id,
-        menu_ids: collectMenuIds(menu_tree.value ?? [], menuRef.value?.getCheckedKeys() ?? [])
-    };
-    await RoleApi.saveRoleMenu(params);
-    MessageUtils.success("保存成功");
-};
+}
 </script>
 
 <template>
-    <el-row class="rbac-container">
-        <!-- 角色 -->
-        <el-col :span="12" class="table-col">
-            <!-- 过滤条件 -->
-            <el-row>
-                <el-form :inline="true" :model="condition">
-                    <el-form-item label="角色名称">
-                        <el-input
-                            v-model="condition.name"
-                            placeholder="请输入角色名称"
-                            clearable
-                            style="width: 170px" />
-                    </el-form-item>
-                    <el-form-item label="角色状态">
-                        <el-select
-                            v-model="condition.state"
-                            placeholder="请输入选择角色状态"
-                            clearable
-                            style="width: 170px">
-                            <el-option label="启用" :value="true" />
-                            <el-option label="禁用" :value="false" />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item>
-                        <el-button type="primary" @click="handleRoleConditionQuery()">查询</el-button>
-                        <el-button @click="handleRoleAdd()">新增</el-button>
-                    </el-form-item>
-                </el-form>
-            </el-row>
-            <!-- 表格 -->
-            <el-table
-                :data="table_data"
-                border
-                highlight-current-row
-                style="width: 100%"
-                @row-click="handleRoleTableRowClick">
-                <el-table-column align="center" width="060" type="index" label="序号" />
-                <el-table-column align="center" width="150" prop="name" label="名称" />
-                <el-table-column align="center" width="120" prop="code" label="标识" show-overflow-tooltip />
-                <el-table-column align="center" width="120" label="是否启用">
+    <div class="role-list-page">
+        <div class="role-list-search">
+            <el-form :inline="true" :model="condition" @submit.prevent>
+                <el-form-item label="角色名称">
+                    <el-input v-model="condition.name" placeholder="请输入角色名称" clearable style="width: 190px" />
+                </el-form-item>
+                <el-form-item label="角色状态">
+                    <el-select v-model="condition.state" placeholder="请选择角色状态" clearable style="width: 190px">
+                        <el-option label="激活" :value="true" />
+                        <el-option label="禁用" :value="false" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="handleRoleConditionQuery">查询</el-button>
+                    <el-button type="primary" plain @click="openCreate">新增角色</el-button>
+                </el-form-item>
+            </el-form>
+        </div>
+
+        <div class="role-list-body">
+            <el-table :data="table_data" border height="100%">
+                <el-table-column align="center" width="60" label="序号">
+                    <template #default="scope">
+                        {{ (pagination.page - 1) * pagination.size + scope.$index + 1 }}
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" width="170" prop="id" label="ID" show-overflow-tooltip />
+                <el-table-column align="center" width="130" prop="name" label="角色名称" show-overflow-tooltip />
+                <el-table-column align="center" width="150" prop="code" label="角色编码" show-overflow-tooltip />
+                <el-table-column align="center" width="110" label="角色类型">
+                    <template #default="scope">
+                        {{ roleKindLabel(scope.row.role_kind) }}
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" width="110" prop="authority_level" label="授权管理等级" />
+                <el-table-column align="center" width="90" label="状态">
                     <template #default="scope">
                         <el-tag :type="scope.row.state ? 'primary' : 'danger'">
-                            {{ scope.row.state ? "启用" : "禁用" }}
+                            {{ scope.row.state ? "激活" : "禁用" }}
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column align="center" width="120" label="内置">
+                <el-table-column align="center" width="100" label="是否内置">
                     <template #default="scope">
                         <el-tag :type="scope.row.builtin ? 'primary' : 'danger'">
                             {{ scope.row.builtin ? "是" : "否" }}
                         </el-tag>
                     </template>
                 </el-table-column>
+                <el-table-column align="center" width="80" prop="version" label="版本" />
                 <el-table-column align="center" prop="remark" label="备注" show-overflow-tooltip />
-                <el-table-column align="center" label="编辑" width="120">
+                <el-table-column align="center" label="操作" width="240" fixed="right">
                     <template #default="scope">
-                        <el-button link type="primary" size="small" @click="handleRoleEdit(scope.row)">编辑</el-button>
-                        <el-button link type="primary" size="small" @click="handleRoleDelete(scope.row)">
-                            删除
-                        </el-button>
+                        <template v-if="!scope.row.builtin">
+                            <el-button link type="primary" size="small" @click="openEdit(scope.row)">编辑</el-button>
+                            <el-button
+                                v-if="scope.row.state"
+                                link
+                                type="warning"
+                                size="small"
+                                @click="handleRoleDisable(scope.row)">
+                                禁用
+                            </el-button>
+                            <el-button v-else link type="success" size="small" @click="handleRoleEnable(scope.row)">
+                                启用
+                            </el-button>
+                            <el-button link type="danger" size="small" @click="handleRoleDelete(scope.row)">
+                                删除
+                            </el-button>
+                        </template>
+                        <el-text v-else type="info" size="small">内置角色</el-text>
                     </template>
                 </el-table-column>
             </el-table>
-            <!-- 分页 -->
-            <el-pagination
-                background
-                layout="total, sizes, prev, pager, next"
-                :page-size="pagination.size"
-                :page-sizes="pagination.page_sizes"
-                :total="pagination.total"
-                style="padding: 10px; float: right"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange" />
-        </el-col>
-        <!-- 权限 -->
-        <el-col :span="4" class="tree-col">
-            <el-text type="primary">角色权限</el-text>
-            <el-divider class="divider-box" />
-            <el-button link type="primary" @click="handleSaveRoleAuthority">预览并保存授权</el-button>
-            <div class="tree-wrapper">
-                <ElTree
-                    ref="powerRef"
-                    :data="authority_tree"
-                    :props="treeDefaultProps"
-                    node-key="id"
-                    default-expand-all
-                    empty-text="暂无权限"
-                    show-checkbox />
-            </div>
-        </el-col>
-        <!-- 可授予权限 -->
-        <el-col :span="4" class="tree-col">
-            <el-text type="primary">可授予权限</el-text>
-            <el-divider class="divider-box" />
-            <el-text size="small" type="info">与角色权限一起提交</el-text>
-            <div class="tree-wrapper">
-                <ElTree
-                    ref="grantablePowerRef"
-                    :data="authority_tree"
-                    :props="treeDefaultProps"
-                    node-key="id"
-                    default-expand-all
-                    empty-text="暂无权限"
-                    show-checkbox />
-            </div>
-        </el-col>
-        <!-- 菜单 -->
-        <el-col :span="4" class="tree-col">
-            <el-text type="primary">角色菜单</el-text>
-            <el-divider class="divider-box" />
-            <el-button link type="primary" @click="handleSaveRoleMenu">保存角色菜单</el-button>
-            <div class="tree-wrapper">
-                <ElTree
-                    ref="menuRef"
-                    :data="menu_tree"
-                    :props="treeDefaultProps"
-                    node-key="id"
-                    default-expand-all
-                    empty-text="暂无菜单"
-                    show-checkbox />
-            </div>
-        </el-col>
-    </el-row>
-    <!-- 角色编辑框 -->
-    <RoleEdit v-if="edit.dialog" :show="edit.dialog" :form="edit.form" @close="handleRoleConditionQuery" />
+        </div>
+
+        <el-pagination
+            background
+            layout="total, sizes, prev, pager, next"
+            v-model:current-page="pagination.page"
+            v-model:page-size="pagination.size"
+            :page-sizes="pagination.page_sizes"
+            :total="pagination.total"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange" />
+    </div>
 </template>
 
 <style scoped lang="scss">
-.rbac-container {
+.role-list-page {
     display: flex;
     height: 100%;
-    padding: 10px;
-    overflow: hidden;
     min-height: 0;
-}
-
-.table-col {
-    flex: 0 0 50%;
-    display: flex;
     flex-direction: column;
-    min-height: 0;
-
-    .el-table {
-        flex: 1;
-        min-height: 0;
-    }
-}
-
-.tree-col {
-    flex: 0 0 16.666%;
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    min-height: 0;
+    padding: 10px 20px 16px;
     overflow: hidden;
-    height: 94%;
+    background: var(--el-bg-color);
+    box-sizing: border-box;
 }
 
-.tree-wrapper {
-    flex: 1;
+.role-list-search {
+    flex: 0 0 auto;
+    padding: 8px 0 18px;
+}
+
+.role-list-search .el-form-item {
+    margin-bottom: 0;
+}
+
+.role-list-body {
+    flex: 1 1 auto;
     min-height: 0;
-    overflow-y: auto;
 }
 
-.divider-box {
-    margin: 18px 0 10px 0;
+.role-list-page > .el-pagination {
+    flex: 0 0 auto;
+    align-self: flex-end;
+    padding: 14px 0 0;
 }
 </style>

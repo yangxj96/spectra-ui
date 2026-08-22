@@ -32,6 +32,7 @@ export function useTable<T>(request: (parameters?: BasePageParams) => Promise<Pa
      * @param value 页码
      */
     async function handleCurrentChange(value: number) {
+        pagination.value.page = value;
         parameters.page_num = value;
         parameters.page_size = pagination.value.size;
         const result = await request(parameters);
@@ -43,7 +44,9 @@ export function useTable<T>(request: (parameters?: BasePageParams) => Promise<Pa
      * @param value 每页数量
      */
     async function handleSizeChange(value: number) {
-        parameters.page_num = pagination.value.page;
+        pagination.value.page = 1;
+        pagination.value.size = value;
+        parameters.page_num = 1;
         parameters.page_size = value;
         const result = await request(parameters);
         handleRequestResult(result);

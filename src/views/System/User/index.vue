@@ -5,7 +5,6 @@ import { useRouter } from "vue-router";
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import { UserApi } from "@/api/user/user-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
-import DictTag from "@/components/DictTag/index.vue";
 import useTable from "@/hooks/use-table.ts";
 import { useDictStore } from "@/plugin/store/modules/use-dict-store.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
@@ -75,6 +74,13 @@ const authorizationStatusMeta: Record<
 const authorizationStatusOf = (status: UserAuthorizationStatus | undefined) =>
     authorizationStatusMeta[status ?? "UNCONFIGURED"];
 
+const userStatusMeta: Record<UserStatus, { label: string; type: "success" | "warning" | "danger" | "info" }> = {
+    ACTIVE: { label: "正常", type: "success" },
+    LOCKED: { label: "锁定", type: "warning" },
+    DISABLED: { label: "禁用", type: "danger" },
+    DEPARTED: { label: "离职", type: "info" }
+};
+
 const temporaryPasswordExpiresText = computed(() => {
     const expiresAt = temporaryPasswordResult.value?.expires_at;
     return expiresAt ? new Date(expiresAt).toLocaleString() : "—";
@@ -83,7 +89,7 @@ const temporaryPasswordExpiresText = computed(() => {
 // 用户重置密码
 const handleTableItemResetPassword = async (row: UserPageVO) => {
     try {
-        await MessageUtils.box.confirm(`是否要重置[${row.username}]的密码`, "提示");
+        await MessageUtils.box.confirm(`是否要重置[${row.real_name}]的密码`, "提示");
     } catch {
         return;
     }
@@ -119,7 +125,6 @@ const handleOrganizationTreeNodeClick = (row: DepartmentTreeVO) => {
 // 挂载后执行
 onMounted(async () => {
     // 预加载数据
-    await dictStore.getDictData("sys_user_gender");
     await dictStore.getDictData("sys_language");
     await dictStore.getDictData("sys_timezone");
     await handleInitData();
@@ -130,16 +135,21 @@ onMounted(async () => {
     <!-- 搜索区 -->
     <el-row class="box__search">
         <el-form :inline="true" :model="condition">
-            <el-form-item label="姓名" prop="username">
-                <el-input v-model="condition.username" placeholder="请输入姓名" clearable />
+            <el-form-item label="工号" prop="employee_no">
+                <el-input v-model="condition.employee_no" class="search-field" placeholder="请输入工号" clearable />
+            </el-form-item>
+            <el-form-item label="姓名" prop="real_name">
+                <el-input v-model="condition.real_name" class="search-field" placeholder="请输入姓名" clearable />
             </el-form-item>
             <el-form-item label="邮箱" prop="email">
-                <el-input v-model="condition.email" placeholder="请输入电话" clearable />
+                <el-input v-model="condition.email" class="search-field" placeholder="请输入邮箱" clearable />
             </el-form-item>
             <el-form-item label="状态" prop="status">
-                <el-select v-model="condition.status" placeholder="请输入状态" clearable style="width: 200px">
-                    <el-option label="激活" :value="true" />
-                    <el-option label="冻结" :value="false" />
+                <el-select v-model="condition.status" class="search-field" placeholder="请选择状态" clearable>
+                    <el-option label="正常" value="ACTIVE" />
+                    <el-option label="锁定" value="LOCKED" />
+                    <el-option label="禁用" value="DISABLED" />
+                    <el-option label="离职" value="DEPARTED" />
                 </el-select>
             </el-form-item>
             <el-form-item>
@@ -168,19 +178,23 @@ onMounted(async () => {
         <el-col :span="20">
             <!-- 列表 -->
             <el-table :data="table_data" height="92%" stripe>
-                <el-table-column align="center" type="index" />
-                <el-table-column align="center" width="150" show-overflow-tooltip label="显示名称" prop="username" />
-                <el-table-column align="center" width="150" show-overflow-tooltip label="真实姓名" prop="real_name" />
+                <el-table-column align="center" type="index" fixed="left" />
+                <el-table-column
+                    align="center"
+                    width="140"
+                    fixed="left"
+                    show-overflow-tooltip
+                    label="工号"
+                    prop="employee_no" />
+                <el-table-column
+                    align="center"
+                    width="150"
+                    fixed="left"
+                    show-overflow-tooltip
+                    label="姓名"
+                    prop="real_name" />
                 <el-table-column align="center" width="250" show-overflow-tooltip label="邮箱" prop="email" />
-                <el-table-column align="center" width="110" show-overflow-tooltip label="性别" prop="gender">
-                    <template v-slot:default="scope">
-                        {{ dictStore.getDictItemSync("sys_user_gender", scope.row.gender)?.label }}
-                    </template>
-                </el-table-column>
-                <el-table-column align="center" width="130" show-overflow-tooltip label="生日" prop="birthday" />
                 <el-table-column align="center" width="120" show-overflow-tooltip label="手机号码" prop="phone" />
-                <el-table-column align="center" width="100" show-overflow-tooltip label="国家" prop="country" />
-                <el-table-column align="center" width="100" show-overflow-tooltip label="城市" prop="city" />
                 <el-table-column align="center" width="150" show-overflow-tooltip label="语言" prop="language">
                     <template v-slot:default="scope">
                         {{ dictStore.getDictItemSync("sys_language", scope.row.language)?.label }}
@@ -191,9 +205,11 @@ onMounted(async () => {
                         {{ dictStore.getDictItemSync("sys_timezone", scope.row.timezone)?.label }}
                     </template>
                 </el-table-column>
-                <el-table-column align="center" width="150" show-overflow-tooltip label="状态" prop="state">
+                <el-table-column align="center" width="100" show-overflow-tooltip label="状态" prop="status">
                     <template #default="scope">
-                        <DictTag v-model="scope.row.status" primary_value="0" dict_code="sys_user_state" />
+                        <el-tag :type="userStatusMeta[scope.row.status]?.type ?? 'info'">
+                            {{ userStatusMeta[scope.row.status]?.label ?? scope.row.status }}
+                        </el-tag>
                     </template>
                 </el-table-column>
                 <el-table-column
@@ -300,6 +316,13 @@ onMounted(async () => {
 
     .el-form-item {
         margin-bottom: 0;
+    }
+
+    :deep(.search-field) {
+        flex: 0 0 200px;
+        width: 200px;
+        min-width: 200px;
+        max-width: 200px;
     }
 }
 

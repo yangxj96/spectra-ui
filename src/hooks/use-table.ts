@@ -1,4 +1,6 @@
-import { onMounted, ref } from "vue";
+import { nextTick, onMounted, ref } from "vue";
+
+import { hideLoading, showLoading } from "@/plugin/element/loading";
 
 /**
  * 分页表格组合式函数
@@ -35,8 +37,7 @@ export function useTable<T>(request: (parameters?: BasePageParams) => Promise<Pa
         pagination.value.page = value;
         parameters.page_num = value;
         parameters.page_size = pagination.value.size;
-        const result = await request(parameters);
-        handleRequestResult(result);
+        await loadPage();
     }
 
     /**
@@ -48,8 +49,7 @@ export function useTable<T>(request: (parameters?: BasePageParams) => Promise<Pa
         pagination.value.size = value;
         parameters.page_num = 1;
         parameters.page_size = value;
-        const result = await request(parameters);
-        handleRequestResult(result);
+        await loadPage();
     }
 
     /**
@@ -58,8 +58,22 @@ export function useTable<T>(request: (parameters?: BasePageParams) => Promise<Pa
     async function handlerConditionQuery() {
         parameters.page_num = pagination.value.page;
         parameters.page_size = pagination.value.size;
-        const result = await request(parameters);
-        handleRequestResult(result);
+        await loadPage();
+    }
+
+    /**
+     * 请求并渲染表格数据
+     */
+    async function loadPage() {
+        // 请求层本身也会维护一份引用，这里额外保留到表格完成 DOM 更新，始终只显示一个全局遮罩。
+        showLoading();
+        try {
+            const result = await request(parameters);
+            handleRequestResult(result);
+            await nextTick();
+        } finally {
+            hideLoading();
+        }
     }
 
     /**

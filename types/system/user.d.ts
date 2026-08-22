@@ -148,8 +148,8 @@ declare global {
         created_at: string;
     };
 
-    // 用户创建成功响应
-    type UserCreatedVO = {
+    /** 用户资料与角色授权一次性提交响应。 */
+    type UserOnboardingVO = {
         id: string;
         username: string;
     };
@@ -194,7 +194,7 @@ declare global {
     // 用户表单提交内容
     type UserDTO = {
         // 主键
-        id: string;
+        id?: string;
         // 用户名
         username: string;
         // 真实姓名
@@ -219,6 +219,12 @@ declare global {
         timezone: string;
         // 部门ID
         department_id: string;
+    };
+
+    /** 用户资料与多角色授权的一次性提交请求。 */
+    type UserOnboardingDTO = {
+        user: UserDTO;
+        authorization: AuthorizationAssignmentsChange;
     };
 
     /** 当前用户详情 */

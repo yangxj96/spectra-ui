@@ -23,18 +23,18 @@ export const UserApi = {
         return get<UserPageVO>(`/api/user/${id}`);
     },
     /**
-     * 新增用户
-     * @param params 用户入参
+     * 提交新增用户及角色授权
+     * @param params 用户资料和授权配置
      */
-    async create(params: UserDTO): Promise<UserCreatedVO> {
-        return post<UserCreatedVO>("/api/user", params);
+    async submitCreate(params: UserOnboardingDTO): Promise<UserOnboardingVO> {
+        return post<UserOnboardingVO>("/api/user/onboarding", params);
     },
     /**
-     * 修改用户
-     * @param params 角色入参
+     * 提交用户编辑及角色授权
+     * @param params 用户资料和授权配置
      */
-    async update(params: UserDTO): Promise<void> {
-        return put<void>("/api/user", params);
+    async submitUpdate(params: UserOnboardingDTO): Promise<UserOnboardingVO> {
+        return put<UserOnboardingVO>("/api/user/onboarding", params);
     },
     /**
      * 重置用户密码

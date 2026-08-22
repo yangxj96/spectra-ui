@@ -46,7 +46,7 @@ export const userConverter = {
     /** 表单数据转接口请求参数 */
     toDTO(form: UserForm): UserDTO {
         return {
-            id: form.id,
+            id: form.id || undefined,
             username: form.username,
             real_name: form.real_name,
             status: form.status ?? undefined,

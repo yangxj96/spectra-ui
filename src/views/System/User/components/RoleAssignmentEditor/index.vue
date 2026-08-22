@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { AuthorityApi } from "@/api/auth/authority-api.ts";
 import { AuthorizationApi } from "@/api/auth/authorization-api.ts";
@@ -18,11 +18,35 @@ import {
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-const props = defineProps<{
-    userId: string;
-}>();
-
+type EditorStage = "selection" | "details";
 type ScopeMode = AuthorizationScopeForm["mode"];
+
+type RoleAssignmentDraft = {
+    key: string;
+    assignmentId?: string;
+    roleId: string;
+    expectedVersion: number;
+    authorization?: RoleAuthorizationState;
+    boundaries: AuthorizationBoundaryForm[];
+};
+
+type RoleAssignmentStep = {
+    key: string;
+    name: string;
+    code: string;
+};
+
+const props = withDefaults(
+    defineProps<{
+        userId?: string;
+        stage?: EditorStage;
+    }>(),
+    { userId: "", stage: "selection" }
+);
+
+const emit = defineEmits<{
+    "roles-change": [steps: RoleAssignmentStep[]];
+}>();
 
 const scopeModeOptions: { value: ScopeMode; label: string }[] = [
     { value: "NONE", label: "NONE（仅能力，不限定数据范围）" },
@@ -36,257 +60,306 @@ const roles = ref<RolePageVO[]>([]);
 const profiles = ref<AuthorizationProfile[]>([]);
 const authorityTree = ref<AuthorityTree[]>([]);
 const departmentTree = ref<DepartmentTreeVO[]>([]);
-const selectedAssignmentId = ref("");
 const selectedProfileId = ref("");
-const selectedRoleId = ref("");
-const permissionToAdd = ref("");
-const roleAuthorization = ref<RoleAuthorizationState>();
-const boundaries = ref<AuthorizationBoundaryForm[]>([]);
+const roleIdsToAdd = ref<string[]>([]);
+const activeDraftKey = ref("");
+const draftAssignments = ref<RoleAssignmentDraft[]>([]);
 const loading = ref(false);
-const saving = ref(false);
 const applyingProfile = ref(false);
 
-const activeAssignments = computed(() => assignments.value.filter(assignment => assignment.state === "ACTIVE"));
-
-const selectedAssignment = computed(() =>
-    assignments.value.find(assignment => assignment.assignment_id === selectedAssignmentId.value)
-);
-
+const initialActiveAssignments = computed(() => assignments.value.filter(assignment => assignment.state === "ACTIVE"));
+const activeProfiles = computed(() => profiles.value.filter(profile => profile.state === "ACTIVE"));
 const permissionCatalog = computed(() => flattenAuthorityPermissions(authorityTree.value));
-
 const departmentByCode = computed(() => {
     const result = new Map<string, DepartmentTreeVO>();
     flattenDepartmentTree(departmentTree.value).forEach(department => result.set(department.code, department));
     return result;
 });
+const selectedRoleIds = computed(() => new Set(draftAssignments.value.map(draft => draft.roleId)));
+const selectableRoles = computed(() => roles.value.filter(role => role.state && !selectedRoleIds.value.has(role.id)));
+const activeDraft = computed(() => draftAssignments.value.find(draft => draft.key === activeDraftKey.value));
+const roleSteps = computed<RoleAssignmentStep[]>(() =>
+    draftAssignments.value.map(draft => {
+        const role = roleById(draft.roleId);
+        return {
+            key: draft.key,
+            name: role?.name ?? draft.roleId,
+            code: role?.code ?? draft.roleId
+        };
+    })
+);
 
-const activeProfiles = computed(() => profiles.value.filter(profile => profile.state === "ACTIVE"));
-
-const rolePermissionOptions = computed(() => {
-    const permissionCodes = new Set(roleAuthorization.value?.permission_codes ?? []);
-    return permissionCatalog.value.filter(permission => permissionCodes.has(permission.code));
-});
-
-const grantablePermissionCodes = computed(() => new Set(roleAuthorization.value?.grantable_permission_codes ?? []));
-
-const editable = computed(() => !selectedAssignment.value || selectedAssignment.value.state === "ACTIVE");
-
+const roleById = (roleId: string) => roles.value.find(role => role.id === roleId);
+const roleName = (roleId: string) => roleById(roleId)?.name ?? roleId;
+const roleLabel = (draft: RoleAssignmentDraft) => {
+    const role = roleById(draft.roleId);
+    return role ? `${role.name}（${role.code}）` : draft.roleId;
+};
+const permissionName = (permission: string) =>
+    permissionCatalog.value.find(item => item.code === permission)?.name ?? permission;
+const scopeModeLabel = (mode: ScopeMode) => scopeModeOptions.find(option => option.value === mode)?.label ?? mode;
 const scopeModesFor = (permission: string): ScopeMode[] => {
     const configured = permissionCatalog.value.find(item => item.code === permission)?.allowed_scope_modes;
     return configured?.length ? [...configured] : ["NONE"];
 };
-
-const permissionName = (permission: string) =>
-    permissionCatalog.value.find(item => item.code === permission)?.name ?? permission;
-
-const scopeModeLabel = (mode: ScopeMode) => scopeModeOptions.find(option => option.value === mode)?.label ?? mode;
-
-const roleName = (roleId: string) => roles.value.find(role => role.id === roleId)?.name ?? roleId;
-
-const stateLabel = (state: AuthorizationAssignment["state"]) => {
-    if (state === "ACTIVE") return "生效中";
-    if (state === "REVOKED") return "已撤销";
-    return "已过期";
+const rolePermissionOptions = (draft: RoleAssignmentDraft) => {
+    const permissionCodes = new Set(draft.authorization?.permission_codes ?? []);
+    return permissionCatalog.value.filter(permission => permissionCodes.has(permission.code));
 };
+const grantablePermissionCodes = (draft: RoleAssignmentDraft) =>
+    new Set(draft.authorization?.grantable_permission_codes ?? []);
+const isRoleEditable = (draft: RoleAssignmentDraft) => Boolean(roleById(draft.roleId)?.state && draft.authorization);
+const assignmentKey = (assignment: AuthorizationAssignment) => `assignment:${assignment.assignment_id}`;
+const newRoleKey = (roleId: string) => `role:${roleId}`;
 
-const isGrantable = (permission: string) => grantablePermissionCodes.value.has(permission);
+async function loadRoleAuthorization(roleId: string): Promise<RoleAuthorizationState | undefined> {
+    try {
+        return await AuthorizationApi.currentRole(roleId);
+    } catch {
+        MessageUtils.warning(`无法读取角色“${roleName(roleId)}”的授权能力，请移除后重新选择角色`);
+        return undefined;
+    }
+}
 
-const load = async () => {
+async function toExistingDraft(assignment: AuthorizationAssignment): Promise<RoleAssignmentDraft> {
+    return {
+        key: assignmentKey(assignment),
+        assignmentId: assignment.assignment_id,
+        roleId: assignment.role_id,
+        expectedVersion: assignment.version,
+        authorization: await loadRoleAuthorization(assignment.role_id),
+        boundaries: authorizationAssignmentBoundaries(assignment)
+    };
+}
+
+async function load(): Promise<void> {
     loading.value = true;
     try {
+        const assignmentsRequest = props.userId
+            ? AuthorizationApi.assignments(props.userId)
+            : Promise.resolve<AuthorizationAssignment[]>([]);
         const [nextAssignments, nextRoles, nextProfiles, nextAuthorityTree, nextDepartmentTree] = await Promise.all([
-            AuthorizationApi.assignments(props.userId),
+            assignmentsRequest,
             RoleApi.list(),
             AuthorizationApi.profiles().catch(() => []),
             AuthorityApi.tree(),
             DepartmentApi.tree()
         ]);
         assignments.value = nextAssignments ?? [];
-        roles.value = (nextRoles ?? []).filter(role => role.state);
+        roles.value = nextRoles ?? [];
         profiles.value = nextProfiles ?? [];
         authorityTree.value = nextAuthorityTree ?? [];
         departmentTree.value = nextDepartmentTree ?? [];
-        const firstAssignment = activeAssignments.value[0] ?? assignments.value[0];
-        if (firstAssignment) {
-            await selectAssignment(firstAssignment.assignment_id);
-        } else {
-            resetEditor();
-        }
-    } catch (error) {
+        draftAssignments.value = await Promise.all(initialActiveAssignments.value.map(toExistingDraft));
+        activeDraftKey.value = draftAssignments.value[0]?.key ?? "";
+    } catch (error: unknown) {
         MessageUtils.error(error);
     } finally {
         loading.value = false;
     }
-};
+}
 
-const resetEditor = () => {
-    selectedAssignmentId.value = "";
-    selectedProfileId.value = "";
-    selectedRoleId.value = "";
-    permissionToAdd.value = "";
-    roleAuthorization.value = undefined;
-    boundaries.value = [];
-};
+function removeDraft(draft: RoleAssignmentDraft): void {
+    draftAssignments.value = draftAssignments.value.filter(item => item.key !== draft.key);
+    if (activeDraftKey.value === draft.key) activeDraftKey.value = draftAssignments.value[0]?.key ?? "";
+}
 
-const selectAssignment = async (assignmentId: string) => {
-    if (!assignmentId) {
-        resetEditor();
-        return;
+function selectRole(key: string): void {
+    if (draftAssignments.value.some(draft => draft.key === key)) activeDraftKey.value = key;
+}
+
+async function addRoles(): Promise<void> {
+    if (!roleIdsToAdd.value.length) return;
+    const ids = [...roleIdsToAdd.value];
+    roleIdsToAdd.value = [];
+    const added: RoleAssignmentDraft[] = [];
+    for (const roleId of ids) {
+        if (selectedRoleIds.value.has(roleId)) continue;
+        const authorization = await loadRoleAuthorization(roleId);
+        added.push({
+            key: newRoleKey(roleId),
+            roleId,
+            expectedVersion: 0,
+            authorization,
+            boundaries: []
+        });
     }
-    const assignment = assignments.value.find(item => item.assignment_id === assignmentId);
-    if (!assignment) return;
-    selectedAssignmentId.value = assignment.assignment_id;
-    selectedRoleId.value = assignment.role_id;
-    permissionToAdd.value = "";
-    roleAuthorization.value = await AuthorizationApi.currentRole(assignment.role_id);
-    boundaries.value = authorizationAssignmentBoundaries(assignment);
-};
+    draftAssignments.value.push(...added);
+    if (added.length) activeDraftKey.value = added[0].key;
+}
 
-const handleRoleChange = async () => {
-    roleAuthorization.value = selectedRoleId.value
-        ? await AuthorizationApi.currentRole(selectedRoleId.value)
-        : undefined;
-    permissionToAdd.value = "";
-    boundaries.value = [];
-};
-
-const applyProfile = async () => {
+async function applyProfile(): Promise<void> {
     const profile = profiles.value.find(item => item.id === selectedProfileId.value);
     if (!profile) return;
     if (profile.state !== "ACTIVE") {
         MessageUtils.warning("已停用的授权方案不能套用");
         return;
     }
-    if (profile.assignments.length !== 1) {
-        MessageUtils.warning("当前用户授权步骤一次配置一个 RoleAssignment，包含多个 Role 的方案请在批量授权流程中使用");
-        return;
-    }
-    const profileAssignment = profile.assignments[0];
-    const role = roles.value.find(item => item.code === profileAssignment.role_code);
-    if (!role) {
-        MessageUtils.warning(`方案依赖的 Role 不存在或已停用：${profileAssignment.role_code}`);
-        return;
-    }
     applyingProfile.value = true;
+    const duplicateRoles: string[] = [];
+    const added: RoleAssignmentDraft[] = [];
     try {
-        const nextRoleAuthorization = await AuthorizationApi.currentRole(role.id);
-        if (nextRoleAuthorization.version !== profileAssignment.role_version) {
-            MessageUtils.warning("授权方案依赖的 Role version 已变化，请先刷新或更新授权方案");
-            return;
+        const existingRoleIds = new Set(initialActiveAssignments.value.map(assignment => assignment.role_id));
+        const selectedIds = new Set(draftAssignments.value.map(draft => draft.roleId));
+        for (const profileAssignment of profile.assignments) {
+            const role = roles.value.find(item => item.code === profileAssignment.role_code);
+            if (!role || !role.state) {
+                MessageUtils.warning(`方案依赖的角色不存在或已停用：${profileAssignment.role_code}`);
+                continue;
+            }
+            if (existingRoleIds.has(role.id) || selectedIds.has(role.id)) {
+                duplicateRoles.push(role.name);
+                continue;
+            }
+            const authorization = await loadRoleAuthorization(role.id);
+            if (!authorization || authorization.version !== profileAssignment.role_version) {
+                MessageUtils.warning(`角色“${role.name}”的授权版本已变化，请先更新授权方案`);
+                continue;
+            }
+            const boundaries = authorizationBoundariesFromProfile(profileAssignment, departmentByCode.value);
+            if (!boundaries) {
+                MessageUtils.warning(`角色“${role.name}”引用了不存在的组织，请先更新授权方案`);
+                continue;
+            }
+            const draft: RoleAssignmentDraft = {
+                key: newRoleKey(role.id),
+                roleId: role.id,
+                expectedVersion: 0,
+                authorization,
+                boundaries
+            };
+            added.push(draft);
+            selectedIds.add(role.id);
         }
-        const rolePermissionCodes = new Set(nextRoleAuthorization.permission_codes);
-        if (profileAssignment.boundaries.some(boundary => !rolePermissionCodes.has(boundary.permission))) {
-            MessageUtils.warning("授权方案中的 Permission 已不属于当前 Role，请先更新授权方案");
-            return;
-        }
-        const nextBoundaries = authorizationBoundariesFromProfile(profileAssignment, departmentByCode.value);
-        if (!nextBoundaries) {
-            MessageUtils.warning("授权方案引用了不存在的部门编码，请先更新授权方案");
-            return;
-        }
-        selectedRoleId.value = role.id;
-        roleAuthorization.value = nextRoleAuthorization;
-        boundaries.value = nextBoundaries;
-        permissionToAdd.value = "";
+        draftAssignments.value.push(...added);
+        if (added.length) activeDraftKey.value = added[0].key;
         selectedProfileId.value = "";
-        MessageUtils.success(`已套用授权方案：${profile.name}，提交前仍可调整当前用户的授权范围`);
+        if (duplicateRoles.length) {
+            MessageUtils.warning(`角色已存在当前用户，已跳过：${duplicateRoles.join("、")}`);
+        }
+        if (added.length) MessageUtils.success(`已加载授权方案“${profile.name}”，可在下一步逐个调整角色范围`);
     } finally {
         applyingProfile.value = false;
     }
-};
+}
 
-const addBoundary = () => {
-    if (!permissionToAdd.value || boundaries.value.some(boundary => boundary.permission === permissionToAdd.value))
-        return;
-    const [defaultMode = "NONE"] = scopeModesFor(permissionToAdd.value);
-    boundaries.value.push({
-        permission: permissionToAdd.value,
+function addSelectedBoundary(draft: RoleAssignmentDraft, permission: string): void {
+    if (!permission || draft.boundaries.some(boundary => boundary.permission === permission)) return;
+    const [defaultMode = "NONE"] = scopeModesFor(permission);
+    draft.boundaries.push({
+        permission,
         access: createAuthorizationScope(defaultMode),
         grantEnabled: false,
         grant: createAuthorizationScope(defaultMode)
     });
-    permissionToAdd.value = "";
-};
+}
 
-const removeBoundary = (permission: string) => {
-    boundaries.value = boundaries.value.filter(boundary => boundary.permission !== permission);
-};
+function removeBoundary(draft: RoleAssignmentDraft, permission: string): void {
+    draft.boundaries = draft.boundaries.filter(boundary => boundary.permission !== permission);
+}
 
-const validateEditor = () => {
-    if (!selectedRoleId.value || !roleAuthorization.value) {
-        MessageUtils.warning("请先选择有效 Role");
+function validateDraft(draft: RoleAssignmentDraft): boolean {
+    if (!isRoleEditable(draft)) {
+        MessageUtils.warning(`角色“${roleLabel(draft)}”不可编辑，请移除该角色后再提交`);
         return false;
     }
-    if (!boundaries.value.length) {
-        MessageUtils.warning("至少添加一个 Permission-specific Access Boundary");
+    if (!draft.boundaries.length) {
+        MessageUtils.warning(`角色“${roleLabel(draft)}”至少需要配置一个权限访问范围`);
         return false;
     }
-    const rolePermissionCodes = new Set(roleAuthorization.value.permission_codes);
-    for (const boundary of boundaries.value) {
+    const rolePermissionCodes = new Set(draft.authorization?.permission_codes ?? []);
+    for (const boundary of draft.boundaries) {
         if (!rolePermissionCodes.has(boundary.permission)) {
-            MessageUtils.warning(`Role 未声明 Permission：${boundary.permission}`);
+            MessageUtils.warning(`角色“${roleLabel(draft)}”未声明权限：${boundary.permission}`);
             return false;
         }
         if (!scopeModesFor(boundary.permission).includes(boundary.access.mode)) {
-            MessageUtils.warning(`Permission ${boundary.permission} 不允许 Access Scope：${boundary.access.mode}`);
+            MessageUtils.warning(`权限 ${boundary.permission} 不允许访问范围模式：${boundary.access.mode}`);
             return false;
         }
         if (boundary.access.mode === "RULES" && !boundary.access.department_ids.length) {
-            MessageUtils.warning(`Permission ${boundary.permission} 的 Access RULES 必须选择组织`);
+            MessageUtils.warning(`角色“${roleLabel(draft)}”的权限 ${boundary.permission} 必须选择访问组织`);
             return false;
         }
         if (boundary.grantEnabled) {
-            if (!isGrantable(boundary.permission)) {
-                MessageUtils.warning(`Role 未声明 GrantablePermission：${boundary.permission}`);
+            if (!grantablePermissionCodes(draft).has(boundary.permission)) {
+                MessageUtils.warning(`角色“${roleLabel(draft)}”未声明可授予权限：${boundary.permission}`);
                 return false;
             }
             if (!scopeModesFor(boundary.permission).includes(boundary.grant.mode)) {
-                MessageUtils.warning(`Permission ${boundary.permission} 不允许 Grant Scope：${boundary.grant.mode}`);
+                MessageUtils.warning(`权限 ${boundary.permission} 不允许授权范围模式：${boundary.grant.mode}`);
                 return false;
             }
             if (boundary.grant.mode === "RULES" && !boundary.grant.department_ids.length) {
-                MessageUtils.warning(`Permission ${boundary.permission} 的 Grant RULES 必须选择组织`);
+                MessageUtils.warning(`角色“${roleLabel(draft)}”的权限 ${boundary.permission} 必须选择授权组织`);
                 return false;
             }
         }
     }
     return true;
-};
+}
 
-const buildRequest = (): AuthorizationAssignmentChange => ({
-    assignment_id: selectedAssignmentId.value || undefined,
-    role_id: selectedRoleId.value,
-    expected_version: selectedAssignment.value?.version ?? 0,
-    boundaries: boundaries.value.map(boundary => ({
-        permission: boundary.permission,
-        access: toAuthorizationScopeChange(boundary.access),
-        grant: boundary.grantEnabled ? toAuthorizationScopeChange(boundary.grant) : undefined
-    }))
+async function validateSelection(): Promise<boolean> {
+    if (roleIdsToAdd.value.length) await addRoles();
+    if (!draftAssignments.value.length) {
+        MessageUtils.warning("至少选择一个角色后才能继续");
+        return false;
+    }
+    return true;
+}
+
+function validateDetails(): boolean {
+    if (!draftAssignments.value.length) {
+        MessageUtils.warning("至少选择一个角色后才能提交");
+        return false;
+    }
+    return draftAssignments.value.every(validateDraft);
+}
+
+function validateCurrent(): boolean {
+    if (!activeDraft.value) {
+        MessageUtils.warning("至少选择一个角色后才能继续");
+        return false;
+    }
+    return validateDraft(activeDraft.value);
+}
+
+function getRoleSteps(): RoleAssignmentStep[] {
+    return roleSteps.value;
+}
+
+function buildRequest(): AuthorizationAssignmentsChange {
+    const draftKeys = new Set(draftAssignments.value.map(draft => draft.assignmentId));
+    return {
+        assignments: draftAssignments.value.map(draft => ({
+            assignment_id: draft.assignmentId,
+            role_id: draft.roleId,
+            expected_version: draft.expectedVersion,
+            boundaries: draft.boundaries.map(boundary => ({
+                permission: boundary.permission,
+                access: toAuthorizationScopeChange(boundary.access),
+                grant: boundary.grantEnabled ? toAuthorizationScopeChange(boundary.grant) : undefined
+            }))
+        })),
+        removed_assignments: initialActiveAssignments.value
+            .filter(assignment => !draftKeys.has(assignment.assignment_id))
+            .map(assignment => ({
+                assignment_id: assignment.assignment_id,
+                expected_version: assignment.version
+            }))
+    };
+}
+
+defineExpose({
+    validateSelection,
+    validateCurrent,
+    validate: validateDetails,
+    getRequest: buildRequest,
+    getRoleSteps,
+    selectRole
 });
 
-const handleSave = async () => {
-    if (!validateEditor()) return;
-    saving.value = true;
-    try {
-        const request = buildRequest();
-        const preview = await AuthorizationApi.previewAssignment(props.userId, request);
-        await MessageUtils.box.confirm(
-            `本次 RoleAssignment 变更将影响 ${preview.affected_user_count} 个用户、${preview.affected_assignment_count} 个授权实例，是否继续提交？`,
-            "确认 RoleAssignment 变更"
-        );
-        await AuthorizationApi.applyAssignment(props.userId, {
-            ...request,
-            expected_version: preview.expected_version,
-            preview_token: preview.preview_token
-        });
-        await load();
-        MessageUtils.success("RoleAssignment 已提交");
-    } finally {
-        saving.value = false;
-    }
-};
-
-defineExpose({ save: handleSave });
+watch([draftAssignments, roles], () => emit("roles-change", roleSteps.value), { deep: true, immediate: true });
 
 onMounted(load);
 </script>
@@ -294,7 +367,7 @@ onMounted(load);
 <template>
     <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-        <div class="authorization-toolbar-grid">
+        <template v-if="props.stage === 'selection'">
             <div class="authorization-tool">
                 <strong class="authorization-tool-title">快速套用授权方案</strong>
                 <div class="authorization-tool-controls">
@@ -316,190 +389,189 @@ onMounted(load);
                         :loading="applyingProfile"
                         :disabled="!selectedProfileId"
                         @click="applyProfile">
-                        套用方案
+                        快速套用
                     </el-button>
                 </div>
             </div>
 
             <div class="authorization-tool">
-                <strong class="authorization-tool-title">编辑已有角色授权</strong>
+                <strong class="authorization-tool-title">新建角色授权</strong>
                 <div class="authorization-tool-controls">
                     <el-select
-                        v-model="selectedAssignmentId"
-                        placeholder="选择要编辑的角色授权"
-                        clearable
+                        v-model="roleIdsToAdd"
+                        multiple
+                        collapse-tags
+                        collapse-tags-tooltip
                         filterable
-                        @change="selectAssignment">
+                        placeholder="选择要新增的角色">
                         <el-option
-                            v-for="assignment in assignments"
-                            :key="assignment.assignment_id"
-                            :label="`${roleName(assignment.role_id)} · ${stateLabel(assignment.state)}`"
-                            :value="assignment.assignment_id">
-                            <span>{{ assignment.role_name }}（{{ assignment.role_code }}）</span>
-                            <el-tag size="small" :type="assignment.state === 'ACTIVE' ? 'success' : 'info'">
-                                {{ stateLabel(assignment.state) }}
-                            </el-tag>
+                            v-for="role in selectableRoles"
+                            :key="role.id"
+                            :label="`${role.name}（${role.code}）`"
+                            :value="role.id">
+                            <span>{{ role.name }}（{{ role.code }}）</span>
+                            <el-tag v-if="role.builtin" size="small" type="info">内置</el-tag>
                         </el-option>
                     </el-select>
-                    <el-button @click="resetEditor">新建角色授权</el-button>
+                    <el-button type="primary" plain :disabled="!roleIdsToAdd.length" @click="addRoles">
+                        添加角色
+                    </el-button>
                 </div>
             </div>
-        </div>
 
-        <div class="role-boundary-toolbar" :class="{ 'has-boundary': selectedRoleId && editable }">
-            <div class="assignment-form">
-                <div class="role-field-label">
-                    <strong class="authorization-tool-title">
-                        角色
-                        <span class="required-mark">*</span>
-                    </strong>
-                    <el-text v-if="selectedAssignment" class="role-version" type="info" size="small">
-                        授权实例版本：{{ selectedAssignment.version }}；角色版本：{{ selectedAssignment.role_version }}
-                    </el-text>
+            <div class="selected-role-panel">
+                <div class="selected-role-header">
+                    <strong class="authorization-tool-title">已选择角色</strong>
+                    <el-text type="info" size="small">至少保留一个角色</el-text>
                 </div>
-                <el-select
-                    v-model="selectedRoleId"
-                    placeholder="请选择角色"
-                    filterable
-                    :disabled="!editable"
-                    @change="handleRoleChange">
-                    <el-option
-                        v-for="role in roles"
-                        :key="role.id"
-                        :label="`${role.name}（${role.code}）`"
-                        :value="role.id">
-                        <span>{{ role.name }}（{{ role.code }}）</span>
-                        <el-tag v-if="role.builtin" size="small" type="info">内置</el-tag>
-                    </el-option>
-                </el-select>
+                <div v-if="draftAssignments.length" class="selected-role-list">
+                    <el-tag
+                        v-for="draft in draftAssignments"
+                        :key="draft.key"
+                        closable
+                        size="large"
+                        type="info"
+                        @close="removeDraft(draft)">
+                        {{ roleLabel(draft) }}
+                    </el-tag>
+                </div>
+                <el-empty v-else description="尚未选择角色" :image-size="70" />
             </div>
+        </template>
 
-            <template v-if="selectedRoleId && editable">
-                <div class="boundary-add-row">
-                    <strong class="authorization-tool-title">添加访问范围</strong>
-                    <div class="boundary-add-controls">
-                        <el-select v-model="permissionToAdd" placeholder="选择角色已声明的权限" filterable>
-                            <el-option
-                                v-for="permission in rolePermissionOptions"
-                                :key="permission.code"
-                                :label="`${permission.name}（${permission.code}）`"
-                                :value="permission.code"
-                                :disabled="boundaries.some(boundary => boundary.permission === permission.code)" />
-                        </el-select>
-                        <el-button type="primary" plain :disabled="!permissionToAdd" @click="addBoundary">
-                            添加访问范围
-                        </el-button>
-                    </div>
-                </div>
-            </template>
-        </div>
-
-        <el-alert
-            v-if="selectedAssignment && !editable"
-            title="历史授权实例只读，不能覆盖历史记录。"
-            type="info"
-            :closable="false" />
-
-        <template v-if="selectedRoleId && editable">
-            <el-alert
-                v-if="!rolePermissionOptions.length"
-                title="当前角色没有可配置的权限，不能提交空的访问范围。"
-                type="error"
-                :closable="false" />
-
-            <el-card v-for="boundary in boundaries" :key="boundary.permission" class="boundary-card" shadow="never">
-                <template #header>
-                    <div class="boundary-header">
-                        <span>{{ permissionName(boundary.permission) }}（{{ boundary.permission }}）</span>
-                        <el-button link type="danger" @click="removeBoundary(boundary.permission)">移除</el-button>
-                    </div>
-                </template>
-
-                <el-form label-width="110px">
-                    <el-form-item label="访问范围">
-                        <el-select v-model="boundary.access.mode">
-                            <el-option
-                                v-for="mode in scopeModesFor(boundary.permission)"
-                                :key="mode"
-                                :label="scopeModeLabel(mode)"
-                                :value="mode" />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item v-if="boundary.access.mode === 'RULES'" label="访问组织">
-                        <el-tree-select
-                            v-model="boundary.access.department_ids"
-                            :data="departmentTree"
-                            node-key="id"
-                            multiple
-                            check-strictly
-                            default-expand-all
-                            :props="treeDefaultProps"
-                            placeholder="选择组织规则" />
-                        <el-checkbox v-model="boundary.access.include_descendants">包含子部门</el-checkbox>
-                    </el-form-item>
-                    <el-form-item label="授权范围">
-                        <el-checkbox v-model="boundary.grantEnabled" :disabled="!isGrantable(boundary.permission)">
-                            允许向下授权此权限
-                        </el-checkbox>
-                        <el-text v-if="!isGrantable(boundary.permission)" type="info" size="small">
-                            当前角色未声明可授权权限
+        <template v-else>
+            <template v-if="activeDraft">
+                <div class="role-detail-header">
+                    <div>
+                        <strong>{{ roleLabel(activeDraft) }}</strong>
+                        <el-text v-if="activeDraft.assignmentId" type="info" size="small">
+                            授权实例版本：{{ activeDraft.expectedVersion }}
                         </el-text>
-                    </el-form-item>
-                    <template v-if="boundary.grantEnabled">
-                        <el-form-item label="授权范围模式">
-                            <el-select v-model="boundary.grant.mode">
-                                <el-option
-                                    v-for="mode in scopeModesFor(boundary.permission)"
-                                    :key="mode"
-                                    :label="scopeModeLabel(mode)"
-                                    :value="mode" />
-                            </el-select>
-                        </el-form-item>
-                        <el-form-item v-if="boundary.grant.mode === 'RULES'" label="授权组织">
-                            <el-tree-select
-                                v-model="boundary.grant.department_ids"
-                                :data="departmentTree"
-                                node-key="id"
-                                multiple
-                                check-strictly
-                                default-expand-all
-                                :props="treeDefaultProps"
-                                placeholder="选择授权组织规则" />
-                            <el-checkbox v-model="boundary.grant.include_descendants">包含子部门</el-checkbox>
-                        </el-form-item>
-                    </template>
-                </el-form>
-            </el-card>
+                    </div>
+                </div>
 
-            <el-empty v-if="!boundaries.length" description="尚未配置权限访问范围" />
+                <el-alert
+                    v-if="!isRoleEditable(activeDraft)"
+                    title="当前角色已停用或授权能力读取失败，请返回第 02 步移除后再选择其他角色。"
+                    type="error"
+                    :closable="false" />
+
+                <template v-else>
+                    <div class="boundary-add-row">
+                        <strong class="authorization-tool-title">添加访问范围</strong>
+                        <div class="boundary-add-controls">
+                            <el-select
+                                placeholder="选择角色已声明的权限"
+                                filterable
+                                @change="addSelectedBoundary(activeDraft, $event)">
+                                <el-option
+                                    v-for="permission in rolePermissionOptions(activeDraft)"
+                                    :key="permission.code"
+                                    :label="`${permission.name}（${permission.code}）`"
+                                    :value="permission.code"
+                                    :disabled="
+                                        activeDraft.boundaries.some(boundary => boundary.permission === permission.code)
+                                    " />
+                            </el-select>
+                        </div>
+                    </div>
+
+                    <el-alert
+                        v-if="!rolePermissionOptions(activeDraft).length"
+                        title="当前角色没有可配置的权限，不能提交空的访问范围。"
+                        type="error"
+                        :closable="false" />
+
+                    <el-card
+                        v-for="boundary in activeDraft.boundaries"
+                        :key="boundary.permission"
+                        class="boundary-card"
+                        shadow="never">
+                        <template #header>
+                            <div class="boundary-header">
+                                <span>{{ permissionName(boundary.permission) }}（{{ boundary.permission }}）</span>
+                                <el-button link type="danger" @click="removeBoundary(activeDraft, boundary.permission)">
+                                    移除
+                                </el-button>
+                            </div>
+                        </template>
+
+                        <el-form label-width="110px">
+                            <el-form-item label="访问范围">
+                                <el-select v-model="boundary.access.mode">
+                                    <el-option
+                                        v-for="mode in scopeModesFor(boundary.permission)"
+                                        :key="mode"
+                                        :label="scopeModeLabel(mode)"
+                                        :value="mode" />
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="boundary.access.mode === 'RULES'" label="访问组织">
+                                <el-tree-select
+                                    v-model="boundary.access.department_ids"
+                                    :data="departmentTree"
+                                    node-key="id"
+                                    multiple
+                                    check-strictly
+                                    default-expand-all
+                                    :props="treeDefaultProps"
+                                    placeholder="选择组织规则" />
+                                <el-checkbox v-model="boundary.access.include_descendants">包含子部门</el-checkbox>
+                            </el-form-item>
+                            <el-form-item label="授权范围">
+                                <el-checkbox
+                                    v-model="boundary.grantEnabled"
+                                    :disabled="!grantablePermissionCodes(activeDraft).has(boundary.permission)">
+                                    允许向下授权此权限
+                                </el-checkbox>
+                                <el-text
+                                    v-if="!grantablePermissionCodes(activeDraft).has(boundary.permission)"
+                                    type="info"
+                                    size="small">
+                                    当前角色未声明可授予权限
+                                </el-text>
+                            </el-form-item>
+                            <template v-if="boundary.grantEnabled">
+                                <el-form-item label="授权范围模式">
+                                    <el-select v-model="boundary.grant.mode">
+                                        <el-option
+                                            v-for="mode in scopeModesFor(boundary.permission)"
+                                            :key="mode"
+                                            :label="scopeModeLabel(mode)"
+                                            :value="mode" />
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item v-if="boundary.grant.mode === 'RULES'" label="授权组织">
+                                    <el-tree-select
+                                        v-model="boundary.grant.department_ids"
+                                        :data="departmentTree"
+                                        node-key="id"
+                                        multiple
+                                        check-strictly
+                                        default-expand-all
+                                        :props="treeDefaultProps"
+                                        placeholder="选择授权组织规则" />
+                                    <el-checkbox v-model="boundary.grant.include_descendants">包含子部门</el-checkbox>
+                                </el-form-item>
+                            </template>
+                        </el-form>
+                    </el-card>
+                    <el-empty v-if="!activeDraft.boundaries.length" description="尚未配置权限访问范围" />
+                </template>
+            </template>
+            <el-empty v-else description="请返回第 02 步至少选择一个角色" />
         </template>
     </template>
 </template>
 
 <style scoped lang="scss">
-.boundary-add-row,
-.boundary-header {
+.authorization-tool,
+.selected-role-panel {
     display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.boundary-add-row {
-    margin: 12px 0;
-}
-
-.authorization-toolbar-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    margin: 16px 0;
-}
-
-.authorization-tool {
-    display: flex;
-    flex-direction: column;
     min-width: 0;
-    gap: 4px;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
     padding: 14px;
     border: 1px solid var(--el-border-color-lighter);
     border-radius: 10px;
@@ -512,11 +584,16 @@ onMounted(load);
     line-height: 20px;
 }
 
-.authorization-tool-controls {
+.authorization-tool-controls,
+.boundary-add-row,
+.boundary-add-controls,
+.selected-role-header,
+.selected-role-list,
+.role-detail-header,
+.boundary-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-width: 0;
+    gap: 10px;
 }
 
 .authorization-tool-controls .el-select,
@@ -525,66 +602,38 @@ onMounted(load);
     min-width: 0;
 }
 
-.role-boundary-toolbar {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.profile-option,
+.selected-role-header,
+.role-detail-header,
+.boundary-header {
+    justify-content: space-between;
+}
+
+.selected-role-list {
+    flex-wrap: wrap;
+}
+
+.role-detail-header {
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.role-detail-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.boundary-add-row {
     align-items: stretch;
-    gap: 12px;
+    flex-direction: column;
     margin: 12px 0;
 }
 
-.role-boundary-toolbar:not(.has-boundary) .assignment-form {
-    grid-column: 1 / -1;
-}
-
-.role-boundary-toolbar .assignment-form,
-.role-boundary-toolbar .boundary-add-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    min-width: 0;
-    box-sizing: border-box;
-    gap: 4px;
-    margin: 0;
-    padding: 14px;
-    border: 1px solid var(--el-border-color-lighter);
-    border-radius: 10px;
-    background: var(--el-fill-color-light);
-}
-
 .boundary-add-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
     width: 100%;
 }
 
-.role-field-label {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.required-mark {
-    margin-left: 2px;
-    color: var(--el-color-danger);
-}
-
-.role-version {
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-}
-
-.profile-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.assignment-form,
 .boundary-card {
     margin-top: 12px;
 }
@@ -603,23 +652,7 @@ onMounted(load);
 }
 
 @media (max-width: 768px) {
-    .authorization-toolbar-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .role-boundary-toolbar {
-        grid-template-columns: 1fr;
-    }
-
-    .role-boundary-toolbar:not(.has-boundary) .assignment-form {
-        grid-column: auto;
-    }
-
-    .boundary-add-row {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
+    .authorization-tool-controls,
     .boundary-add-controls {
         align-items: stretch;
         flex-direction: column;

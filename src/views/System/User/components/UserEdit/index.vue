@@ -17,8 +17,19 @@ import { email, mobile } from "@/utils/verify-rules.ts";
 import RoleAssignmentEditor from "../RoleAssignmentEditor/index.vue";
 
 interface RoleAssignmentEditorExpose {
-    save: () => Promise<void>;
+    validateSelection: () => Promise<boolean>;
+    validateCurrent: () => boolean;
+    validate: () => boolean;
+    getRequest: () => AuthorizationAssignmentsChange;
+    getRoleSteps: () => RoleAssignmentStep[];
+    selectRole: (key: string) => void;
 }
+
+type RoleAssignmentStep = {
+    key: string;
+    name: string;
+    code: string;
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -28,9 +39,15 @@ const userId = computed(() => String(route.params.id ?? ""));
 const isEditing = computed(() => Boolean(userId.value));
 const editorTitle = computed(() => (isEditing.value ? "编辑用户" : "新建用户"));
 const activeStep = ref(0);
+const stepTipTitle = computed(() => {
+    if (activeStep.value === 0) return "基本信息提示";
+    if (activeStep.value === 1) return "授权方案提示";
+    return "角色授权提示";
+});
 const userEditSteps = [
     { title: "基本信息", description: "填写用户基础资料" },
-    { title: "角色授权", description: "配置角色和数据访问范围" }
+    { title: "授权方案", description: "选择方案或新增多个角色" },
+    { title: "角色授权", description: "分别配置每个角色的访问范围" }
 ] as const;
 const form = reactive<UserForm>(
     userConverter.createForm({
@@ -41,8 +58,13 @@ const form = reactive<UserForm>(
 const departmentTree = ref<DepartmentTreeVO[]>([]);
 const emailSuffixes = ref<string[]>([]);
 const loading = ref(false);
-const saving = ref(false);
-const authorizationSaving = ref(false);
+const submitting = ref(false);
+const roleSteps = ref<RoleAssignmentStep[]>([]);
+const activeRoleStepKey = ref("");
+const activeRoleStepIndex = computed(() => roleSteps.value.findIndex(step => step.key === activeRoleStepKey.value));
+const roleStepActionLabel = computed(() =>
+    activeRoleStepIndex.value >= 0 && activeRoleStepIndex.value < roleSteps.value.length - 1 ? "下一步" : "提交"
+);
 const formRef = useTemplateRef<FormInstance>("formRef");
 const roleAssignmentEditor = useTemplateRef<RoleAssignmentEditorExpose>("roleAssignmentEditor");
 
@@ -88,47 +110,80 @@ async function handleBack(): Promise<void> {
     await router.push({ name: "SystemUser" });
 }
 
-function handleStepChange(step: number): void {
-    if (step === 1 && !form.id) {
-        MessageUtils.warning("请先保存用户基本信息");
-        return;
+async function validateBasicForm(): Promise<boolean> {
+    if (!formRef.value) return false;
+    try {
+        await formRef.value.validate();
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+async function handleStepChange(step: number): Promise<void> {
+    if (step > 0 && activeStep.value === 0 && !(await validateBasicForm())) return;
+    if (step > 1 && (!roleAssignmentEditor.value || !(await roleAssignmentEditor.value.validateSelection()))) return;
+    if (step === 2 && roleAssignmentEditor.value) {
+        activeRoleStepKey.value = roleAssignmentEditor.value.getRoleSteps()[0]?.key ?? "";
+        roleAssignmentEditor.value.selectRole(activeRoleStepKey.value);
     }
     activeStep.value = step;
 }
 
-async function handleUserSave(): Promise<void> {
-    if (!formRef.value) return;
-    saving.value = true;
-    try {
-        await formRef.value.validate();
-        if (isEditing.value) {
-            await UserApi.update(userConverter.toDTO(form));
-            MessageUtils.success("修改用户成功，继续配置角色授权");
-            activeStep.value = 1;
-        } else {
-            const createdUser = await UserApi.create(userConverter.toDTO(form));
-            form.id = createdUser.id;
-            await router.replace({ name: "SystemUserEdit", params: { id: createdUser.id } });
-            MessageUtils.success("新增用户成功，继续配置角色授权");
-            activeStep.value = 1;
-        }
-    } catch (error: unknown) {
-        console.error(error);
-        MessageUtils.error(error);
-    } finally {
-        saving.value = false;
+function handleRoleStepsChange(steps: RoleAssignmentStep[]): void {
+    roleSteps.value = steps;
+    if (!steps.some(step => step.key === activeRoleStepKey.value)) {
+        activeRoleStepKey.value = steps[0]?.key ?? "";
     }
 }
 
-async function handleAuthorizationSave(): Promise<void> {
+function handleRoleStepChange(key: string): void {
+    activeRoleStepKey.value = key;
+    roleAssignmentEditor.value?.selectRole(key);
+}
+
+function handleRoleStepPrevious(): void {
+    if (activeRoleStepIndex.value > 0) {
+        handleRoleStepChange(roleSteps.value[activeRoleStepIndex.value - 1].key);
+        return;
+    }
+    activeStep.value = 1;
+}
+
+async function handleRoleStepNext(): Promise<void> {
+    if (!roleAssignmentEditor.value || activeRoleStepIndex.value < 0) return;
+    if (!roleAssignmentEditor.value.validateCurrent()) return;
+
+    const nextRoleStep = roleSteps.value[activeRoleStepIndex.value + 1];
+    if (nextRoleStep) {
+        handleRoleStepChange(nextRoleStep.key);
+        return;
+    }
+    await handleSubmit();
+}
+
+async function handleSubmit(): Promise<void> {
     if (!roleAssignmentEditor.value) return;
-    authorizationSaving.value = true;
+    if (formRef.value && !(await validateBasicForm())) return;
+    if (!roleAssignmentEditor.value.validate()) return;
+    submitting.value = true;
     try {
-        await roleAssignmentEditor.value.save();
+        const params: UserOnboardingDTO = {
+            user: userConverter.toDTO(form),
+            authorization: roleAssignmentEditor.value.getRequest()
+        };
+        if (isEditing.value) {
+            await UserApi.submitUpdate(params);
+            MessageUtils.success("用户信息和角色授权已提交");
+        } else {
+            await UserApi.submitCreate(params);
+            MessageUtils.success("用户和角色授权已提交");
+        }
+        await router.replace({ name: "SystemUser" });
     } catch (error: unknown) {
-        if (error !== "cancel" && error !== "close") MessageUtils.error(error);
+        MessageUtils.error(error);
     } finally {
-        authorizationSaving.value = false;
+        submitting.value = false;
     }
 }
 
@@ -167,20 +222,38 @@ onMounted(load);
             <div class="user-edit-workspace">
                 <aside class="user-edit-side user-edit-side-left">
                     <nav class="user-edit-step-nav" aria-label="用户编辑步骤">
-                        <button
-                            v-for="(step, index) in userEditSteps"
-                            :key="step.title"
-                            class="user-edit-step"
-                            :class="{ 'is-active': activeStep === index, 'is-complete': activeStep > index }"
-                            type="button"
-                            :aria-current="activeStep === index ? 'step' : undefined"
-                            @click="handleStepChange(index)">
-                            <span class="user-edit-step-index">{{ String(index + 1).padStart(2, "0") }}</span>
-                            <span class="user-edit-step-content">
-                                <strong>{{ step.title }}</strong>
-                                <small>{{ step.description }}</small>
-                            </span>
-                        </button>
+                        <template v-for="(step, index) in userEditSteps" :key="step.title">
+                            <button
+                                class="user-edit-step"
+                                :class="{ 'is-active': activeStep === index, 'is-complete': activeStep > index }"
+                                type="button"
+                                :aria-current="activeStep === index ? 'step' : undefined"
+                                @click="handleStepChange(index)">
+                                <span class="user-edit-step-index">{{ String(index + 1).padStart(2, "0") }}</span>
+                                <span class="user-edit-step-content">
+                                    <strong>{{ step.title }}</strong>
+                                    <small>{{ step.description }}</small>
+                                </span>
+                            </button>
+                            <div
+                                v-if="index === 2 && activeStep === 2 && roleSteps.length"
+                                class="user-edit-substep-nav">
+                                <button
+                                    v-for="(roleStep, roleIndex) in roleSteps"
+                                    :key="roleStep.key"
+                                    class="user-edit-substep"
+                                    :class="{ 'is-active': activeRoleStepKey === roleStep.key }"
+                                    type="button"
+                                    :aria-current="activeRoleStepKey === roleStep.key ? 'step' : undefined"
+                                    @click="handleRoleStepChange(roleStep.key)">
+                                    <span class="user-edit-substep-index">3.{{ roleIndex + 1 }}</span>
+                                    <span class="user-edit-substep-content">
+                                        <strong>{{ roleStep.name }}设置</strong>
+                                        <small>{{ roleStep.code }}</small>
+                                    </span>
+                                </button>
+                            </div>
+                        </template>
                     </nav>
                 </aside>
 
@@ -190,140 +263,151 @@ onMounted(load);
                             <div class="user-step-section-title">
                                 <div>
                                     <span>基本信息</span>
-                                    <small>用于登录、身份识别和组织归属，保存后进入角色授权</small>
+                                    <small>用于登录、身份识别和组织归属，点击下一步后继续配置授权</small>
                                 </div>
                             </div>
                         </template>
 
                         <template v-else>
-                            <div class="user-step-section-title">
+                            <div v-if="activeStep === 1" class="user-step-section-title">
+                                <div>
+                                    <span>授权方案</span>
+                                    <small>选择快速套用授权方案，或新增多个角色，下一步逐个配置访问范围</small>
+                                </div>
+                            </div>
+                            <div v-else class="user-step-section-title">
                                 <div>
                                     <span>角色授权</span>
-                                    <small>配置当前用户的角色、权限和数据访问范围</small>
+                                    <small>分别配置每个角色的权限和数据访问范围，完成后统一提交</small>
                                 </div>
                             </div>
                         </template>
                     </div>
 
                     <div class="user-edit-content">
-                        <template v-if="activeStep === 0">
-                            <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" @submit.prevent>
-                                <el-row :gutter="24">
-                                    <el-col :span="12">
-                                        <el-form-item label="名称" prop="username">
-                                            <el-input v-model="form.username" clearable placeholder="请输入名称" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="真实名称" prop="real_name">
-                                            <el-input v-model="form.real_name" clearable placeholder="请输入真实名称" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="状态" prop="status">
-                                            <DictSelect
-                                                v-model="form.status"
-                                                dict_code="sys_user_state"
-                                                placeholder="请选择状态" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="性别" prop="gender">
-                                            <DictSelect
-                                                v-model="form.gender"
-                                                dict_code="sys_user_gender"
-                                                placeholder="请选择性别" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="生日" prop="birthday">
-                                            <el-date-picker
-                                                v-model="form.birthday"
-                                                type="date"
-                                                placeholder="请选择生日"
-                                                value-format="YYYY-MM-DD"
-                                                style="width: 100%" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="手机号码" prop="phone">
-                                            <el-input v-model="form.phone" clearable placeholder="请输入手机号码" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="邮箱" prop="email">
-                                            <el-autocomplete
-                                                v-model="form.email"
-                                                :fetch-suggestions="handleEmailSuggestions"
-                                                clearable
-                                                placeholder="请输入邮箱">
-                                                <template #suffix>
-                                                    <el-tooltip
-                                                        effect="dark"
-                                                        content="同时也作为默认登录账号"
-                                                        placement="right">
-                                                        <ComponentsIcons
-                                                            name="icon-hint"
-                                                            style="margin-left: 10px; width: 1.4em; height: 1.4em" />
-                                                    </el-tooltip>
-                                                </template>
-                                            </el-autocomplete>
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="所属组织" prop="department_id">
-                                            <el-tree-select
-                                                v-model="form.department_id"
-                                                :data="departmentTree"
-                                                node-key="id"
-                                                clearable
-                                                check-strictly
-                                                default-expand-all
-                                                :props="treeDefaultProps"
-                                                placeholder="请选择所属组织" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="国家" prop="country">
-                                            <el-input v-model="form.country" clearable placeholder="请输入国家" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="城市" prop="city">
-                                            <el-input v-model="form.city" clearable placeholder="请输入城市" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="语言" prop="language">
-                                            <DictSelect
-                                                v-model="form.language"
-                                                dict_code="sys_language"
-                                                placeholder="请选择语言" />
-                                        </el-form-item>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-form-item label="时区" prop="timezone">
-                                            <DictSelect
-                                                v-model="form.timezone"
-                                                dict_code="sys_timezone"
-                                                placeholder="请选择时区" />
-                                        </el-form-item>
-                                    </el-col>
-                                </el-row>
-                            </el-form>
-                        </template>
+                        <el-form
+                            v-show="activeStep === 0"
+                            ref="formRef"
+                            :model="form"
+                            :rules="rules"
+                            label-width="100px"
+                            @submit.prevent>
+                            <el-row :gutter="24">
+                                <el-col :span="12">
+                                    <el-form-item label="名称" prop="username">
+                                        <el-input v-model="form.username" clearable placeholder="请输入名称" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="真实名称" prop="real_name">
+                                        <el-input v-model="form.real_name" clearable placeholder="请输入真实名称" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="状态" prop="status">
+                                        <DictSelect
+                                            v-model="form.status"
+                                            dict_code="sys_user_state"
+                                            placeholder="请选择状态" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="性别" prop="gender">
+                                        <DictSelect
+                                            v-model="form.gender"
+                                            dict_code="sys_user_gender"
+                                            placeholder="请选择性别" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="生日" prop="birthday">
+                                        <el-date-picker
+                                            v-model="form.birthday"
+                                            type="date"
+                                            placeholder="请选择生日"
+                                            value-format="YYYY-MM-DD"
+                                            style="width: 100%" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="手机号码" prop="phone">
+                                        <el-input v-model="form.phone" clearable placeholder="请输入手机号码" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="邮箱" prop="email">
+                                        <el-autocomplete
+                                            v-model="form.email"
+                                            :fetch-suggestions="handleEmailSuggestions"
+                                            clearable
+                                            placeholder="请输入邮箱">
+                                            <template #suffix>
+                                                <el-tooltip
+                                                    effect="dark"
+                                                    content="同时也作为默认登录账号"
+                                                    placement="right">
+                                                    <ComponentsIcons
+                                                        name="icon-hint"
+                                                        style="margin-left: 10px; width: 1.4em; height: 1.4em" />
+                                                </el-tooltip>
+                                            </template>
+                                        </el-autocomplete>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="所属组织" prop="department_id">
+                                        <el-tree-select
+                                            v-model="form.department_id"
+                                            :data="departmentTree"
+                                            node-key="id"
+                                            clearable
+                                            check-strictly
+                                            default-expand-all
+                                            :props="treeDefaultProps"
+                                            placeholder="请选择所属组织" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="国家" prop="country">
+                                        <el-input v-model="form.country" clearable placeholder="请输入国家" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="城市" prop="city">
+                                        <el-input v-model="form.city" clearable placeholder="请输入城市" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="语言" prop="language">
+                                        <DictSelect
+                                            v-model="form.language"
+                                            dict_code="sys_language"
+                                            placeholder="请选择语言" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="时区" prop="timezone">
+                                        <DictSelect
+                                            v-model="form.timezone"
+                                            dict_code="sys_timezone"
+                                            placeholder="请选择时区" />
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                        </el-form>
 
-                        <template v-else-if="form.id">
-                            <RoleAssignmentEditor ref="roleAssignmentEditor" :user-id="form.id" />
+                        <template v-if="activeStep !== 0">
+                            <div
+                                v-if="form.id || !isEditing"
+                                v-show="activeStep !== 0"
+                                class="authorization-editor-wrapper">
+                                <RoleAssignmentEditor
+                                    ref="roleAssignmentEditor"
+                                    :user-id="form.id || undefined"
+                                    :stage="activeStep === 1 ? 'selection' : 'details'"
+                                    @roles-change="handleRoleStepsChange" />
+                            </div>
                         </template>
-
-                        <el-alert
-                            v-else
-                            class="authorization-tip"
-                            title="用户保存后可以继续配置角色授权和数据访问范围。"
-                            type="info"
-                            :closable="false"
-                            show-icon />
                     </div>
                 </section>
 
@@ -331,24 +415,27 @@ onMounted(load);
                     <div class="section-title user-heading">
                         <div>
                             <span>{{ editorTitle }}</span>
-                            <small>用于维护用户身份信息并完成角色授权配置</small>
+                            <small>填写所有步骤后一次提交用户资料和角色授权</small>
                         </div>
                         <el-text type="info">带 * 的字段为必填项</el-text>
                     </div>
-                    <el-alert class="user-tip" title="授权提示" type="info" :closable="false" show-icon>
+                    <el-alert class="user-tip" :title="stepTipTitle" type="info" :closable="false" show-icon>
                         <template #default>
                             <div class="user-tip-content">
-                                <p>
-                                    每个权限都必须显式配置访问范围；向下授权范围独立管理，未配置时不会自动扩大为全部数据。
-                                </p>
-                                <p>
-                                    <strong>快速套用授权方案：</strong>
-                                    授权方案只填充当前编辑内容，不会直接创建或修改授权实例。
-                                </p>
-                                <p>
-                                    <strong>编辑已有角色授权：</strong>
-                                    可修改已有实例，或新建一个角色授权。
-                                </p>
+                                <template v-if="activeStep === 0">
+                                    <p>请先完成用户登录、身份和组织归属信息，点击下一步后进入授权方案。</p>
+                                    <p>用户资料和角色授权会在最后一次提交，不会在步骤切换时提前保存。</p>
+                                </template>
+                                <template v-else-if="activeStep === 1">
+                                    <p>可以快速套用授权方案，也可以新增多个角色；已有角色会自动加载到当前页面。</p>
+                                    <p>角色的新增、套用和移除都在本步骤完成，至少保留一个角色后才能进入下一步。</p>
+                                    <p>如果方案中的角色已经存在当前用户，系统会跳过并提示具体角色名称。</p>
+                                </template>
+                                <template v-else>
+                                    <p>左侧会按角色显示 3.1、3.2 等子节点，点击节点切换对应角色的授权配置。</p>
+                                    <p>当前步骤只配置权限访问范围；如需新增或移除角色，请返回第 02 步处理。</p>
+                                    <p>每个权限都必须显式配置访问范围，向下授权范围也需要单独配置。</p>
+                                </template>
                             </div>
                         </template>
                     </el-alert>
@@ -357,13 +444,16 @@ onMounted(load);
 
             <div class="user-edit-actions">
                 <el-button @click="handleBack">取消</el-button>
-                <template v-if="activeStep === 0">
-                    <el-button type="primary" :loading="saving" @click="handleUserSave">保存并继续授权</el-button>
+                <template v-if="activeStep < 2">
+                    <el-button v-if="activeStep > 0" @click="handleStepChange(activeStep - 1)">上一步</el-button>
+                    <el-button type="primary" @click="handleStepChange(activeStep + 1)">下一步</el-button>
                 </template>
                 <template v-else>
-                    <el-button @click="activeStep = 0">上一步</el-button>
-                    <el-button type="primary" :loading="authorizationSaving" @click="handleAuthorizationSave">
-                        预览并应用
+                    <el-button @click="handleRoleStepPrevious">
+                        {{ activeRoleStepIndex > 0 ? "上一个角色" : "上一步" }}
+                    </el-button>
+                    <el-button type="primary" :loading="submitting" @click="handleRoleStepNext">
+                        {{ roleStepActionLabel }}
                     </el-button>
                 </template>
             </div>
@@ -526,6 +616,84 @@ onMounted(load);
     color: var(--el-text-color-secondary);
     font-size: 12px;
     line-height: 18px;
+}
+
+.user-edit-substep-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: -2px 8px 4px 28px;
+    padding: 4px 0 4px 10px;
+    border-left: 1px solid var(--el-border-color-lighter);
+}
+
+.user-edit-substep {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 7px;
+    outline: none;
+    background: transparent;
+    color: var(--el-text-color-secondary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.user-edit-substep:hover {
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-primary);
+}
+
+.user-edit-substep:focus-visible {
+    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
+}
+
+.user-edit-substep.is-active {
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+}
+
+.user-edit-substep-index {
+    flex: 0 0 auto;
+    min-width: 28px;
+    color: inherit;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 18px;
+}
+
+.user-edit-substep-content {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.user-edit-substep-content strong,
+.user-edit-substep-content small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-edit-substep-content strong {
+    color: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+}
+
+.user-edit-substep-content small {
+    color: var(--el-text-color-secondary);
+    font-size: 11px;
+    line-height: 16px;
 }
 
 .section-title,
@@ -696,6 +864,10 @@ onMounted(load);
 
     .user-edit-step {
         flex: 1;
+    }
+
+    .user-edit-substep-nav {
+        display: none;
     }
 
     .user-edit-section {

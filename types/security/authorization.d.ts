@@ -62,6 +62,18 @@ declare global {
         boundaries: AuthorizationBoundaryChange[];
     };
 
+    /** 移除已有 RoleAssignment 的并发校验信息。 */
+    type AuthorizationAssignmentRemoval = {
+        assignment_id: string;
+        expected_version: number;
+    };
+
+    /** 用户一次性提交的多角色授权变更。 */
+    type AuthorizationAssignmentsChange = {
+        assignments: AuthorizationAssignmentChange[];
+        removed_assignments: AuthorizationAssignmentRemoval[];
+    };
+
     type AuthorizationAssignmentPreview = {
         preview_token: string;
         target_user_id: string;

@@ -46,10 +46,6 @@ const handleUserEdit = (row: UserPageVO) => {
     router.push({ name: "SystemUserEdit", params: { id: row.id } });
 };
 
-const handleUserAuthorization = (row: UserPageVO) => {
-    router.push({ name: "SystemUserEdit", params: { id: row.id }, query: { step: "authorization" } });
-};
-
 const authorizationStatusMeta: Record<
     UserAuthorizationStatus,
     { label: string; type: "success" | "warning" | "danger" | "info"; description: string }
@@ -72,7 +68,7 @@ const authorizationStatusMeta: Record<
     PARTIAL: {
         label: "部分失效",
         type: "danger",
-        description: "部分授权已撤销、过期、停用或未完整生效。"
+        description: "当前仍有角色授权过期、停用或未完整生效。"
     }
 };
 
@@ -231,7 +227,7 @@ onMounted(async () => {
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column align="center" width="230" fixed="right" label="操作">
+                <el-table-column align="center" width="150" fixed="right" label="操作">
                     <template #default="scope">
                         <el-tooltip content="重置密码" placement="top">
                             <el-button link type="primary" @click="handleTableItemResetPassword(scope.row)">
@@ -243,7 +239,6 @@ onMounted(async () => {
                                 <ComponentsIcons name="icon-user-edit" style="width: 1.4em; height: 1.4em" />
                             </el-button>
                         </el-tooltip>
-                        <el-button link type="primary" @click="handleUserAuthorization(scope.row)">配置授权</el-button>
                     </template>
                 </el-table-column>
             </el-table>

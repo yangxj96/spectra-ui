@@ -32,7 +32,15 @@ export const AuthorizationApi = {
         return put<void>(`/api/security/authorization/profiles/${id}`, params, AUTHORIZATION_API_OPTIONS);
     },
 
+    enableProfile(id: string): Promise<void> {
+        return put<void>(`/api/security/authorization/profiles/${id}/enable`, undefined, AUTHORIZATION_API_OPTIONS);
+    },
+
     disableProfile(id: string): Promise<void> {
+        return put<void>(`/api/security/authorization/profiles/${id}/disable`, undefined, AUTHORIZATION_API_OPTIONS);
+    },
+
+    deleteProfile(id: string): Promise<void> {
         return del<void>(`/api/security/authorization/profiles/${id}`, undefined, AUTHORIZATION_API_OPTIONS);
     },
 

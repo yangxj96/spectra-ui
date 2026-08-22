@@ -63,6 +63,21 @@ function openEdit(profile: AuthorizationProfile): void {
     void router.push({ name: "SystemAuthorizationProfileEdit", params: { id: profile.id } });
 }
 
+async function handleEnable(profile: AuthorizationProfile): Promise<void> {
+    if (profile.state !== "DISABLED") return;
+    try {
+        await MessageUtils.box.confirm(
+            `启用后可继续用于新用户和批量导入，已经生成的用户授权不受影响。是否启用「${profile.name}」？`,
+            "启用授权方案"
+        );
+        await AuthorizationApi.enableProfile(profile.id);
+        MessageUtils.success("授权方案已启用");
+        await load();
+    } catch (error: unknown) {
+        if (error !== "cancel" && error !== "close") MessageUtils.error(error);
+    }
+}
+
 async function handleDisable(profile: AuthorizationProfile): Promise<void> {
     if (profile.state !== "ACTIVE") return;
     try {
@@ -72,6 +87,20 @@ async function handleDisable(profile: AuthorizationProfile): Promise<void> {
         );
         await AuthorizationApi.disableProfile(profile.id);
         MessageUtils.success("授权方案已停用");
+        await load();
+    } catch (error: unknown) {
+        if (error !== "cancel" && error !== "close") MessageUtils.error(error);
+    }
+}
+
+async function handleDelete(profile: AuthorizationProfile): Promise<void> {
+    try {
+        await MessageUtils.box.confirm(
+            `删除后该授权方案仅从可复用模板列表移除，不会撤销已经生成的用户授权，也不会影响已生效权限。是否删除「${profile.name}」？`,
+            "删除授权方案"
+        );
+        await AuthorizationApi.deleteProfile(profile.id);
+        MessageUtils.success("授权方案已删除");
         await load();
     } catch (error: unknown) {
         if (error !== "cancel" && error !== "close") MessageUtils.error(error);
@@ -134,7 +163,7 @@ onMounted(load);
                     </template>
                 </el-table-column>
                 <el-table-column prop="description" label="说明" min-width="240" show-overflow-tooltip />
-                <el-table-column label="操作" width="180" fixed="right" align="center">
+                <el-table-column label="操作" width="240" fixed="right" align="center">
                     <template #default="scope">
                         <el-button link type="primary" @click="openEdit(scope.row)">编辑</el-button>
                         <el-button
@@ -144,6 +173,8 @@ onMounted(load);
                             @click="handleDisable(scope.row)">
                             停用
                         </el-button>
+                        <el-button v-else link type="success" @click="handleEnable(scope.row)">启用</el-button>
+                        <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>

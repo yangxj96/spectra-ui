@@ -9,21 +9,11 @@ import { get } from "@/plugin/request/api.ts";
  */
 export const ServiceMonitorApi = {
     /**
-     * 获取CPU信息
+     * 获取服务监控总览
      */
-    getCPUInfo(): Promise<CPUInfo> {
-        return get<CPUInfo>("/api/service/monitor/getCPUInfo");
-    },
-    /**
-     * 获取内存信息
-     */
-    getRAMInfo(): Promise<RAMInfo> {
-        return get<RAMInfo>("/api/service/monitor/getRAMInfo");
-    },
-    /**
-     * 获取JVM信息
-     */
-    getJVMInfo(): Promise<JVMInfo> {
-        return get<JVMInfo>("/api/service/monitor/getJVMInfo");
+    getOverview(
+        options?: Pick<RequestOptions<"/api/service/monitor/overview">, "loading">
+    ): Promise<ServiceMonitorOverview> {
+        return get<ServiceMonitorOverview>("/api/service/monitor/overview", undefined, options);
     }
 };

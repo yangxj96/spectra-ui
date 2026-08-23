@@ -54,6 +54,17 @@ export default [
                 meta: { title: "模板管理", requiresAuth: true, requiredMenu: "DevopsNotificationTemplate" }
             },
             {
+                path: "notification/template/edit",
+                name: "DevopsNotificationTemplateEdit",
+                component: () => import("@/views/Devops/Notification/Template/Edit/index.vue"),
+                meta: {
+                    title: "编辑通知模板",
+                    requiresAuth: true,
+                    requiredMenu: "DevopsNotificationTemplate",
+                    activeMenu: "DevopsNotificationTemplate"
+                }
+            },
+            {
                 path: "notification/provider",
                 name: "DevopsNotificationProvider",
                 component: () => import("@/views/Devops/Notification/Provider/index.vue"),

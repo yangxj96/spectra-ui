@@ -48,6 +48,12 @@ export default [
                 meta: { title: "投递记录", requiresAuth: true, requiredMenu: "DevopsNotificationDeliveryRecord" }
             },
             {
+                path: "notification/template",
+                name: "DevopsNotificationTemplate",
+                component: () => import("@/views/Devops/Notification/Template/index.vue"),
+                meta: { title: "模板管理", requiresAuth: true, requiredMenu: "DevopsNotificationTemplate" }
+            },
+            {
                 path: "scheduler/task",
                 name: "DevopsSchedulerTask",
                 component: () => import("@/views/Devops/Scheduler/Task/index.vue"),

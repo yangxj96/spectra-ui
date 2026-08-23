@@ -516,13 +516,6 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
 
 <template>
     <div class="notification-template-page">
-        <div class="page-toolbar">
-            <div>
-                <h2>通知模板</h2>
-                <p>管理通知模板草稿、发布版本和渠道渲染内容。</p>
-            </div>
-        </div>
-
         <el-card shadow="never" class="search-card">
             <el-form :inline="true" :model="condition">
                 <el-form-item label="模板组编码">
@@ -923,26 +916,6 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
     overflow-y: auto;
     box-sizing: border-box;
     background: var(--el-bg-color-page);
-}
-
-.page-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex: 0 0 auto;
-}
-
-.page-toolbar h2 {
-    margin: 0;
-    color: var(--el-text-color-primary);
-    font-size: 20px;
-}
-
-.page-toolbar p {
-    margin: 6px 0 0;
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
 }
 
 .search-card {

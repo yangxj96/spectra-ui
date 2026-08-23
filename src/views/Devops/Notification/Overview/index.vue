@@ -177,9 +177,6 @@ onUnmounted(() => {
         <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
         <div class="overview-toolbar">
-            <div>
-                <p>数据窗口：最近 {{ overview?.range_hours ?? rangeHours }} 小时；仅展示聚合指标和脱敏错误。</p>
-            </div>
             <div class="overview-toolbar__actions">
                 <el-select v-model="rangeHours" style="width: 150px" @change="changeRange">
                     <el-option v-for="item in rangeOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -319,14 +316,9 @@ onUnmounted(() => {
 .overview-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 16px;
     margin-bottom: 14px;
-}
-
-.overview-toolbar p {
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
 }
 
 .overview-toolbar__actions {

@@ -99,12 +99,6 @@ async function openDetail(row: NotificationDeliveryAdminVO): Promise<void> {
 
 <template>
     <div class="notification-delivery-page">
-        <div class="page-toolbar">
-            <div>
-                <h2>投递记录</h2>
-                <p>查看各通知渠道的投递结果、供应商回执和脱敏错误信息。</p>
-            </div>
-        </div>
         <el-card shadow="never" class="search-card">
             <el-form :inline="true" :model="condition">
                 <el-form-item label="状态">
@@ -272,26 +266,6 @@ async function openDetail(row: NotificationDeliveryAdminVO): Promise<void> {
     overflow-y: auto;
     box-sizing: border-box;
     background: var(--el-bg-color-page);
-}
-
-.page-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex: 0 0 auto;
-}
-
-.page-toolbar h2 {
-    margin: 0;
-    color: var(--el-text-color-primary);
-    font-size: 20px;
-}
-
-.page-toolbar p {
-    margin: 6px 0 0;
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
 }
 
 .search-card {

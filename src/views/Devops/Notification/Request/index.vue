@@ -128,12 +128,6 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
 
 <template>
     <div class="notification-request-page">
-        <div class="page-toolbar">
-            <div>
-                <h2>通知请求</h2>
-                <p>查看通知请求状态、业务关联和已展开的投递任务。</p>
-            </div>
-        </div>
         <el-card shadow="never" class="search-card">
             <el-form :inline="true" :model="condition">
                 <el-form-item label="状态">
@@ -317,26 +311,6 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
     overflow-y: auto;
     box-sizing: border-box;
     background: var(--el-bg-color-page);
-}
-
-.page-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex: 0 0 auto;
-}
-
-.page-toolbar h2 {
-    margin: 0;
-    color: var(--el-text-color-primary);
-    font-size: 20px;
-}
-
-.page-toolbar p {
-    margin: 6px 0 0;
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
 }
 
 .search-card {

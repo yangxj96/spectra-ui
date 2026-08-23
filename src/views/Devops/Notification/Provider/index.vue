@@ -319,11 +319,7 @@ onMounted(() => {
 
 <template>
     <div v-loading="loading" class="provider-page">
-        <div class="page-toolbar">
-            <div>
-                <h2>通知渠道配置</h2>
-                <p>渠道服务配置属于单体系统全局配置；密钥不回显，渠道健康检查通过后才允许投递。</p>
-            </div>
+        <div class="provider-toolbar">
             <el-button :loading="loading" @click="void loadData()">
                 <el-icon><Refresh /></el-icon>
                 刷新
@@ -558,21 +554,17 @@ onMounted(() => {
     background: var(--el-bg-color-page);
 }
 
-.page-toolbar {
+.provider-toolbar {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    justify-content: flex-end;
     margin-bottom: 14px;
 }
 
-.page-toolbar h2,
 .provider-card h3 {
     margin: 0;
     color: var(--el-text-color-primary);
 }
 
-.page-toolbar p,
 .provider-card__header p {
     margin: 6px 0 0;
     color: var(--el-text-color-secondary);
@@ -701,11 +693,6 @@ onMounted(() => {
 }
 
 @media (max-width: 600px) {
-    .page-toolbar {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
     .summary-grid {
         grid-template-columns: 1fr;
     }

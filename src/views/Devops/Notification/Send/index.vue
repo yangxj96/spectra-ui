@@ -347,10 +347,6 @@ onMounted(() => {
 <template>
     <div class="notification-send-page">
         <div class="page-header">
-            <div>
-                <h2>通知受控发送</h2>
-                <p>先预览当前受众、模板和渠道状态，再确认发送，创建通知请求。</p>
-            </div>
             <el-tag type="warning">仅限运维操作</el-tag>
         </div>
 
@@ -641,19 +637,8 @@ onMounted(() => {
 }
 
 .page-header {
+    justify-content: flex-end;
     margin-bottom: 14px;
-}
-
-.page-header h2 {
-    margin: 0;
-    color: var(--el-text-color-primary);
-    font-size: 20px;
-}
-
-.page-header p {
-    margin: 6px 0 0;
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
 }
 
 .send-layout {

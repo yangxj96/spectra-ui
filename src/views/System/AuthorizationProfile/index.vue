@@ -82,7 +82,7 @@ async function handleDisable(profile: AuthorizationProfile): Promise<void> {
     if (profile.state !== "ACTIVE") return;
     try {
         await MessageUtils.box.confirm(
-            `停用后不能用于新用户和批量导入，已经生成的 RoleAssignment 不受影响。是否停用「${profile.name}」？`,
+            `停用后不能用于新用户和批量导入，已经生成的用户授权不受影响。是否停用「${profile.name}」？`,
             "停用授权方案"
         );
         await AuthorizationApi.disableProfile(profile.id);
@@ -138,7 +138,7 @@ onMounted(load);
         <el-row class="box__body">
             <el-alert
                 class="profile-tip"
-                title="授权方案不是运行时授权实例。套用后仍需根据当前用户完成 Preview/Apply，方案停用不会撤销已生效授权。"
+                title="授权方案不是运行时授权实例。套用后仍需根据当前用户完成预览和应用，方案停用不会撤销已生效授权。"
                 type="info"
                 :closable="false"
                 show-icon />

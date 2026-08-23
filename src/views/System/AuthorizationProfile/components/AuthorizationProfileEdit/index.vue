@@ -1039,13 +1039,27 @@ onMounted(load);
                         </div>
                         <el-text type="info">带 * 的字段为必填项</el-text>
                     </div>
-                    <el-alert
-                        class="profile-tip"
-                        title="使用提示"
-                        description="授权方案不是运行时授权实例。套用后仍需根据当前用户完成预览和应用，方案停用不会撤销已生效授权。"
-                        type="info"
-                        :closable="false"
-                        show-icon />
+                    <el-alert class="profile-tip" title="使用提示" type="info" :closable="false" show-icon>
+                        <template #default>
+                            <div class="profile-tip-content">
+                                <p>
+                                    授权方案
+                                    <strong>不是运行时授权实例</strong>
+                                    。
+                                </p>
+                                <p>
+                                    套用后仍需根据当前用户
+                                    <strong>完成预览和应用</strong>
+                                    。
+                                </p>
+                                <p>
+                                    方案停用
+                                    <strong>不会撤销已生效授权</strong>
+                                    。
+                                </p>
+                            </div>
+                        </template>
+                    </el-alert>
                 </aside>
             </div>
 
@@ -1179,6 +1193,24 @@ onMounted(load);
     color: var(--el-text-color-regular);
     font-size: 12px;
     line-height: 1.7;
+}
+
+.profile-tip-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: var(--el-text-color-regular);
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.profile-tip-content p {
+    margin: 0;
+}
+
+.profile-tip-content strong {
+    color: var(--el-text-color-primary);
+    font-weight: 600;
 }
 
 .profile-edit-section {

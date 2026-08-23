@@ -16,6 +16,8 @@ import { MessageUtils } from "@/utils/message-utils.ts";
 type RoleEditorNode = "basic" | "permissions" | "grantable" | "menus";
 type PermissionView = "all" | "selected" | "unselected";
 type PermissionSelection = "permissions" | "grantable";
+type RoleTipText = { emphasis: string; suffix: string };
+type RoleNodeTip = { title: string; description: RoleTipText; items: RoleTipText[] };
 
 type PermissionItem = AuthorityTree & {
     groupId: string;
@@ -167,35 +169,46 @@ const roleNavigationItems = computed<StepNavigationItem[]>(() =>
     }))
 );
 
-const nodeTips: Record<RoleEditorNode, { title: string; description: string; items: string[] }> = {
+const nodeTips: Record<RoleEditorNode, RoleNodeTip> = {
     basic: {
         title: "角色信息提示",
-        description: "角色编码、类型、授权管理等级和内置标记由系统控制。",
-        items: ["业务角色可以新增多个。", "角色名称不能与其他角色重复。", "内置角色只能查看，不能编辑或变更状态。"]
+        description: { emphasis: "角色编码、类型、授权管理等级和内置标记", suffix: "由系统控制。" },
+        items: [
+            { emphasis: "业务角色", suffix: "可以新增多个。" },
+            { emphasis: "角色名称", suffix: "不能与其他角色重复。" },
+            { emphasis: "内置角色", suffix: "只能查看，不能编辑或变更状态。" }
+        ]
     },
     permissions: {
         title: "角色权限提示",
-        description: "这里配置角色可以使用的功能和操作权限，同时设置授权管理等级。",
+        description: { emphasis: "角色可以使用的功能和操作权限", suffix: "，同时设置授权管理等级。" },
         items: [
-            "这里的选择会在最后一步统一提交。",
-            "权限调整会影响该角色已有用户的有效授权。",
-            "授权管理等级用于限制角色可以授予的目标角色范围，等级越高，可管理的目标角色等级越低。",
-            "授权管理等级只控制授权边界，不代表业务角色级别或排序。",
-            "内置角色的权限固定，不能在这里修改。"
+            { emphasis: "这里的选择", suffix: "会在最后一步统一提交。" },
+            { emphasis: "权限调整", suffix: "会影响该角色已有用户的有效授权。" },
+            {
+                emphasis: "授权管理等级",
+                suffix: "用于限制角色可以授予的目标角色范围，等级越高，可管理的目标角色等级越低。"
+            },
+            { emphasis: "授权管理等级", suffix: "只控制授权边界，不代表业务角色级别或排序。" },
+            { emphasis: "内置角色的权限", suffix: "固定，不能在这里修改。" }
         ]
     },
     grantable: {
         title: "可授予权限提示",
-        description: "可授予权限决定角色能够向下管理哪些能力。",
-        items: ["可授予权限必须同时存在于角色权限中。", "范围边界由授权方案继续配置。", "请谨慎扩大可授予权限范围。"]
+        description: { emphasis: "可授予权限", suffix: "决定角色能够向下管理哪些能力。" },
+        items: [
+            { emphasis: "可授予权限", suffix: "必须同时存在于角色权限中。" },
+            { emphasis: "授权方案", suffix: "继续配置范围边界。" },
+            { emphasis: "请谨慎扩大", suffix: "可授予权限范围。" }
+        ]
     },
     menus: {
         title: "角色菜单提示",
-        description: "菜单决定角色在管理后台可以看到的导航入口。",
+        description: { emphasis: "菜单", suffix: "决定角色在管理后台可以看到的导航入口。" },
         items: [
-            "菜单变更只影响导航可见性，不替代接口权限校验。",
-            "提交时会自动包含选中节点的父级目录。",
-            "内置角色菜单固定，不能在这里修改。"
+            { emphasis: "菜单变更", suffix: "只影响导航可见性，不替代接口权限校验。" },
+            { emphasis: "父级目录", suffix: "会在提交时自动包含。" },
+            { emphasis: "内置角色菜单", suffix: "固定，不能在这里修改。" }
         ]
     }
 };
@@ -875,17 +888,21 @@ watch([menuSearch, menuView, selectedMenuIds], applyMenuFilter, { deep: true });
                 </main>
 
                 <aside class="role-side role-side-right">
-                    <el-alert
-                        class="role-tip"
-                        :title="currentNodeTip.title"
-                        :description="currentNodeTip.description"
-                        type="info"
-                        :closable="false"
-                        show-icon />
+                    <el-alert class="role-tip" :title="currentNodeTip.title" type="info" :closable="false" show-icon>
+                        <template #default>
+                            <div class="role-tip-description">
+                                <strong>{{ currentNodeTip.description.emphasis }}</strong>
+                                {{ currentNodeTip.description.suffix }}
+                            </div>
+                        </template>
+                    </el-alert>
                     <el-card class="role-tip-card" shadow="never">
                         <template #header>操作说明</template>
                         <ul>
-                            <li v-for="item in currentNodeTip.items" :key="item">{{ item }}</li>
+                            <li v-for="item in currentNodeTip.items" :key="item.emphasis + item.suffix">
+                                <strong>{{ item.emphasis }}</strong>
+                                {{ item.suffix }}
+                            </li>
                         </ul>
                     </el-card>
                 </aside>
@@ -1222,6 +1239,18 @@ watch([menuSearch, menuView, selectedMenuIds], applyMenuFilter, { deep: true });
 .role-tip {
     flex: 0 0 auto;
     align-items: flex-start;
+}
+
+.role-tip-description {
+    color: var(--el-text-color-regular);
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.role-tip-description strong,
+.role-tip-card li strong {
+    color: var(--el-text-color-primary);
+    font-weight: 600;
 }
 
 .role-tip-card {

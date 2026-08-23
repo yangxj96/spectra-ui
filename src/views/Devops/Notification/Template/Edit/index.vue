@@ -532,13 +532,6 @@ onMounted(() => {
                                     </el-col>
                                 </el-row>
 
-                                <el-alert
-                                    :title="channelFieldHint"
-                                    type="info"
-                                    :closable="false"
-                                    show-icon
-                                    class="channel-field-alert" />
-
                                 <el-form-item v-if="showInAppTitleTemplate" label="标题模板">
                                     <el-input v-model="editor.title_template" placeholder="支持 {{变量名}} 占位符" />
                                 </el-form-item>
@@ -549,41 +542,21 @@ onMounted(() => {
                                         :rows="5"
                                         placeholder="请填写有明确通知语义的正文，例如：公告《{{title}}》已发布，请及时查看。" />
                                 </el-form-item>
-                                <el-alert
-                                    title="正文不能直接等于 {{变量名}}；请补充通知对象、事件或处理提示等业务语义。"
-                                    type="warning"
-                                    :closable="false"
-                                    show-icon
-                                    class="content-alert" />
-
                                 <el-form-item label="参数 Schema" prop="parameter_schema_text">
                                     <el-input
                                         v-model="editor.parameter_schema_text"
                                         type="textarea"
                                         :rows="8"
                                         placeholder='JSON Schema，例如 { "properties": { "code": { "type": "string", "sensitive": true } } }' />
-                                    <div class="form-help">
-                                        properties 中的 sensitive: true 表示该参数必须从敏感参数通道传入。
-                                    </div>
                                 </el-form-item>
                             </div>
 
                             <div v-show="activeStep === 1" class="template-step-panel">
-                                <el-alert
-                                    :title="channelFieldHint"
-                                    type="info"
-                                    :closable="false"
-                                    show-icon
-                                    class="channel-field-alert" />
-
                                 <template v-if="editor.channel === 'SMS'">
                                     <el-form-item label="短信供应商模板编码">
                                         <el-input
                                             v-model="editor.provider_template_code"
                                             placeholder="请输入短信供应商模板编码，可选" />
-                                        <div class="form-help">
-                                            如果短信供应商要求使用已审核模板，请填写供应商分配的模板编码。
-                                        </div>
                                     </el-form-item>
                                 </template>
 
@@ -634,11 +607,6 @@ onMounted(() => {
                                         </el-form-item>
                                     </el-col>
                                 </el-row>
-                                <el-alert
-                                    title="示例参数仅用于预览，不会写入数据库；发布前会重新校验变量声明、敏感参数分区和 HTML 安全规则。"
-                                    type="info"
-                                    :closable="false"
-                                    show-icon />
                             </div>
                         </el-form>
                     </div>
@@ -656,24 +624,89 @@ onMounted(() => {
                         <template #default>
                             <div class="template-tip-content">
                                 <template v-if="activeStep === 0">
-                                    <p>模板组编码用于业务调用，模板名称用于管理端识别，请填写清晰的业务含义。</p>
-                                    <p>通知用途和渠道会共同决定模板是否可用，验证码用途不能配置为站内信。</p>
-                                    <p>正文必须包含明确通知语义，不能直接使用单个占位符。</p>
+                                    <p>
+                                        <strong>模板组编码</strong>
+                                        用于业务调用，
+                                        <strong>模板名称</strong>
+                                        用于管理端识别，请填写清晰的业务含义。
+                                    </p>
+                                    <p>
+                                        <strong>通知用途和渠道</strong>
+                                        会共同决定模板是否可用，验证码用途不能配置为站内信。
+                                    </p>
+                                    <p>
+                                        <strong>{{ channelFieldHint }}</strong>
+                                    </p>
+                                    <p>
+                                        <strong>正文必须包含明确通知语义</strong>
+                                        ，不能直接使用单个占位符。
+                                    </p>
+                                    <p>
+                                        <strong>正文不能只填写单个变量占位符</strong>
+                                        ；请补充通知对象、事件或处理提示等业务语义。
+                                    </p>
+                                    <p>
+                                        参数 Schema 中的
+                                        <strong>sensitive: true</strong>
+                                        表示该参数必须从敏感参数通道传入。
+                                    </p>
                                 </template>
                                 <template v-else-if="editor.channel === 'SMS'">
-                                    <p>短信只使用纯文本正文，标题和 HTML 模板不会参与发送。</p>
-                                    <p>供应商模板编码仅在供应商要求使用已审核短信模板时填写。</p>
-                                    <p>示例参数只用于预览，不会保存到模板或业务通知数据中。</p>
+                                    <p>
+                                        <strong>{{ channelFieldHint }}</strong>
+                                    </p>
+                                    <p>
+                                        <strong>短信只使用纯文本正文</strong>
+                                        ，标题和 HTML 模板不会参与发送。
+                                    </p>
+                                    <p>
+                                        <strong>供应商模板编码</strong>
+                                        仅在供应商要求使用已审核短信模板时填写。
+                                    </p>
+                                    <p>如果短信供应商要求使用已审核模板，请填写供应商分配的模板编码。</p>
+                                    <p>
+                                        <strong>示例参数仅用于预览</strong>
+                                        ，不会保存到模板或业务通知数据中。
+                                    </p>
+                                    <p>
+                                        <strong>普通参数和敏感参数需要分别填写</strong>
+                                        ，发布前系统会重新校验参数分区。
+                                    </p>
                                 </template>
                                 <template v-else-if="editor.channel === 'EMAIL'">
-                                    <p>邮件主题对应邮件标题，HTML 正文可选，纯文本正文用于兼容不支持 HTML 的客户端。</p>
-                                    <p>HTML 模板禁止脚本、事件属性和危险 URL 协议。</p>
-                                    <p>示例参数只用于预览，不会保存到模板或业务通知数据中。</p>
+                                    <p>
+                                        <strong>{{ channelFieldHint }}</strong>
+                                    </p>
+                                    <p>
+                                        <strong>邮件主题对应邮件标题</strong>
+                                        ，HTML 正文可选，纯文本正文用于兼容不支持 HTML 的客户端。
+                                    </p>
+                                    <p><strong>HTML 模板禁止脚本、事件属性和危险 URL 协议。</strong></p>
+                                    <p>
+                                        <strong>示例参数仅用于预览</strong>
+                                        ，不会保存到模板或业务通知数据中。
+                                    </p>
+                                    <p>
+                                        <strong>普通参数和敏感参数需要分别填写</strong>
+                                        ，发布前系统会重新校验参数分区。
+                                    </p>
                                 </template>
                                 <template v-else>
-                                    <p>站内信使用标题和纯文本正文，当前步骤用于确认实际渲染结果。</p>
-                                    <p>敏感参数必须填写在敏感示例参数中，不能放入普通示例参数。</p>
-                                    <p>预览成功后仍需保存草稿，发布前系统会再次执行完整校验。</p>
+                                    <p>
+                                        <strong>{{ channelFieldHint }}</strong>
+                                    </p>
+                                    <p>
+                                        <strong>站内信使用标题和纯文本正文</strong>
+                                        ，当前步骤用于确认实际渲染结果。
+                                    </p>
+                                    <p>
+                                        <strong>敏感参数必须填写在敏感示例参数中</strong>
+                                        ，不能放入普通示例参数。
+                                    </p>
+                                    <p>
+                                        <strong>预览成功后仍需保存草稿</strong>
+                                        ，发布前系统会再次执行完整校验。
+                                    </p>
                                 </template>
                             </div>
                         </template>
@@ -768,6 +801,8 @@ onMounted(() => {
     min-width: 0;
     flex-direction: column;
     gap: 12px;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 .notification-template-edit-section {
@@ -901,18 +936,9 @@ onMounted(() => {
     margin: 0;
 }
 
-.content-alert,
-.channel-field-alert,
-.form-help {
-    margin-bottom: 18px;
-}
-
-.form-help {
-    width: 100%;
-    margin-top: 6px;
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-    line-height: 1.5;
+.template-tip-content strong {
+    color: var(--el-text-color-primary);
+    font-weight: 700;
 }
 
 .editor-actions {

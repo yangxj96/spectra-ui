@@ -22,6 +22,10 @@ export const NotificationTemplateApi = {
         return put<NotificationTemplateVO>(`${TEMPLATE_API}/${id}`, params);
     },
 
+    copy(id: string): Promise<NotificationTemplateVO> {
+        return post<NotificationTemplateVO>(`${TEMPLATE_API}/${id}/copy`);
+    },
+
     publish(id: string, version: number): Promise<void> {
         return post<void>(`${TEMPLATE_API}/${id}/publish`, { version });
     },

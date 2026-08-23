@@ -17,6 +17,7 @@ declare global {
         html_template?: string | null;
         parameter_schema: Record<string, unknown>;
         provider_template_code?: string | null;
+        version_digest: string;
         version: number;
         created_at?: string;
         updated_at?: string;

@@ -149,6 +149,13 @@ function purposeLabel(purpose: string): string {
     return purposeOptions.find(item => item.value === purpose)?.label ?? purpose;
 }
 
+function digestLabel(digest: string | null | undefined): string {
+    if (!digest) {
+        return "-";
+    }
+    return `${digest.slice(0, 12)}…`;
+}
+
 function resetCondition(): void {
     Object.assign(condition.value, {
         template_group_code: undefined,
@@ -317,6 +324,23 @@ function archive(row: NotificationTemplateVO): Promise<void> {
     );
 }
 
+async function copyTemplate(row: NotificationTemplateVO): Promise<void> {
+    try {
+        await ElMessageBox.confirm(
+            `确定复制模板「${row.template_group_code}」为新的草稿吗？原版本不会被修改。`,
+            "复制模板草稿",
+            { confirmButtonText: "复制", cancelButtonText: "取消", type: "info" }
+        );
+        await NotificationTemplateApi.copy(row.id);
+        ElMessage.success("模板草稿已复制");
+        await handlerConditionQuery();
+    } catch (error: unknown) {
+        if (error !== "cancel") {
+            ElMessage.error(errorMessage(error, "复制模板失败"));
+        }
+    }
+}
+
 async function openVersions(row: NotificationTemplateVO): Promise<void> {
     versionVisible.value = true;
     versionLoading.value = true;
@@ -414,6 +438,11 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                 </template>
             </el-table-column>
             <el-table-column align="center" label="版本" prop="version_no" width="75" />
+            <el-table-column align="center" label="版本摘要" width="135" show-overflow-tooltip>
+                <template #default="scope">
+                    {{ digestLabel(scope.row.version_digest) }}
+                </template>
+            </el-table-column>
             <el-table-column align="center" label="状态" width="90">
                 <template #default="scope">
                     <el-tag :type="stateTagType(scope.row.state)" size="small">
@@ -422,7 +451,7 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                 </template>
             </el-table-column>
             <el-table-column align="center" label="更新时间" prop="updated_at" width="170" show-overflow-tooltip />
-            <el-table-column align="center" label="操作" width="330" fixed="right">
+            <el-table-column align="center" label="操作" width="410" fixed="right">
                 <template #default="scope">
                     <el-button
                         v-permission="'notification:template:read'"
@@ -431,6 +460,14 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                         size="small"
                         @click="openVersions(scope.row)">
                         版本历史
+                    </el-button>
+                    <el-button
+                        v-permission="'notification:template:write'"
+                        link
+                        type="info"
+                        size="small"
+                        @click="copyTemplate(scope.row)">
+                        复制草稿
                     </el-button>
                     <el-button
                         v-if="scope.row.state === 'DRAFT'"
@@ -613,6 +650,11 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                 <el-table-column align="center" label="用途" min-width="120">
                     <template #default="scope">
                         {{ purposeLabel(scope.row.purpose) }}
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" label="版本摘要" width="145" show-overflow-tooltip>
+                    <template #default="scope">
+                        {{ digestLabel(scope.row.version_digest) }}
                     </template>
                 </el-table-column>
                 <el-table-column align="center" label="更新时间" prop="updated_at" width="170" />

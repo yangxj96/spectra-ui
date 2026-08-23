@@ -26,7 +26,7 @@ export default [
             {
                 path: "notification/overview",
                 name: "DevopsNotificationOverview",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
+                component: () => import("@/views/Devops/Notification/Overview/index.vue"),
                 meta: { title: "通知运行概览", requiresAuth: true, requiredMenu: "DevopsNotificationOverview" }
             },
             {

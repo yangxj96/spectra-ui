@@ -178,7 +178,6 @@ onUnmounted(() => {
 
         <div class="overview-toolbar">
             <div>
-                <h2>通知运行概览</h2>
                 <p>数据窗口：最近 {{ overview?.range_hours ?? rangeHours }} 小时；仅展示聚合指标和脱敏错误。</p>
             </div>
             <div class="overview-toolbar__actions">
@@ -267,7 +266,7 @@ onUnmounted(() => {
                                 <span class="section-card__hint">最多展示 10 条</span>
                             </div>
                         </template>
-                        <el-table :data="overview.recent_errors" stripe>
+                        <el-table :data="overview.recent_errors" empty-text="暂无错误" stripe>
                             <el-table-column label="时间" width="155">
                                 <template #default="scope">{{ formatDateTime(scope.row.occurred_at) }}</template>
                             </el-table-column>
@@ -285,10 +284,6 @@ onUnmounted(() => {
                                 </template>
                             </el-table-column>
                         </el-table>
-                        <el-empty
-                            v-if="overview.recent_errors.length === 0"
-                            description="窗口内暂无错误"
-                            :image-size="60" />
                     </el-card>
                 </el-col>
             </el-row>
@@ -329,14 +324,7 @@ onUnmounted(() => {
     margin-bottom: 14px;
 }
 
-.overview-toolbar h2 {
-    margin: 0;
-    color: var(--el-text-color-primary);
-    font-size: 20px;
-}
-
 .overview-toolbar p {
-    margin: 6px 0 0;
     color: var(--el-text-color-secondary);
     font-size: 13px;
 }

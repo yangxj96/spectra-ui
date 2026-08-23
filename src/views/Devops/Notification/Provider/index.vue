@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Refresh } from "@element-plus/icons-vue";
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
 import { NotificationAdminApi } from "@/api/notification/notification-admin-api.ts";
 import { NotificationProviderApi } from "@/api/notification/notification-provider-api.ts";
@@ -66,6 +66,13 @@ const reasonLabels: Record<string, string> = {
 
 const providers = ref<NotificationProviderVO[]>([]);
 const overview = ref<NotificationOverviewVO>();
+const providerColumns = computed<NotificationProviderVO[][]>(() => {
+    const columns: NotificationProviderVO[][] = [[], []];
+    providers.value.forEach((provider, index) => {
+        columns[index % 2]!.push(provider);
+    });
+    return columns.filter(column => column.length > 0);
+});
 const loading = ref(false);
 const savingChannel = ref<ExternalChannel>();
 const healthChannel = ref<ExternalChannel>();
@@ -348,9 +355,12 @@ onMounted(() => {
             </el-card>
         </div>
 
-        <el-row v-if="providers.length" :gutter="12" class="provider-grid">
-            <el-col v-for="provider in providers" :key="provider.channel" :xs="24" :lg="12">
-                <el-card shadow="never" class="provider-card">
+        <div v-if="providers.length" class="provider-grid">
+            <div
+                v-for="(column, columnIndex) in providerColumns"
+                :key="`provider-column-${columnIndex}`"
+                class="provider-column">
+                <el-card v-for="provider in column" :key="provider.channel" shadow="never" class="provider-card">
                     <template #header>
                         <div class="provider-card__header">
                             <div>
@@ -484,8 +494,8 @@ onMounted(() => {
                         <span>未知状态 {{ overviewChannel(provider.channel)?.unknown_task_count ?? 0 }}</span>
                     </div>
                 </el-card>
-            </el-col>
-        </el-row>
+            </div>
+        </div>
         <el-empty v-else-if="!loading" description="暂无渠道配置" />
 
         <el-dialog
@@ -605,12 +615,21 @@ onMounted(() => {
 }
 
 .provider-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
     margin-bottom: 12px;
+}
+
+.provider-column {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .provider-card {
     height: auto;
-    margin-bottom: 12px;
 }
 
 .provider-card__header {
@@ -674,6 +693,10 @@ onMounted(() => {
 @media (max-width: 900px) {
     .summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .provider-grid {
+        grid-template-columns: 1fr;
     }
 }
 

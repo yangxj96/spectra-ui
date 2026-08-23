@@ -60,6 +60,12 @@ export default [
                 meta: { title: "渠道配置", requiresAuth: true, requiredMenu: "DevopsNotificationProvider" }
             },
             {
+                path: "notification/send",
+                name: "DevopsNotificationSend",
+                component: () => import("@/views/Devops/Notification/Send/index.vue"),
+                meta: { title: "受控发送", requiresAuth: true, requiredMenu: "DevopsNotificationSend" }
+            },
+            {
                 path: "scheduler/task",
                 name: "DevopsSchedulerTask",
                 component: () => import("@/views/Devops/Scheduler/Task/index.vue"),

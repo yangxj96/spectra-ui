@@ -89,7 +89,8 @@ export function upload<T, U extends string = string>(url: U, form: FormData, opt
 export async function download<U extends string = string>(url: U, options?: RequestOptions<U>) {
     return await request<Blob, U>(url, {
         method: "GET",
-        ...options
+        ...options,
+        download: true
     });
 }
 

@@ -85,7 +85,7 @@ const formatStorageType = (type: string): string => {
 
 // 下载文件
 const handleDownload = async (row: FileInfo) => {
-    await FileApi.download(row.id, row.original_name);
+    await FileApi.download(row.id);
     MessageUtils.success("下载成功");
 };
 

@@ -1,5 +1,4 @@
-import { del, get } from "@/plugin/request/api.ts";
-import { request } from "@/plugin/request/http";
+import { del, download, get } from "@/plugin/request/api.ts";
 
 /**
  * 文件管理相关接口
@@ -15,20 +14,9 @@ export const FileApi = {
     /**
      * 下载文件
      * @param id 文件ID
-     * @param filename 文件名
      */
-    async download(id: string, filename: string): Promise<void> {
-        const blob = await request<Blob, string>(`/api/file/upload/download/${id}`, {
-            method: "GET"
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+    async download(id: string): Promise<void> {
+        await download(`/api/file/upload/download/${id}`);
     },
     /**
      * 删除文件

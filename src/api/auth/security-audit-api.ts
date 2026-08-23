@@ -1,5 +1,4 @@
-import { get } from "@/plugin/request/api.ts";
-import { request } from "@/plugin/request/http";
+import { download, get } from "@/plugin/request/api.ts";
 
 /** Security Audit 只读查询与导出接口。 */
 export const SecurityAuditApi = {
@@ -13,9 +12,6 @@ export const SecurityAuditApi = {
         return get<SecurityAuditRetention>("/api/security/audit/retention");
     },
     async export(params?: Omit<SecurityAuditPageParams, "page_num" | "page_size">): Promise<Blob> {
-        return request<Blob, string>("/api/security/audit/export", {
-            method: "GET",
-            params
-        });
+        return download("/api/security/audit/export", { params });
     }
 };

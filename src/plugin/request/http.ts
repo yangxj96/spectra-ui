@@ -305,7 +305,7 @@ async function encryptRequestBody(
 /**
  * 文件下载处理
  */
-async function handleBlobDownload(res: Response): Promise<Blob | null> {
+async function handleBlobDownload(res: Response, shouldDownload: boolean): Promise<Blob | null> {
     const contentType = res.headers.get("content-type");
     if (
         !contentType?.includes("application/octet-stream") &&
@@ -319,14 +319,16 @@ async function handleBlobDownload(res: Response): Promise<Blob | null> {
     }
     const blob = await res.blob();
     const disposition = res.headers.get("content-disposition");
-    if (disposition) {
+    if (shouldDownload) {
         const filename = getFilename(disposition) || "download";
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = filename;
+        document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     }
     return blob;
 }
@@ -363,6 +365,7 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
     const {
         params,
         loading = true,
+        download = false,
         priority = "normal",
         fetchPriority = "auto",
         retry = 0,
@@ -479,7 +482,7 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
                 await handleHttpError(res);
             }
 
-            const blob = await handleBlobDownload(res);
+            const blob = await handleBlobDownload(res, download);
             if (blob) return blob as T;
 
             if (noBody) return undefined as T;

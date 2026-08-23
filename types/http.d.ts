@@ -25,6 +25,11 @@ declare global {
         loading?: boolean;
 
         /**
+         * 是否将二进制响应保存为文件
+         */
+        download?: boolean;
+
+        /**
          * 网络失败重试次数
          */
         retry?: number;

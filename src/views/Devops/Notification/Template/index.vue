@@ -12,6 +12,7 @@ type EditorMode = "create" | "edit";
 interface TemplateEditorForm {
     id?: string;
     template_group_code: string;
+    template_name: string;
     channel: NotificationTemplateChannel;
     purpose: string;
     title_template: string;
@@ -20,6 +21,7 @@ interface TemplateEditorForm {
     parameter_schema_text: string;
     provider_template_code: string;
     sample_parameters_text: string;
+    sample_sensitive_parameters_text: string;
     version?: number;
 }
 
@@ -87,6 +89,12 @@ const INVALID_VARIABLE_PATTERN = /\{\{|}}/s;
 const VERIFICATION_CODE_PURPOSES = new Set(["LOGIN_CODE", "BIND_PHONE_CODE", "BIND_EMAIL_CODE", "RESET_PASSWORD_CODE"]);
 
 const editorChannelOptions = computed(() => {
+    if (editor.value.purpose === "BIND_PHONE_CODE") {
+        return channelOptions.filter(item => item.value === "SMS");
+    }
+    if (editor.value.purpose === "BIND_EMAIL_CODE") {
+        return channelOptions.filter(item => item.value === "EMAIL");
+    }
     if (VERIFICATION_CODE_PURPOSES.has(editor.value.purpose)) {
         return channelOptions.filter(item => item.value === "SMS" || item.value === "EMAIL");
     }
@@ -95,6 +103,7 @@ const editorChannelOptions = computed(() => {
 
 const editorRules: FormRules = {
     template_group_code: [{ required: true, message: "请输入模板组编码", trigger: "blur" }],
+    template_name: [{ required: true, message: "请输入模板名称", trigger: "blur" }],
     channel: [{ required: true, message: "请选择通知渠道", trigger: "change" }],
     purpose: [{ required: true, message: "请选择通知用途", trigger: "change" }],
     content_template: [{ required: true, message: "请输入纯文本正文模板", trigger: "blur" }],
@@ -104,6 +113,7 @@ const editorRules: FormRules = {
 function createEditorForm(): TemplateEditorForm {
     return {
         template_group_code: "",
+        template_name: "",
         channel: "IN_APP",
         purpose: "SYSTEM_NOTICE",
         title_template: "",
@@ -111,7 +121,8 @@ function createEditorForm(): TemplateEditorForm {
         html_template: "",
         parameter_schema_text: JSON.stringify({ properties: {} }, null, 2),
         provider_template_code: "",
-        sample_parameters_text: "{}"
+        sample_parameters_text: "{}",
+        sample_sensitive_parameters_text: "{}"
     };
 }
 
@@ -137,6 +148,16 @@ function parseJsonObject(value: string, label: string): Record<string, unknown> 
     }
 }
 
+function sensitiveParameterNames(parameterSchema: Record<string, unknown> | null | undefined): string[] {
+    const properties = parameterSchema?.properties;
+    if (!isObjectRecord(properties)) {
+        return [];
+    }
+    return Object.entries(properties)
+        .filter(([, definition]) => isObjectRecord(definition) && definition.sensitive === true)
+        .map(([name]) => name);
+}
+
 function collectTemplateVariables(...templates: Array<string | null | undefined>): Set<string> {
     const variables = new Set<string>();
     for (const template of templates) {
@@ -149,6 +170,14 @@ function collectTemplateVariables(...templates: Array<string | null | undefined>
 }
 
 function validateTemplatePurposeChannel(purpose: string, channel: NotificationTemplateChannel): boolean {
+    if (purpose === "BIND_PHONE_CODE" && channel !== "SMS") {
+        ElMessage.error("绑定手机号验证码模板只能使用短信渠道");
+        return false;
+    }
+    if (purpose === "BIND_EMAIL_CODE" && channel !== "EMAIL") {
+        ElMessage.error("绑定邮箱验证码模板只能使用邮件渠道");
+        return false;
+    }
     if (VERIFICATION_CODE_PURPOSES.has(purpose) && channel === "IN_APP") {
         ElMessage.error("验证码模板只能使用短信或邮件渠道");
         return false;
@@ -158,8 +187,8 @@ function validateTemplatePurposeChannel(purpose: string, channel: NotificationTe
 
 function handleEditorPurposeChange(): void {
     if (!editorChannelOptions.value.some(item => item.value === editor.value.channel)) {
-        editor.value.channel = "SMS";
-        ElMessage.info("验证码模板已切换为短信渠道；也可以改为邮件");
+        editor.value.channel = editor.value.purpose === "BIND_EMAIL_CODE" ? "EMAIL" : "SMS";
+        ElMessage.info(`模板渠道已切换为${channelLabel(editor.value.channel)}`);
     }
 }
 
@@ -172,6 +201,21 @@ function validateTemplateDefinition(
     const properties = schema.properties;
     if (!isObjectRecord(properties)) {
         ElMessage.error("参数 Schema 必须包含 properties 对象");
+        return undefined;
+    }
+    const invalidDefinitions = Object.entries(properties).filter(([, definition]) => !isObjectRecord(definition));
+    if (invalidDefinitions.length) {
+        ElMessage.error(`参数定义必须是 JSON 对象：${invalidDefinitions.map(([name]) => name).join(", ")}`);
+        return undefined;
+    }
+    const invalidSensitiveDefinitions = Object.entries(properties).filter(
+        ([, definition]) =>
+            isObjectRecord(definition) &&
+            definition.sensitive !== undefined &&
+            typeof definition.sensitive !== "boolean"
+    );
+    if (invalidSensitiveDefinitions.length) {
+        ElMessage.error(`参数敏感标识必须是布尔值：${invalidSensitiveDefinitions.map(([name]) => name).join(", ")}`);
         return undefined;
     }
     const declared = new Set(Object.keys(properties));
@@ -273,6 +317,7 @@ async function openEdit(row: NotificationTemplateVO): Promise<void> {
         editor.value = {
             id: detail.id,
             template_group_code: detail.template_group_code,
+            template_name: detail.template_name,
             channel: detail.channel,
             purpose: detail.purpose,
             title_template: detail.title_template ?? "",
@@ -281,6 +326,7 @@ async function openEdit(row: NotificationTemplateVO): Promise<void> {
             parameter_schema_text: formatJson(detail.parameter_schema),
             provider_template_code: detail.provider_template_code ?? "",
             sample_parameters_text: "{}",
+            sample_sensitive_parameters_text: "{}",
             version: detail.version
         };
     } catch (error: unknown) {
@@ -317,6 +363,7 @@ async function saveEditor(): Promise<void> {
 
     const payload: NotificationTemplateSaveParams = {
         template_group_code: editor.value.template_group_code.trim(),
+        template_name: editor.value.template_name.trim(),
         channel: editor.value.channel,
         purpose: editor.value.purpose,
         title_template: editor.value.title_template,
@@ -369,8 +416,25 @@ async function previewEditor(): Promise<void> {
     if (!parameters) {
         return;
     }
-    if (variables.some(variable => !(variable in parameters))) {
+    const sensitiveParameters = parseJsonObject(editor.value.sample_sensitive_parameters_text, "敏感示例参数");
+    if (!sensitiveParameters) {
+        return;
+    }
+    const sensitiveVariables = sensitiveParameterNames(parameterSchema);
+    if (sensitiveVariables.some(variable => variable in parameters)) {
+        ElMessage.error("敏感模板参数不能放在普通示例参数中");
+        return;
+    }
+    if (variables.some(variable => !(variable in parameters) && !(variable in sensitiveParameters))) {
         ElMessage.error("示例参数未覆盖全部模板变量");
+        return;
+    }
+    if (sensitiveVariables.some(variable => !(variable in sensitiveParameters))) {
+        ElMessage.error("敏感示例参数未覆盖全部敏感模板变量");
+        return;
+    }
+    if (Object.keys(sensitiveParameters).some(variable => !sensitiveVariables.includes(variable))) {
+        ElMessage.error("敏感示例参数中包含未声明为敏感的字段");
         return;
     }
 
@@ -383,7 +447,8 @@ async function previewEditor(): Promise<void> {
             content_template: editor.value.content_template,
             html_template: editor.value.html_template,
             parameter_schema: parameterSchema,
-            parameters
+            parameters,
+            sensitive_parameters: sensitiveParameters
         });
         previewVisible.value = true;
     } catch (error: unknown) {
@@ -474,7 +539,7 @@ async function copyTemplate(row: NotificationTemplateVO): Promise<void> {
 async function openVersions(row: NotificationTemplateVO): Promise<void> {
     versionVisible.value = true;
     versionLoading.value = true;
-    versionTemplateName.value = `${row.template_group_code} / ${channelLabel(row.channel)}`;
+    versionTemplateName.value = `${row.template_name}（${row.template_group_code}） / ${channelLabel(row.channel)}`;
     try {
         versionData.value = await NotificationTemplateApi.versions(row.id);
         compareFromId.value = versionData.value[1]?.id ?? "";
@@ -572,6 +637,7 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                     label="模板组编码"
                     min-width="150"
                     show-overflow-tooltip />
+                <el-table-column prop="template_name" label="模板名称" min-width="160" show-overflow-tooltip />
                 <el-table-column align="center" label="渠道" width="100">
                     <template #default="scope">
                         {{ channelLabel(scope.row.channel) }}
@@ -583,6 +649,20 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                     </template>
                 </el-table-column>
                 <el-table-column prop="content_template" label="模板正文" min-width="240" show-overflow-tooltip />
+                <el-table-column label="敏感参数" min-width="150">
+                    <template #default="scope">
+                        <template v-if="sensitiveParameterNames(scope.row.parameter_schema).length">
+                            <el-tag
+                                v-for="name in sensitiveParameterNames(scope.row.parameter_schema)"
+                                :key="name"
+                                type="warning"
+                                size="small">
+                                {{ name }}
+                            </el-tag>
+                        </template>
+                        <span v-else>无</span>
+                    </template>
+                </el-table-column>
                 <el-table-column align="center" label="版本" prop="version_no" width="75" />
                 <el-table-column align="center" label="版本摘要" width="135" show-overflow-tooltip>
                     <template #default="scope">
@@ -697,6 +777,9 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                             </el-form-item>
                         </el-col>
                     </el-row>
+                    <el-form-item label="模板名称" prop="template_name">
+                        <el-input v-model="editor.template_name" placeholder="例如 登录验证码" />
+                    </el-form-item>
                     <el-form-item label="通知用途" prop="purpose">
                         <el-select
                             v-model="editor.purpose"
@@ -732,7 +815,7 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                             v-model="editor.parameter_schema_text"
                             type="textarea"
                             :rows="6"
-                            placeholder='JSON Schema，例如 { "properties": { "name": { "type": "string" } } }' />
+                            placeholder='JSON Schema，例如 { "properties": { "code": { "type": "string", "sensitive": true } } }' />
                     </el-form-item>
                     <el-form-item label="供应商模板编码">
                         <el-input v-model="editor.provider_template_code" placeholder="短信/邮件供应商模板编码，可选" />
@@ -744,9 +827,16 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                             :rows="4"
                             placeholder='JSON 对象，例如 { "name": "张三" }' />
                     </el-form-item>
+                    <el-form-item label="敏感示例参数">
+                        <el-input
+                            v-model="editor.sample_sensitive_parameters_text"
+                            type="textarea"
+                            :rows="4"
+                            placeholder='JSON 对象，例如 { "code": "123456" }；只填写 Schema 中 sensitive 为 true 的参数' />
+                    </el-form-item>
                 </el-form>
                 <el-alert
-                    title="发布前会重新校验变量声明、HTML 安全规则和当前乐观锁版本；预览示例参数不会写入数据库。"
+                    title="发布前会重新校验变量声明、敏感参数分区、HTML 安全规则和当前乐观锁版本；预览示例参数不会写入数据库。"
                     type="info"
                     :closable="false"
                     show-icon />

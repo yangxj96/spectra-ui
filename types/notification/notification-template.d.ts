@@ -8,6 +8,7 @@ declare global {
     interface NotificationTemplateVO {
         id: string;
         template_group_code: string;
+        template_name: string;
         channel: NotificationTemplateChannel;
         purpose: string;
         version_no: number;
@@ -33,6 +34,7 @@ declare global {
     interface NotificationTemplateSaveParams {
         id?: string;
         template_group_code: string;
+        template_name: string;
         channel: NotificationTemplateChannel;
         purpose: string;
         title_template?: string;
@@ -52,6 +54,7 @@ declare global {
         html_template?: string;
         parameter_schema?: Record<string, unknown>;
         parameters: Record<string, unknown>;
+        sensitive_parameters?: Record<string, unknown>;
     }
 
     interface NotificationTemplatePreviewVO {

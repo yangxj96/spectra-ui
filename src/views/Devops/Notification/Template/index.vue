@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { NotificationTemplateApi } from "@/api/notification/notification-template-api.ts";
 import useTable from "@/hooks/use-table.ts";
@@ -71,6 +71,12 @@ const versionVisible = ref(false);
 const versionLoading = ref(false);
 const versionData = ref<NotificationTemplateVO[]>([]);
 const versionTemplateName = ref("");
+const compareVisible = ref(false);
+const compareFromId = ref("");
+const compareToId = ref("");
+
+const compareFrom = computed(() => versionData.value.find(item => item.id === compareFromId.value));
+const compareTo = computed(() => versionData.value.find(item => item.id === compareToId.value));
 
 const previewVisible = ref(false);
 const previewLoading = ref(false);
@@ -347,12 +353,22 @@ async function openVersions(row: NotificationTemplateVO): Promise<void> {
     versionTemplateName.value = `${row.template_group_code} / ${channelLabel(row.channel)}`;
     try {
         versionData.value = await NotificationTemplateApi.versions(row.id);
+        compareFromId.value = versionData.value[1]?.id ?? "";
+        compareToId.value = versionData.value[0]?.id ?? "";
     } catch (error: unknown) {
         versionVisible.value = false;
         ElMessage.error(errorMessage(error, "加载版本历史失败"));
     } finally {
         versionLoading.value = false;
     }
+}
+
+function openCompare(): void {
+    if (!compareFrom.value || !compareTo.value || compareFrom.value.id === compareTo.value.id) {
+        ElMessage.warning("请选择两个不同的模板版本进行对比");
+        return;
+    }
+    compareVisible.value = true;
 }
 
 async function rollback(row: NotificationTemplateVO): Promise<void> {
@@ -638,6 +654,31 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
 
     <el-dialog v-model="versionVisible" :title="`版本历史 - ${versionTemplateName}`" width="900px" destroy-on-close>
         <div v-loading="versionLoading" class="version-container">
+            <el-alert
+                title="版本摘要用于确认当前版本内容；对比只在浏览器展示模板快照，不会修改任何版本。"
+                type="info"
+                :closable="false"
+                show-icon />
+            <div class="compare-toolbar">
+                <el-select v-model="compareFromId" placeholder="选择基准版本" style="width: 220px">
+                    <el-option
+                        v-for="item in versionData"
+                        :key="`from-${item.id}`"
+                        :label="`版本 ${item.version_no} · ${stateLabel(item.state)}`"
+                        :value="item.id" />
+                </el-select>
+                <span>对比</span>
+                <el-select v-model="compareToId" placeholder="选择目标版本" style="width: 220px">
+                    <el-option
+                        v-for="item in versionData"
+                        :key="`to-${item.id}`"
+                        :label="`版本 ${item.version_no} · ${stateLabel(item.state)}`"
+                        :value="item.id" />
+                </el-select>
+                <el-button type="primary" :disabled="!compareFrom || !compareTo" @click="openCompare">
+                    对比版本
+                </el-button>
+            </div>
             <el-table :data="versionData" stripe>
                 <el-table-column align="center" label="版本号" prop="version_no" width="80" />
                 <el-table-column align="center" label="状态" width="90">
@@ -675,6 +716,46 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
             <el-empty v-if="!versionLoading && versionData.length === 0" description="暂无版本记录" />
         </div>
     </el-dialog>
+
+    <el-dialog v-model="compareVisible" title="模板版本对比" width="1100px" destroy-on-close>
+        <el-empty v-if="!compareFrom || !compareTo" description="请选择两个版本" />
+        <el-row v-else :gutter="18">
+            <el-col :span="12">
+                <el-card shadow="never">
+                    <template #header>版本 {{ compareFrom.version_no }} · {{ stateLabel(compareFrom.state) }}</template>
+                    <el-descriptions :column="1" border>
+                        <el-descriptions-item label="版本摘要">
+                            {{ compareFrom.version_digest }}
+                        </el-descriptions-item>
+                        <el-descriptions-item label="用途">
+                            {{ purposeLabel(compareFrom.purpose) }}
+                        </el-descriptions-item>
+                        <el-descriptions-item label="更新时间">{{ compareFrom.updated_at }}</el-descriptions-item>
+                    </el-descriptions>
+                    <h4>标题模板</h4>
+                    <pre class="preview-source">{{ compareFrom.title_template || "（无标题）" }}</pre>
+                    <h4>正文模板</h4>
+                    <pre class="preview-source">{{ compareFrom.content_template }}</pre>
+                </el-card>
+            </el-col>
+            <el-col :span="12">
+                <el-card shadow="never">
+                    <template #header>版本 {{ compareTo.version_no }} · {{ stateLabel(compareTo.state) }}</template>
+                    <el-descriptions :column="1" border>
+                        <el-descriptions-item label="版本摘要">
+                            {{ compareTo.version_digest }}
+                        </el-descriptions-item>
+                        <el-descriptions-item label="用途">{{ purposeLabel(compareTo.purpose) }}</el-descriptions-item>
+                        <el-descriptions-item label="更新时间">{{ compareTo.updated_at }}</el-descriptions-item>
+                    </el-descriptions>
+                    <h4>标题模板</h4>
+                    <pre class="preview-source">{{ compareTo.title_template || "（无标题）" }}</pre>
+                    <h4>正文模板</h4>
+                    <pre class="preview-source">{{ compareTo.content_template }}</pre>
+                </el-card>
+            </el-col>
+        </el-row>
+    </el-dialog>
 </template>
 
 <style scoped lang="scss">
@@ -695,6 +776,13 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
 
 .version-container {
     min-height: 240px;
+
+    .compare-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 14px 0;
+    }
 }
 
 .preview-text {

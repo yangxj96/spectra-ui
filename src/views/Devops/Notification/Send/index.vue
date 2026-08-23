@@ -620,9 +620,12 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .notification-send-page {
-    min-height: 100%;
+    height: 100%;
+    min-height: 0;
     padding: 14px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
     background: var(--el-bg-color-page);
 }
 
@@ -658,7 +661,7 @@ onMounted(() => {
 }
 
 .section-card {
-    height: 100%;
+    height: auto;
 }
 
 .send-form :deep(.el-form-item) {

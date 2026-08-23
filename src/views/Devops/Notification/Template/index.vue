@@ -515,182 +515,35 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
 </script>
 
 <template>
-    <el-row class="box__search">
-        <el-form :inline="true" :model="condition">
-            <el-form-item label="模板组编码">
-                <el-input v-model="condition.template_group_code" clearable placeholder="请输入模板组编码" />
-            </el-form-item>
-            <el-form-item label="渠道">
-                <el-select v-model="condition.channel" clearable placeholder="请选择渠道" style="width: 130px">
-                    <el-option
-                        v-for="item in channelOptions"
-                        :key="item.value"
-                        :label="item.label"
-                        :value="item.value" />
-                </el-select>
-            </el-form-item>
-            <el-form-item label="用途">
-                <el-select
-                    v-model="condition.purpose"
-                    clearable
-                    filterable
-                    placeholder="请选择用途"
-                    style="width: 170px">
-                    <el-option
-                        v-for="item in purposeOptions"
-                        :key="item.value"
-                        :label="item.label"
-                        :value="item.value" />
-                </el-select>
-            </el-form-item>
-            <el-form-item label="状态">
-                <el-select v-model="condition.state" clearable placeholder="请选择状态" style="width: 130px">
-                    <el-option v-for="item in stateOptions" :key="item.value" :label="item.label" :value="item.value" />
-                </el-select>
-            </el-form-item>
-            <el-form-item>
-                <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
-                <el-button @click="resetCondition">重置</el-button>
-                <el-button v-permission="'notification:template:write'" type="success" @click="openCreate">
-                    新增模板
-                </el-button>
-            </el-form-item>
-        </el-form>
-    </el-row>
+    <div class="notification-template-page">
+        <div class="page-toolbar">
+            <div>
+                <h2>通知模板</h2>
+                <p>管理通知模板草稿、发布版本和渠道渲染内容。</p>
+            </div>
+        </div>
 
-    <el-row class="box__body">
-        <el-table :data="table_data" height="92%" stripe>
-            <el-table-column align="center" type="index" label="序号" width="70" />
-            <el-table-column
-                align="center"
-                prop="template_group_code"
-                label="模板组编码"
-                min-width="150"
-                show-overflow-tooltip />
-            <el-table-column align="center" label="渠道" width="100">
-                <template #default="scope">
-                    {{ channelLabel(scope.row.channel) }}
-                </template>
-            </el-table-column>
-            <el-table-column align="center" label="用途" min-width="130" show-overflow-tooltip>
-                <template #default="scope">
-                    {{ purposeLabel(scope.row.purpose) }}
-                </template>
-            </el-table-column>
-            <el-table-column align="center" label="版本" prop="version_no" width="75" />
-            <el-table-column align="center" label="版本摘要" width="135" show-overflow-tooltip>
-                <template #default="scope">
-                    {{ digestLabel(scope.row.version_digest) }}
-                </template>
-            </el-table-column>
-            <el-table-column align="center" label="状态" width="90">
-                <template #default="scope">
-                    <el-tag :type="stateTagType(scope.row.state)" size="small">
-                        {{ stateLabel(scope.row.state) }}
-                    </el-tag>
-                </template>
-            </el-table-column>
-            <el-table-column align="center" label="更新时间" prop="updated_at" width="170" show-overflow-tooltip />
-            <el-table-column align="center" label="操作" width="410" fixed="right">
-                <template #default="scope">
-                    <el-button
-                        v-permission="'notification:template:read'"
-                        link
-                        type="info"
-                        size="small"
-                        @click="openVersions(scope.row)">
-                        版本历史
-                    </el-button>
-                    <el-button
-                        v-permission="'notification:template:write'"
-                        link
-                        type="info"
-                        size="small"
-                        @click="copyTemplate(scope.row)">
-                        复制草稿
-                    </el-button>
-                    <el-button
-                        v-if="scope.row.state === 'DRAFT'"
-                        v-permission="'notification:template:write'"
-                        link
-                        type="primary"
-                        size="small"
-                        @click="openEdit(scope.row)">
-                        编辑
-                    </el-button>
-                    <el-button
-                        v-if="scope.row.state === 'DRAFT'"
-                        v-permission="'notification:template:publish'"
-                        link
-                        type="success"
-                        size="small"
-                        @click="publish(scope.row)">
-                        发布
-                    </el-button>
-                    <el-button
-                        v-if="scope.row.state === 'PUBLISHED'"
-                        v-permission="'notification:template:write'"
-                        link
-                        type="warning"
-                        size="small"
-                        @click="disable(scope.row)">
-                        停用
-                    </el-button>
-                    <el-button
-                        v-if="scope.row.state === 'DRAFT' || scope.row.state === 'DISABLED'"
-                        v-permission="'notification:template:write'"
-                        link
-                        type="danger"
-                        size="small"
-                        @click="archive(scope.row)">
-                        归档
-                    </el-button>
-                </template>
-            </el-table-column>
-        </el-table>
-        <el-pagination
-            layout="total, sizes, prev, pager, next"
-            :page-size="pagination.size"
-            :page-sizes="pagination.page_sizes"
-            :total="pagination.total"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange" />
-    </el-row>
-
-    <el-dialog
-        v-model="editorVisible"
-        :title="editorMode === 'create' ? '新增通知模板' : '编辑通知模板草稿'"
-        width="900px"
-        destroy-on-close>
-        <div v-loading="editorLoading">
-            <el-form ref="editorFormRef" :model="editor" :rules="editorRules" label-width="125px" status-icon>
-                <el-row :gutter="18">
-                    <el-col :span="12">
-                        <el-form-item label="模板组编码" prop="template_group_code">
-                            <el-input
-                                v-model="editor.template_group_code"
-                                :disabled="editorMode === 'edit'"
-                                placeholder="例如 workflow.todo" />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="渠道" prop="channel">
-                            <el-select v-model="editor.channel" :disabled="editorMode === 'edit'" style="width: 100%">
-                                <el-option
-                                    v-for="item in editorChannelOptions"
-                                    :key="item.value"
-                                    :label="item.label"
-                                    :value="item.value" />
-                            </el-select>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-form-item label="通知用途" prop="purpose">
+        <el-card shadow="never" class="search-card">
+            <el-form :inline="true" :model="condition">
+                <el-form-item label="模板组编码">
+                    <el-input v-model="condition.template_group_code" clearable placeholder="请输入模板组编码" />
+                </el-form-item>
+                <el-form-item label="渠道">
+                    <el-select v-model="condition.channel" clearable placeholder="请选择渠道" style="width: 130px">
+                        <el-option
+                            v-for="item in channelOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="用途">
                     <el-select
-                        v-model="editor.purpose"
+                        v-model="condition.purpose"
+                        clearable
                         filterable
-                        style="width: 100%"
-                        @change="handleEditorPurposeChange">
+                        placeholder="请选择用途"
+                        style="width: 170px">
                         <el-option
                             v-for="item in purposeOptions"
                             :key="item.value"
@@ -698,117 +551,50 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                             :value="item.value" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="标题模板">
-                    <el-input v-model="editor.title_template" placeholder="支持 {{变量名}} 占位符" />
+                <el-form-item label="状态">
+                    <el-select v-model="condition.state" clearable placeholder="请选择状态" style="width: 130px">
+                        <el-option
+                            v-for="item in stateOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value" />
+                    </el-select>
                 </el-form-item>
-                <el-form-item label="正文模板" prop="content_template">
-                    <el-input
-                        v-model="editor.content_template"
-                        type="textarea"
-                        :rows="4"
-                        placeholder="纯文本正文，支持 {{变量名}} 占位符" />
-                </el-form-item>
-                <el-form-item label="HTML 模板">
-                    <el-input
-                        v-model="editor.html_template"
-                        type="textarea"
-                        :rows="4"
-                        placeholder="可选；禁止 script、事件属性和 javascript: 链接" />
-                </el-form-item>
-                <el-form-item label="参数 Schema" prop="parameter_schema_text">
-                    <el-input
-                        v-model="editor.parameter_schema_text"
-                        type="textarea"
-                        :rows="6"
-                        placeholder='JSON Schema，例如 { "properties": { "name": { "type": "string" } } }' />
-                </el-form-item>
-                <el-form-item label="供应商模板编码">
-                    <el-input v-model="editor.provider_template_code" placeholder="短信/邮件供应商模板编码，可选" />
-                </el-form-item>
-                <el-form-item label="预览示例参数">
-                    <el-input
-                        v-model="editor.sample_parameters_text"
-                        type="textarea"
-                        :rows="4"
-                        placeholder='JSON 对象，例如 { "name": "张三" }' />
+                <el-form-item>
+                    <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
+                    <el-button @click="resetCondition">重置</el-button>
+                    <el-button v-permission="'notification:template:write'" type="success" @click="openCreate">
+                        新增模板
+                    </el-button>
                 </el-form-item>
             </el-form>
-            <el-alert
-                title="发布前会重新校验变量声明、HTML 安全规则和当前乐观锁版本；预览示例参数不会写入数据库。"
-                type="info"
-                :closable="false"
-                show-icon />
-        </div>
-        <template #footer>
-            <el-button @click="editorVisible = false">取消</el-button>
-            <el-button :loading="previewLoading" @click="previewEditor">预览</el-button>
-            <el-button
-                v-permission="'notification:template:write'"
-                type="primary"
-                :loading="editorSubmitting"
-                @click="saveEditor">
-                保存草稿
-            </el-button>
-        </template>
-    </el-dialog>
+        </el-card>
 
-    <el-dialog v-model="previewVisible" title="模板预览" width="760px" destroy-on-close>
-        <template v-if="previewResult">
-            <el-descriptions :column="2" border>
-                <el-descriptions-item label="模板组">
-                    {{ previewResult.template_group_code || "未保存草稿" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="渠道">
-                    {{
-                        previewResult.channel ? channelLabel(previewResult.channel as NotificationTemplateChannel) : "-"
-                    }}
-                </el-descriptions-item>
-                <el-descriptions-item label="用途">
-                    {{ purposeLabel(previewResult.purpose ?? "") }}
-                </el-descriptions-item>
-                <el-descriptions-item label="预览时间">{{ previewResult.previewed_at }}</el-descriptions-item>
-            </el-descriptions>
-            <h4>标题</h4>
-            <div class="preview-text">{{ previewResult.title || "（无标题）" }}</div>
-            <h4>纯文本正文</h4>
-            <pre class="preview-source">{{ previewResult.content }}</pre>
-            <template v-if="previewResult.html">
-                <h4>HTML 渲染源</h4>
-                <pre class="preview-source">{{ previewResult.html }}</pre>
-            </template>
-        </template>
-        <el-empty v-else description="暂无预览结果" />
-    </el-dialog>
-
-    <el-dialog v-model="versionVisible" :title="`版本历史 - ${versionTemplateName}`" width="900px" destroy-on-close>
-        <div v-loading="versionLoading" class="version-container">
-            <el-alert
-                title="版本摘要用于确认当前版本内容；对比只在浏览器展示模板快照，不会修改任何版本。"
-                type="info"
-                :closable="false"
-                show-icon />
-            <div class="compare-toolbar">
-                <el-select v-model="compareFromId" placeholder="选择基准版本" style="width: 220px">
-                    <el-option
-                        v-for="item in versionData"
-                        :key="`from-${item.id}`"
-                        :label="`版本 ${item.version_no} · ${stateLabel(item.state)}`"
-                        :value="item.id" />
-                </el-select>
-                <span>对比</span>
-                <el-select v-model="compareToId" placeholder="选择目标版本" style="width: 220px">
-                    <el-option
-                        v-for="item in versionData"
-                        :key="`to-${item.id}`"
-                        :label="`版本 ${item.version_no} · ${stateLabel(item.state)}`"
-                        :value="item.id" />
-                </el-select>
-                <el-button type="primary" :disabled="!compareFrom || !compareTo" @click="openCompare">
-                    对比版本
-                </el-button>
-            </div>
-            <el-table :data="versionData" stripe>
-                <el-table-column align="center" label="版本号" prop="version_no" width="80" />
+        <el-card shadow="never" class="table-card">
+            <el-table :data="table_data" class="notification-data-table" stripe>
+                <el-table-column align="center" type="index" label="序号" width="70" />
+                <el-table-column
+                    align="center"
+                    prop="template_group_code"
+                    label="模板组编码"
+                    min-width="150"
+                    show-overflow-tooltip />
+                <el-table-column align="center" label="渠道" width="100">
+                    <template #default="scope">
+                        {{ channelLabel(scope.row.channel) }}
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" label="用途" min-width="130" show-overflow-tooltip>
+                    <template #default="scope">
+                        {{ purposeLabel(scope.row.purpose) }}
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" label="版本" prop="version_no" width="75" />
+                <el-table-column align="center" label="版本摘要" width="135" show-overflow-tooltip>
+                    <template #default="scope">
+                        {{ digestLabel(scope.row.version_digest) }}
+                    </template>
+                </el-table-column>
                 <el-table-column align="center" label="状态" width="90">
                     <template #default="scope">
                         <el-tag :type="stateTagType(scope.row.state)" size="small">
@@ -816,90 +602,379 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column align="center" label="用途" min-width="120">
-                    <template #default="scope">
-                        {{ purposeLabel(scope.row.purpose) }}
-                    </template>
-                </el-table-column>
-                <el-table-column align="center" label="版本摘要" width="145" show-overflow-tooltip>
-                    <template #default="scope">
-                        {{ digestLabel(scope.row.version_digest) }}
-                    </template>
-                </el-table-column>
-                <el-table-column align="center" label="更新时间" prop="updated_at" width="170" />
-                <el-table-column align="center" label="操作" width="150">
+                <el-table-column align="center" label="更新时间" prop="updated_at" width="170" show-overflow-tooltip />
+                <el-table-column align="center" label="操作" width="410" fixed="right">
                     <template #default="scope">
                         <el-button
-                            v-if="scope.row.state !== 'DRAFT'"
-                            v-permission="'notification:template:publish'"
+                            v-permission="'notification:template:read'"
+                            link
+                            type="info"
+                            size="small"
+                            @click="openVersions(scope.row)">
+                            版本历史
+                        </el-button>
+                        <el-button
+                            v-permission="'notification:template:write'"
+                            link
+                            type="info"
+                            size="small"
+                            @click="copyTemplate(scope.row)">
+                            复制草稿
+                        </el-button>
+                        <el-button
+                            v-if="scope.row.state === 'DRAFT'"
+                            v-permission="'notification:template:write'"
                             link
                             type="primary"
                             size="small"
-                            @click="rollback(scope.row)">
-                            回滚为草稿
+                            @click="openEdit(scope.row)">
+                            编辑
+                        </el-button>
+                        <el-button
+                            v-if="scope.row.state === 'DRAFT'"
+                            v-permission="'notification:template:publish'"
+                            link
+                            type="success"
+                            size="small"
+                            @click="publish(scope.row)">
+                            发布
+                        </el-button>
+                        <el-button
+                            v-if="scope.row.state === 'PUBLISHED'"
+                            v-permission="'notification:template:write'"
+                            link
+                            type="warning"
+                            size="small"
+                            @click="disable(scope.row)">
+                            停用
+                        </el-button>
+                        <el-button
+                            v-if="scope.row.state === 'DRAFT' || scope.row.state === 'DISABLED'"
+                            v-permission="'notification:template:write'"
+                            link
+                            type="danger"
+                            size="small"
+                            @click="archive(scope.row)">
+                            归档
                         </el-button>
                     </template>
                 </el-table-column>
             </el-table>
-            <el-empty v-if="!versionLoading && versionData.length === 0" description="暂无版本记录" />
-        </div>
-    </el-dialog>
+            <el-pagination
+                layout="total, sizes, prev, pager, next"
+                :current-page="pagination.page"
+                :page-size="pagination.size"
+                :page-sizes="pagination.page_sizes"
+                :total="pagination.total"
+                background
+                size="small"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange" />
+        </el-card>
 
-    <el-dialog v-model="compareVisible" title="模板版本对比" width="1100px" destroy-on-close>
-        <el-empty v-if="!compareFrom || !compareTo" description="请选择两个版本" />
-        <el-row v-else :gutter="18">
-            <el-col :span="12">
-                <el-card shadow="never">
-                    <template #header>版本 {{ compareFrom.version_no }} · {{ stateLabel(compareFrom.state) }}</template>
-                    <el-descriptions :column="1" border>
-                        <el-descriptions-item label="版本摘要">
-                            {{ compareFrom.version_digest }}
-                        </el-descriptions-item>
-                        <el-descriptions-item label="用途">
-                            {{ purposeLabel(compareFrom.purpose) }}
-                        </el-descriptions-item>
-                        <el-descriptions-item label="更新时间">{{ compareFrom.updated_at }}</el-descriptions-item>
-                    </el-descriptions>
-                    <h4>标题模板</h4>
-                    <pre class="preview-source">{{ compareFrom.title_template || "（无标题）" }}</pre>
-                    <h4>正文模板</h4>
-                    <pre class="preview-source">{{ compareFrom.content_template }}</pre>
-                </el-card>
-            </el-col>
-            <el-col :span="12">
-                <el-card shadow="never">
-                    <template #header>版本 {{ compareTo.version_no }} · {{ stateLabel(compareTo.state) }}</template>
-                    <el-descriptions :column="1" border>
-                        <el-descriptions-item label="版本摘要">
-                            {{ compareTo.version_digest }}
-                        </el-descriptions-item>
-                        <el-descriptions-item label="用途">{{ purposeLabel(compareTo.purpose) }}</el-descriptions-item>
-                        <el-descriptions-item label="更新时间">{{ compareTo.updated_at }}</el-descriptions-item>
-                    </el-descriptions>
-                    <h4>标题模板</h4>
-                    <pre class="preview-source">{{ compareTo.title_template || "（无标题）" }}</pre>
-                    <h4>正文模板</h4>
-                    <pre class="preview-source">{{ compareTo.content_template }}</pre>
-                </el-card>
-            </el-col>
-        </el-row>
-    </el-dialog>
+        <el-dialog
+            v-model="editorVisible"
+            :title="editorMode === 'create' ? '新增通知模板' : '编辑通知模板草稿'"
+            width="900px"
+            destroy-on-close>
+            <div v-loading="editorLoading">
+                <el-form ref="editorFormRef" :model="editor" :rules="editorRules" label-width="125px" status-icon>
+                    <el-row :gutter="18">
+                        <el-col :span="12">
+                            <el-form-item label="模板组编码" prop="template_group_code">
+                                <el-input
+                                    v-model="editor.template_group_code"
+                                    :disabled="editorMode === 'edit'"
+                                    placeholder="例如 workflow.todo" />
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-form-item label="渠道" prop="channel">
+                                <el-select
+                                    v-model="editor.channel"
+                                    :disabled="editorMode === 'edit'"
+                                    style="width: 100%">
+                                    <el-option
+                                        v-for="item in editorChannelOptions"
+                                        :key="item.value"
+                                        :label="item.label"
+                                        :value="item.value" />
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-form-item label="通知用途" prop="purpose">
+                        <el-select
+                            v-model="editor.purpose"
+                            filterable
+                            style="width: 100%"
+                            @change="handleEditorPurposeChange">
+                            <el-option
+                                v-for="item in purposeOptions"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="标题模板">
+                        <el-input v-model="editor.title_template" placeholder="支持 {{变量名}} 占位符" />
+                    </el-form-item>
+                    <el-form-item label="正文模板" prop="content_template">
+                        <el-input
+                            v-model="editor.content_template"
+                            type="textarea"
+                            :rows="4"
+                            placeholder="纯文本正文，支持 {{变量名}} 占位符" />
+                    </el-form-item>
+                    <el-form-item label="HTML 模板">
+                        <el-input
+                            v-model="editor.html_template"
+                            type="textarea"
+                            :rows="4"
+                            placeholder="可选；禁止 script、事件属性和 javascript: 链接" />
+                    </el-form-item>
+                    <el-form-item label="参数 Schema" prop="parameter_schema_text">
+                        <el-input
+                            v-model="editor.parameter_schema_text"
+                            type="textarea"
+                            :rows="6"
+                            placeholder='JSON Schema，例如 { "properties": { "name": { "type": "string" } } }' />
+                    </el-form-item>
+                    <el-form-item label="供应商模板编码">
+                        <el-input v-model="editor.provider_template_code" placeholder="短信/邮件供应商模板编码，可选" />
+                    </el-form-item>
+                    <el-form-item label="预览示例参数">
+                        <el-input
+                            v-model="editor.sample_parameters_text"
+                            type="textarea"
+                            :rows="4"
+                            placeholder='JSON 对象，例如 { "name": "张三" }' />
+                    </el-form-item>
+                </el-form>
+                <el-alert
+                    title="发布前会重新校验变量声明、HTML 安全规则和当前乐观锁版本；预览示例参数不会写入数据库。"
+                    type="info"
+                    :closable="false"
+                    show-icon />
+            </div>
+            <template #footer>
+                <el-button @click="editorVisible = false">取消</el-button>
+                <el-button :loading="previewLoading" @click="previewEditor">预览</el-button>
+                <el-button
+                    v-permission="'notification:template:write'"
+                    type="primary"
+                    :loading="editorSubmitting"
+                    @click="saveEditor">
+                    保存草稿
+                </el-button>
+            </template>
+        </el-dialog>
+
+        <el-dialog v-model="previewVisible" title="模板预览" width="760px" destroy-on-close>
+            <template v-if="previewResult">
+                <el-descriptions :column="2" border>
+                    <el-descriptions-item label="模板组">
+                        {{ previewResult.template_group_code || "未保存草稿" }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="渠道">
+                        {{
+                            previewResult.channel
+                                ? channelLabel(previewResult.channel as NotificationTemplateChannel)
+                                : "-"
+                        }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="用途">
+                        {{ purposeLabel(previewResult.purpose ?? "") }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="预览时间">{{ previewResult.previewed_at }}</el-descriptions-item>
+                </el-descriptions>
+                <h4>标题</h4>
+                <div class="preview-text">{{ previewResult.title || "（无标题）" }}</div>
+                <h4>纯文本正文</h4>
+                <pre class="preview-source">{{ previewResult.content }}</pre>
+                <template v-if="previewResult.html">
+                    <h4>HTML 渲染源</h4>
+                    <pre class="preview-source">{{ previewResult.html }}</pre>
+                </template>
+            </template>
+            <el-empty v-else description="暂无预览结果" />
+        </el-dialog>
+
+        <el-dialog v-model="versionVisible" :title="`版本历史 - ${versionTemplateName}`" width="900px" destroy-on-close>
+            <div v-loading="versionLoading" class="version-container">
+                <el-alert
+                    title="版本摘要用于确认当前版本内容；对比只在浏览器展示模板快照，不会修改任何版本。"
+                    type="info"
+                    :closable="false"
+                    show-icon />
+                <div class="compare-toolbar">
+                    <el-select v-model="compareFromId" placeholder="选择基准版本" style="width: 220px">
+                        <el-option
+                            v-for="item in versionData"
+                            :key="`from-${item.id}`"
+                            :label="`版本 ${item.version_no} · ${stateLabel(item.state)}`"
+                            :value="item.id" />
+                    </el-select>
+                    <span>对比</span>
+                    <el-select v-model="compareToId" placeholder="选择目标版本" style="width: 220px">
+                        <el-option
+                            v-for="item in versionData"
+                            :key="`to-${item.id}`"
+                            :label="`版本 ${item.version_no} · ${stateLabel(item.state)}`"
+                            :value="item.id" />
+                    </el-select>
+                    <el-button type="primary" :disabled="!compareFrom || !compareTo" @click="openCompare">
+                        对比版本
+                    </el-button>
+                </div>
+                <el-table :data="versionData" stripe>
+                    <el-table-column align="center" label="版本号" prop="version_no" width="80" />
+                    <el-table-column align="center" label="状态" width="90">
+                        <template #default="scope">
+                            <el-tag :type="stateTagType(scope.row.state)" size="small">
+                                {{ stateLabel(scope.row.state) }}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="用途" min-width="120">
+                        <template #default="scope">
+                            {{ purposeLabel(scope.row.purpose) }}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="版本摘要" width="145" show-overflow-tooltip>
+                        <template #default="scope">
+                            {{ digestLabel(scope.row.version_digest) }}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="更新时间" prop="updated_at" width="170" />
+                    <el-table-column align="center" label="操作" width="150">
+                        <template #default="scope">
+                            <el-button
+                                v-if="scope.row.state !== 'DRAFT'"
+                                v-permission="'notification:template:publish'"
+                                link
+                                type="primary"
+                                size="small"
+                                @click="rollback(scope.row)">
+                                回滚为草稿
+                            </el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-empty v-if="!versionLoading && versionData.length === 0" description="暂无版本记录" />
+            </div>
+        </el-dialog>
+
+        <el-dialog v-model="compareVisible" title="模板版本对比" width="1100px" destroy-on-close>
+            <el-empty v-if="!compareFrom || !compareTo" description="请选择两个版本" />
+            <el-row v-else :gutter="18">
+                <el-col :span="12">
+                    <el-card shadow="never">
+                        <template #header>
+                            版本 {{ compareFrom.version_no }} · {{ stateLabel(compareFrom.state) }}
+                        </template>
+                        <el-descriptions :column="1" border>
+                            <el-descriptions-item label="版本摘要">
+                                {{ compareFrom.version_digest }}
+                            </el-descriptions-item>
+                            <el-descriptions-item label="用途">
+                                {{ purposeLabel(compareFrom.purpose) }}
+                            </el-descriptions-item>
+                            <el-descriptions-item label="更新时间">{{ compareFrom.updated_at }}</el-descriptions-item>
+                        </el-descriptions>
+                        <h4>标题模板</h4>
+                        <pre class="preview-source">{{ compareFrom.title_template || "（无标题）" }}</pre>
+                        <h4>正文模板</h4>
+                        <pre class="preview-source">{{ compareFrom.content_template }}</pre>
+                    </el-card>
+                </el-col>
+                <el-col :span="12">
+                    <el-card shadow="never">
+                        <template #header>版本 {{ compareTo.version_no }} · {{ stateLabel(compareTo.state) }}</template>
+                        <el-descriptions :column="1" border>
+                            <el-descriptions-item label="版本摘要">
+                                {{ compareTo.version_digest }}
+                            </el-descriptions-item>
+                            <el-descriptions-item label="用途">
+                                {{ purposeLabel(compareTo.purpose) }}
+                            </el-descriptions-item>
+                            <el-descriptions-item label="更新时间">{{ compareTo.updated_at }}</el-descriptions-item>
+                        </el-descriptions>
+                        <h4>标题模板</h4>
+                        <pre class="preview-source">{{ compareTo.title_template || "（无标题）" }}</pre>
+                        <h4>正文模板</h4>
+                        <pre class="preview-source">{{ compareTo.content_template }}</pre>
+                    </el-card>
+                </el-col>
+            </el-row>
+        </el-dialog>
+    </div>
 </template>
 
 <style scoped lang="scss">
-.box__search {
-    min-height: 10%;
+.notification-template-page {
     display: flex;
-    align-items: center;
-    padding-left: 20px;
-
-    .el-form-item {
-        margin-bottom: 0;
-    }
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+    min-height: 0;
+    padding: 14px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background: var(--el-bg-color-page);
 }
 
-.box__body {
-    height: 90%;
+.page-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex: 0 0 auto;
+}
+
+.page-toolbar h2 {
+    margin: 0;
+    color: var(--el-text-color-primary);
+    font-size: 20px;
+}
+
+.page-toolbar p {
+    margin: 6px 0 0;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+}
+
+.search-card {
+    flex: 0 0 auto;
+}
+
+.search-card :deep(.el-form-item) {
+    margin-bottom: 12px;
+}
+
+.table-card {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 320px;
+}
+
+.table-card :deep(.el-card__body) {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.notification-data-table {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.table-card :deep(.el-pagination) {
+    justify-content: flex-end;
+    margin-top: 12px;
 }
 
 .version-container {

@@ -99,6 +99,12 @@ async function openDetail(row: NotificationDeliveryAdminVO): Promise<void> {
 
 <template>
     <div class="notification-delivery-page">
+        <div class="page-toolbar">
+            <div>
+                <h2>投递记录</h2>
+                <p>查看各通知渠道的投递结果、供应商回执和脱敏错误信息。</p>
+            </div>
+        </div>
         <el-card shadow="never" class="search-card">
             <el-form :inline="true" :model="condition">
                 <el-form-item label="状态">
@@ -159,7 +165,7 @@ async function openDetail(row: NotificationDeliveryAdminVO): Promise<void> {
         </el-card>
 
         <el-card shadow="never" class="table-card">
-            <el-table :data="table_data" stripe>
+            <el-table :data="table_data" class="notification-data-table" stripe>
                 <el-table-column type="index" label="序号" width="65" align="center" />
                 <el-table-column label="投递编号" prop="id" min-width="235" show-overflow-tooltip />
                 <el-table-column label="任务编号" prop="task_id" min-width="235" show-overflow-tooltip />
@@ -201,9 +207,12 @@ async function openDetail(row: NotificationDeliveryAdminVO): Promise<void> {
             <el-empty v-if="table_data.length === 0" description="暂无通知投递记录" />
             <el-pagination
                 layout="total, sizes, prev, pager, next"
+                :current-page="pagination.page"
                 :page-size="pagination.size"
                 :page-sizes="pagination.page_sizes"
                 :total="pagination.total"
+                background
+                size="small"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange" />
         </el-card>
@@ -253,19 +262,63 @@ async function openDetail(row: NotificationDeliveryAdminVO): Promise<void> {
 
 <style scoped lang="scss">
 .notification-delivery-page {
-    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+    min-height: 0;
     padding: 14px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
     background: var(--el-bg-color-page);
 }
 
-.search-card,
-.table-card {
-    margin-bottom: 12px;
+.page-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex: 0 0 auto;
+}
+
+.page-toolbar h2 {
+    margin: 0;
+    color: var(--el-text-color-primary);
+    font-size: 20px;
+}
+
+.page-toolbar p {
+    margin: 6px 0 0;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+}
+
+.search-card {
+    flex: 0 0 auto;
 }
 
 .search-card :deep(.el-form-item) {
     margin-bottom: 12px;
+}
+
+.table-card {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 320px;
+}
+
+.table-card :deep(.el-card__body) {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.notification-data-table {
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .table-card :deep(.el-pagination) {

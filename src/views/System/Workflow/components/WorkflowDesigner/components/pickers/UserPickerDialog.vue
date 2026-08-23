@@ -117,12 +117,7 @@ const hasSelection = () => (props.multiple ? selectedMap.value.size > 0 : !!curr
 <template>
     <el-dialog v-model="visible" title="选择用户" width="680px" destroy-on-close :close-on-click-modal="false">
         <div style="margin-bottom: 12px">
-            <el-input
-                v-model="keyword"
-                placeholder="搜索姓名"
-                clearable
-                style="width: 240px"
-                @keyup.enter="loadData" />
+            <el-input v-model="keyword" placeholder="搜索姓名" clearable style="width: 240px" @keyup.enter="loadData" />
             <el-button type="primary" style="margin-left: 8px" @click="loadData">查询</el-button>
         </div>
         <el-table

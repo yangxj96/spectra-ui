@@ -35,20 +35,32 @@ const stateLabels: Record<NotificationProviderState, string> = {
     BLOCKED: "已阻断"
 };
 
+const providerTypeLabels: Record<string, string> = {
+    HTTP_JSON: "通用 HTTP JSON",
+    MOCK: "模拟服务（仅测试）"
+};
+
+const testStatusLabels: Record<string, string> = {
+    SENT: "已发送",
+    FAILED: "失败",
+    BLOCKED: "已阻断",
+    UNKNOWN: "未知"
+};
+
 const reasonLabels: Record<string, string> = {
     IN_APP_READY: "站内信由系统内置投递",
-    PROVIDER_NOT_CONFIGURED: "尚未选择外部 Provider",
+    PROVIDER_NOT_CONFIGURED: "尚未选择外部渠道服务",
     DISABLED_BY_CONFIGURATION: "已被配置为禁用",
     HEALTH_CHECK_REQUIRED: "保存配置后需要执行健康检查",
-    SECRET_NOT_CONFIGURED: "尚未配置 Secret",
-    SECRET_UNAVAILABLE: "Secret 无法解密，已阻断",
-    PROVIDER_CONFIGURATION_INVALID: "Provider 配置不完整或不合法",
-    PROVIDER_NOT_REGISTERED: "当前运行环境未注册该 Provider",
+    SECRET_NOT_CONFIGURED: "尚未配置密钥",
+    SECRET_UNAVAILABLE: "密钥无法解密，已阻断",
+    PROVIDER_CONFIGURATION_INVALID: "渠道服务配置不完整或不合法",
+    PROVIDER_NOT_REGISTERED: "当前运行环境未注册该渠道服务",
     HEALTH_CHECK_OK: "健康检查通过",
-    HEALTH_CHECK_UNAVAILABLE: "Provider 端点不可达",
-    HEALTH_CHECK_HTTP_400: "Provider 健康检查返回 HTTP 400",
-    HEALTH_CHECK_HTTP_401: "Provider 健康检查返回 HTTP 401",
-    HEALTH_CHECK_HTTP_403: "Provider 健康检查返回 HTTP 403",
+    HEALTH_CHECK_UNAVAILABLE: "渠道服务地址不可达",
+    HEALTH_CHECK_HTTP_400: "渠道服务健康检查返回 HTTP 400",
+    HEALTH_CHECK_HTTP_401: "渠道服务健康检查返回 HTTP 401",
+    HEALTH_CHECK_HTTP_403: "渠道服务健康检查返回 HTTP 403",
     MODULE_DISABLED: "通知模块已关闭"
 };
 
@@ -65,8 +77,8 @@ const errorMessage = ref("");
 const lastHealthAt = reactive<Partial<Record<ExternalChannel, string>>>({});
 const testForm = reactive<NotificationProviderTestParams>({
     recipient_address: "",
-    title: "Spectra Provider 测试消息",
-    content: "这是一条通知 Provider 测试消息，请确认渠道配置和投递结果。",
+    title: "Spectra 渠道测试消息",
+    content: "这是一条通知渠道测试消息，请确认渠道配置和投递结果。",
     confirmation: ""
 });
 const editors = reactive<Record<ExternalChannel, ProviderEditor>>({
@@ -94,6 +106,14 @@ function channelLabel(channel: NotificationAdminChannel): string {
 
 function stateLabel(state: NotificationProviderState): string {
     return stateLabels[state] ?? state;
+}
+
+function providerTypeLabel(providerType: string | null | undefined): string {
+    return providerTypeLabels[providerType ?? ""] ?? providerType ?? "尚未选择渠道服务";
+}
+
+function testStatusLabel(status: string): string {
+    return testStatusLabels[status] ?? status;
 }
 
 function stateTagType(state: NotificationProviderState): "success" | "warning" | "danger" | "info" {
@@ -152,11 +172,11 @@ async function loadData(): Promise<void> {
 
 function validateEditor(channel: ExternalChannel, form: ProviderEditor): boolean {
     if (form.provider_type === "HTTP_JSON" && !form.endpoint.trim()) {
-        MessageUtils.error(`${channelLabel(channel)} Provider 端点不能为空。`);
+        MessageUtils.error(`${channelLabel(channel)} 渠道服务地址不能为空。`);
         return false;
     }
     if (form.clear_secret && form.secret.trim()) {
-        MessageUtils.error("清除 Secret 时不能同时填写新的 Secret。");
+        MessageUtils.error("清除密钥时不能同时填写新的密钥。");
         return false;
     }
     return true;
@@ -167,7 +187,7 @@ async function saveProvider(channel: ExternalChannel): Promise<void> {
     if (!validateEditor(channel, form)) return;
     try {
         await MessageUtils.box.confirm(
-            `确定保存${channelLabel(channel)} Provider 配置吗？Secret 只会覆盖或清除，不会回显旧值。`,
+            `确定保存${channelLabel(channel)}渠道服务配置吗？密钥只会覆盖或清除，不会回显旧值。`,
             "保存渠道配置"
         );
     } catch {
@@ -189,9 +209,9 @@ async function saveProvider(channel: ExternalChannel): Promise<void> {
         const index = providers.value.findIndex(item => item.channel === channel);
         if (index >= 0) providers.value[index] = result;
         syncEditor(result);
-        MessageUtils.success(`${channelLabel(channel)} Provider 配置已保存，请执行健康检查后再发送。`);
+        MessageUtils.success(`${channelLabel(channel)}渠道服务配置已保存，请执行健康检查后再发送。`);
     } catch (error) {
-        MessageUtils.error(error instanceof Error ? error.message : "Provider 配置保存失败");
+        MessageUtils.error(error instanceof Error ? error.message : "渠道服务配置保存失败");
     } finally {
         savingChannel.value = undefined;
     }
@@ -213,7 +233,7 @@ async function checkHealth(channel: ExternalChannel): Promise<void> {
             MessageUtils.warning(`${channelLabel(channel)} 未通过健康检查：${reasonLabel(result.reason)}`);
         }
     } catch (error) {
-        MessageUtils.error(error instanceof Error ? error.message : "Provider 健康检查失败");
+        MessageUtils.error(error instanceof Error ? error.message : "渠道服务健康检查失败");
     } finally {
         healthChannel.value = undefined;
     }
@@ -225,8 +245,8 @@ function healthTime(channel: ExternalChannel): string {
 
 function clearTestForm(): void {
     testForm.recipient_address = "";
-    testForm.title = "Spectra Provider 测试消息";
-    testForm.content = "这是一条通知 Provider 测试消息，请确认渠道配置和投递结果。";
+    testForm.title = "Spectra 渠道测试消息";
+    testForm.content = "这是一条通知渠道测试消息，请确认渠道配置和投递结果。";
     testForm.confirmation = "";
     testResult.value = undefined;
     testChannel.value = undefined;
@@ -257,7 +277,7 @@ async function submitTest(): Promise<void> {
     }
     try {
         await MessageUtils.box.confirm(
-            `将向你填写的${channelLabel(channel)}测试地址发送一条真实 Provider 测试消息，继续吗？`,
+            `将向你填写的${channelLabel(channel)}测试地址发送一条真实渠道测试消息，继续吗？`,
             "确认测试发送"
         );
     } catch {
@@ -272,12 +292,12 @@ async function submitTest(): Promise<void> {
             confirmation: testForm.confirmation
         });
         if (testResult.value.status === "SENT") {
-            MessageUtils.notify.success("Provider 测试发送已返回成功结果。", "测试发送");
+            MessageUtils.notify.success("渠道测试发送已返回成功结果。", "测试发送");
         } else {
-            MessageUtils.notify.warning(`Provider 测试发送结果：${testResult.value.status}`, "测试发送");
+            MessageUtils.notify.warning(`渠道测试发送结果：${testStatusLabel(testResult.value.status)}`, "测试发送");
         }
     } catch (error) {
-        MessageUtils.notify.error(error instanceof Error ? error.message : "Provider 测试发送失败", "测试发送");
+        MessageUtils.notify.error(error instanceof Error ? error.message : "渠道测试发送失败", "测试发送");
     } finally {
         testSending.value = false;
         testForm.recipient_address = "";
@@ -295,7 +315,7 @@ onMounted(() => {
         <div class="page-toolbar">
             <div>
                 <h2>通知渠道配置</h2>
-                <p>Provider 配置属于单体系统全局配置；Secret 不回显，渠道健康检查通过后才允许投递。</p>
+                <p>渠道服务配置属于单体系统全局配置；密钥不回显，渠道健康检查通过后才允许投递。</p>
             </div>
             <el-button :loading="loading" @click="void loadData()">
                 <el-icon><Refresh /></el-icon>
@@ -317,7 +337,7 @@ onMounted(() => {
                 <small>失败与阻断结果</small>
             </el-card>
             <el-card shadow="never" class="summary-card">
-                <span>窗口 UNKNOWN</span>
+                <span>窗口未知状态</span>
                 <strong class="summary-card__warning">{{ overview.unknown_delivery_count }}</strong>
                 <small>需要人工确认</small>
             </el-card>
@@ -335,7 +355,7 @@ onMounted(() => {
                         <div class="provider-card__header">
                             <div>
                                 <h3>{{ channelLabel(provider.channel) }}</h3>
-                                <p>{{ provider.provider_type || "尚未选择 Provider" }}</p>
+                                <p>{{ providerTypeLabel(provider.provider_type) }}</p>
                             </div>
                             <el-tag :type="stateTagType(provider.state)">{{ stateLabel(provider.state) }}</el-tag>
                         </div>
@@ -367,10 +387,10 @@ onMounted(() => {
                         <el-form :model="editor(provider.channel)" label-position="top" class="provider-form">
                             <el-row :gutter="12">
                                 <el-col :span="12">
-                                    <el-form-item label="Provider 类型">
+                                    <el-form-item label="渠道服务类型">
                                         <el-select v-model="editor(provider.channel).provider_type" style="width: 100%">
                                             <el-option label="通用 HTTP JSON" value="HTTP_JSON" />
-                                            <el-option label="Mock（仅测试）" value="MOCK" />
+                                            <el-option label="模拟服务（仅测试）" value="MOCK" />
                                         </el-select>
                                     </el-form-item>
                                 </el-col>
@@ -418,22 +438,20 @@ onMounted(() => {
                             <el-form-item label="供应商模板编码">
                                 <el-input v-model="editor(provider.channel).template_code" placeholder="可选" />
                             </el-form-item>
-                            <el-form-item label="Secret（只覆盖更新，不回显）">
+                            <el-form-item label="密钥（只覆盖更新，不回显）">
                                 <el-input
                                     v-model="editor(provider.channel).secret"
                                     type="password"
                                     show-password
                                     autocomplete="new-password"
-                                    placeholder="留空表示保持当前 Secret" />
+                                    placeholder="留空表示保持当前密钥" />
                             </el-form-item>
                             <div class="secret-status">
                                 <span>
-                                    Secret：{{ provider.secret_configured ? "已配置" : "未配置" }}
+                                    密钥：{{ provider.secret_configured ? "已配置" : "未配置" }}
                                     <template v-if="provider.secret_key_id">（{{ provider.secret_key_id }}）</template>
                                 </span>
-                                <el-checkbox v-model="editor(provider.channel).clear_secret">
-                                    清除当前 Secret
-                                </el-checkbox>
+                                <el-checkbox v-model="editor(provider.channel).clear_secret">清除当前密钥</el-checkbox>
                             </div>
                             <div class="provider-actions">
                                 <el-button
@@ -463,7 +481,7 @@ onMounted(() => {
                     <div v-if="overviewChannel(provider.channel)" class="channel-summary">
                         <span>待处理 {{ overviewChannel(provider.channel)?.pending_task_count ?? 0 }}</span>
                         <span>失败 {{ overviewChannel(provider.channel)?.failed_task_count ?? 0 }}</span>
-                        <span>UNKNOWN {{ overviewChannel(provider.channel)?.unknown_task_count ?? 0 }}</span>
+                        <span>未知状态 {{ overviewChannel(provider.channel)?.unknown_task_count ?? 0 }}</span>
                     </div>
                 </el-card>
             </el-col>
@@ -472,7 +490,7 @@ onMounted(() => {
 
         <el-dialog
             v-model="testDialogVisible"
-            :title="`${testChannel ? channelLabel(testChannel) : ''} Provider 测试发送`"
+            :title="`${testChannel ? channelLabel(testChannel) : ''} 渠道测试发送`"
             width="560px"
             destroy-on-close
             @closed="clearTestForm">
@@ -501,13 +519,13 @@ onMounted(() => {
             </el-form>
             <el-alert
                 v-if="testResult"
-                :title="`结果：${testResult.status}`"
+                :title="`结果：${testStatusLabel(testResult.status)}`"
                 :type="testResult.status === 'SENT' ? 'success' : 'error'"
                 show-icon
                 :closable="false">
                 <template #default>
-                    <div>Provider：{{ testResult.provider_code }}</div>
-                    <div v-if="testResult.provider_message_id">消息 ID：{{ testResult.provider_message_id }}</div>
+                    <div>渠道服务：{{ testResult.provider_code }}</div>
+                    <div v-if="testResult.provider_message_id">消息编号：{{ testResult.provider_message_id }}</div>
                     <div v-if="testResult.summary">摘要：{{ testResult.summary }}</div>
                 </template>
             </el-alert>

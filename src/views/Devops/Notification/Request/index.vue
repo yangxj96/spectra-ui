@@ -167,11 +167,11 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                         placeholder="请输入业务类型"
                         style="width: 150px" />
                 </el-form-item>
-                <el-form-item label="业务 ID">
+                <el-form-item label="业务编号">
                     <el-input
                         v-model="condition.business_id"
                         clearable
-                        placeholder="请输入业务 ID"
+                        placeholder="请输入业务编号"
                         style="width: 180px" />
                 </el-form-item>
                 <el-form-item label="创建时间">
@@ -190,7 +190,7 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                 </el-form-item>
             </el-form>
             <el-alert
-                title="未指定时间时默认查询最近 31 天；精确关联任务由 Request ID 定位，不受时间窗口影响。"
+                title="未指定时间时默认查询最近 31 天；精确关联任务由请求编号定位，不受时间窗口影响。"
                 type="info"
                 :closable="false"
                 show-icon />
@@ -199,7 +199,7 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
         <el-card shadow="never" class="table-card">
             <el-table v-loading="false" :data="table_data" stripe>
                 <el-table-column type="index" label="序号" width="65" align="center" />
-                <el-table-column label="Request ID" prop="id" min-width="245" show-overflow-tooltip />
+                <el-table-column label="请求编号" prop="id" min-width="245" show-overflow-tooltip />
                 <el-table-column label="用途" min-width="120">
                     <template #default="scope">{{ purposeLabel(scope.row.purpose) }}</template>
                 </el-table-column>
@@ -238,7 +238,7 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
             <div v-loading="detailLoading" class="detail-container">
                 <template v-if="detail">
                     <el-descriptions :column="3" border>
-                        <el-descriptions-item label="Request ID">{{ detail.id }}</el-descriptions-item>
+                        <el-descriptions-item label="请求编号">{{ detail.id }}</el-descriptions-item>
                         <el-descriptions-item label="状态">
                             <el-tag :type="statusTagType(detail.status)" size="small">
                                 {{ statusLabel(detail.status) }}
@@ -249,7 +249,7 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                         <el-descriptions-item label="来源模块">{{ detail.source_module || "—" }}</el-descriptions-item>
                         <el-descriptions-item label="优先级">{{ detail.priority ?? "—" }}</el-descriptions-item>
                         <el-descriptions-item label="业务类型">{{ detail.business_type || "—" }}</el-descriptions-item>
-                        <el-descriptions-item label="业务 ID">{{ detail.business_id || "—" }}</el-descriptions-item>
+                        <el-descriptions-item label="业务编号">{{ detail.business_id || "—" }}</el-descriptions-item>
                         <el-descriptions-item label="接收人数">{{ detail.recipient_count }}</el-descriptions-item>
                         <el-descriptions-item label="任务数">{{ detail.task_count }}</el-descriptions-item>
                         <el-descriptions-item label="计划时间">
@@ -268,7 +268,7 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                         </span>
                     </div>
                     <el-table :data="detailTasks" stripe>
-                        <el-table-column label="Task ID" prop="id" min-width="230" show-overflow-tooltip />
+                        <el-table-column label="任务编号" prop="id" min-width="230" show-overflow-tooltip />
                         <el-table-column label="渠道" width="90">
                             <template #default="scope">{{ channelLabel(scope.row.channel) }}</template>
                         </el-table-column>
@@ -280,7 +280,7 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                         <el-table-column label="状态" width="100">
                             <template #default="scope">
                                 <el-tag :type="statusTagType(scope.row.status)" size="small">
-                                    {{ scope.row.status }}
+                                    {{ statusLabel(scope.row.status) }}
                                 </el-tag>
                             </template>
                         </el-table-column>

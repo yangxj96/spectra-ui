@@ -129,10 +129,10 @@ function availabilityReason(reason: string | null | undefined): string {
     if (!reason) return "可用";
     const labels: Record<string, string> = {
         AVAILABLE: "可用",
-        PROVIDER_NOT_CONFIGURED: "尚未配置 Provider",
+        PROVIDER_NOT_CONFIGURED: "尚未配置渠道服务",
         HEALTH_CHECK_REQUIRED: "需要重新执行健康检查",
         DISABLED_BY_CONFIGURATION: "已被配置为禁用",
-        PROVIDER_NOT_REGISTERED: "当前运行环境未注册 Provider",
+        PROVIDER_NOT_REGISTERED: "当前运行环境未注册渠道服务",
         MODULE_DISABLED: "通知模块已关闭"
     };
     return labels[reason] ?? reason;
@@ -282,7 +282,7 @@ async function preview(): Promise<void> {
     clearPreview();
     try {
         previewResult.value = await NotificationControlledSendApi.preview(request);
-        MessageUtils.success("发送 Preview 已生成，请核对受众和渠道结果");
+        MessageUtils.success("发送预览已生成，请核对受众和渠道结果");
     } catch {
         // 请求客户端已展示后端业务错误。
     } finally {
@@ -295,7 +295,7 @@ async function apply(): Promise<void> {
     if (!preview || !canApply.value) return;
     try {
         await MessageUtils.box.confirm(
-            `将按 Preview 创建 ${preview.eligible_task_count} 条投递任务，Preview 有效期至 ${formatDateTime(preview.expires_at)}。确认继续发送吗？`,
+            `将按当前预览创建 ${preview.eligible_task_count} 条投递任务，预览有效期至 ${formatDateTime(preview.expires_at)}。确认继续发送吗？`,
             "确认受控发送"
         );
     } catch {
@@ -349,13 +349,13 @@ onMounted(() => {
         <div class="page-header">
             <div>
                 <h2>通知受控发送</h2>
-                <p>先 Preview 当前受众、模板和渠道状态，再 Apply 创建通知请求。</p>
+                <p>先预览当前受众、模板和渠道状态，再确认发送，创建通知请求。</p>
             </div>
             <el-tag type="warning">仅限运维操作</el-tag>
         </div>
 
         <el-alert
-            title="Preview 只保存 10 分钟的非敏感快照；Apply 会重新校验受众、数据范围、用户偏好和渠道健康状态。"
+            title="预览只保存 10 分钟的非敏感快照；确认发送时会重新校验受众、数据范围、用户偏好和渠道健康状态。"
             type="info"
             :closable="false"
             show-icon />
@@ -372,7 +372,7 @@ onMounted(() => {
                     <el-form label-position="top" class="send-form">
                         <el-form-item label="业务幂等键" required>
                             <el-input v-model="form.idempotency_key" maxlength="200" show-word-limit />
-                            <div class="form-hint">同一个幂等键重复 Apply 时不会重复创建通知请求。</div>
+                            <div class="form-hint">同一个幂等键重复确认发送时不会重复创建通知请求。</div>
                         </el-form-item>
                         <el-form-item label="通知用途" required>
                             <el-select v-model="form.purpose" filterable style="width: 100%">
@@ -473,7 +473,7 @@ onMounted(() => {
                                 :rows="7"
                                 resize="vertical"
                                 placeholder='例如：{"name": "Spectra"}' />
-                            <div class="form-hint">禁止填写验证码、密码、Token、Secret 等敏感字段。</div>
+                            <div class="form-hint">禁止填写验证码、密码、令牌、密钥等敏感字段。</div>
                         </el-form-item>
                         <el-row :gutter="12">
                             <el-col :span="8">
@@ -482,7 +482,7 @@ onMounted(() => {
                                 </el-form-item>
                             </el-col>
                             <el-col :span="8">
-                                <el-form-item label="业务 ID">
+                                <el-form-item label="业务编号">
                                     <el-input v-model="form.business_id" maxlength="200" />
                                 </el-form-item>
                             </el-col>
@@ -494,7 +494,7 @@ onMounted(() => {
                         </el-row>
                         <div class="form-actions">
                             <el-button type="primary" :loading="previewLoading" @click="void preview">
-                                生成 Preview
+                                生成预览
                             </el-button>
                             <el-button @click="form.idempotency_key = createIdempotencyKey()">重新生成幂等键</el-button>
                         </div>
@@ -506,13 +506,13 @@ onMounted(() => {
                 <el-card shadow="never" class="section-card preview-card">
                     <template #header>
                         <div class="section-header">
-                            <span>Preview 结果</span>
+                            <span>预览结果</span>
                             <el-tag v-if="previewResult" type="success" size="small">已锁定当前快照</el-tag>
                         </div>
                     </template>
                     <template v-if="previewResult">
                         <el-alert
-                            title="修改左侧任一发送条件后，当前 Preview 会立即失效，需要重新生成。"
+                            title="修改左侧任一发送条件后，当前预览会立即失效，需要重新生成。"
                             type="warning"
                             :closable="false"
                             show-icon />
@@ -596,18 +596,18 @@ onMounted(() => {
 
                         <div class="apply-actions">
                             <el-button type="danger" :loading="applyLoading" :disabled="!canApply" @click="void apply">
-                                确认 Apply 发送
+                                确认发送
                             </el-button>
-                            <span v-if="!canApply" class="form-hint">当前没有满足条件的可发送任务，不能 Apply。</span>
+                            <span v-if="!canApply" class="form-hint">当前没有满足条件的可发送任务，不能确认发送。</span>
                         </div>
                     </template>
-                    <el-empty v-else description="填写发送条件后生成 Preview" />
+                    <el-empty v-else description="填写发送条件后生成预览" />
 
                     <el-result
                         v-if="applyResult"
                         icon="success"
                         title="通知请求已提交"
-                        :sub-title="`Request ID：${applyResult.request_id}；任务数：${applyResult.task_count}`">
+                        :sub-title="`请求编号：${applyResult.request_id}；任务数：${applyResult.task_count}`">
                         <template #extra>
                             <el-button type="primary" @click="openRequest">查看通知请求</el-button>
                         </template>

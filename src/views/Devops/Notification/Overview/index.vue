@@ -36,9 +36,15 @@ const channelLabels: Record<NotificationAdminChannel, string> = {
     EMAIL: "邮件"
 };
 
+const statusLabels: Record<string, string> = {
+    FAILED: "失败",
+    BLOCKED: "已阻断",
+    UNKNOWN: "未知"
+};
+
 const trendOption = computed<EChartsOption>(() => ({
     tooltip: { trigger: "axis" },
-    legend: { data: ["成功", "失败/阻断", "UNKNOWN"] },
+    legend: { data: ["成功", "失败/阻断", "未知"] },
     grid: { left: 42, right: 20, top: 38, bottom: 32 },
     xAxis: {
         type: "category",
@@ -58,7 +64,7 @@ const trendOption = computed<EChartsOption>(() => ({
             "#f56c6c"
         ),
         trendSeries(
-            "UNKNOWN",
+            "未知",
             (overview.value?.trend ?? []).map(item => item.unknown_count),
             "#e6a23c"
         )
@@ -107,12 +113,29 @@ function channelLabel(channel: NotificationAdminChannel): string {
     return channelLabels[channel] ?? channel;
 }
 
+function statusLabel(status: string): string {
+    return statusLabels[status] ?? status;
+}
+
 function availabilityTagType(available: boolean): "success" | "danger" {
     return available ? "success" : "danger";
 }
 
 function availabilityText(available: boolean): string {
     return available ? "可用" : "不可用";
+}
+
+function availabilityReason(reason: string | null | undefined): string {
+    if (!reason) return "可用";
+    const labels: Record<string, string> = {
+        AVAILABLE: "可用",
+        PROVIDER_NOT_CONFIGURED: "尚未配置渠道服务",
+        HEALTH_CHECK_REQUIRED: "需要重新执行健康检查",
+        DISABLED_BY_CONFIGURATION: "已被配置为禁用",
+        PROVIDER_NOT_REGISTERED: "当前运行环境未注册渠道服务",
+        MODULE_DISABLED: "通知模块已关闭"
+    };
+    return labels[reason] ?? reason;
 }
 
 function formatTrendTime(value: string): string {
@@ -187,10 +210,10 @@ onUnmounted(() => {
                 <el-card shadow="never" class="metric-card">
                     <div class="metric-card__label">失败任务</div>
                     <div class="metric-card__value metric-card__value--danger">{{ overview.failed_task_count }}</div>
-                    <div class="metric-card__detail">当前 FAILED / BLOCKED 任务</div>
+                    <div class="metric-card__detail">当前失败或阻断任务</div>
                 </el-card>
                 <el-card shadow="never" class="metric-card">
-                    <div class="metric-card__label">UNKNOWN 任务</div>
+                    <div class="metric-card__label">未知状态任务</div>
                     <div class="metric-card__value metric-card__value--warning">{{ overview.unknown_task_count }}</div>
                     <div class="metric-card__detail">需要人工确认或受控重试</div>
                 </el-card>
@@ -226,11 +249,13 @@ onUnmounted(() => {
                                 </template>
                             </el-table-column>
                             <el-table-column label="说明" min-width="150" show-overflow-tooltip>
-                                <template #default="scope">{{ scope.row.availability.reason || "—" }}</template>
+                                <template #default="scope">
+                                    {{ availabilityReason(scope.row.availability.reason) }}
+                                </template>
                             </el-table-column>
                             <el-table-column label="待处理" prop="pending_task_count" width="90" />
                             <el-table-column label="失败" prop="failed_task_count" width="75" />
-                            <el-table-column label="UNKNOWN" prop="unknown_task_count" width="90" />
+                            <el-table-column label="未知" prop="unknown_task_count" width="90" />
                         </el-table>
                     </el-card>
                 </el-col>
@@ -251,7 +276,7 @@ onUnmounted(() => {
                             </el-table-column>
                             <el-table-column label="状态" width="95">
                                 <template #default="scope">
-                                    <el-tag type="danger" size="small">{{ scope.row.status }}</el-tag>
+                                    <el-tag type="danger" size="small">{{ statusLabel(scope.row.status) }}</el-tag>
                                 </template>
                             </el-table-column>
                             <el-table-column label="错误" min-width="150" show-overflow-tooltip>
@@ -273,9 +298,7 @@ onUnmounted(() => {
                     <div class="section-card__header">
                         <span>投递结果趋势</span>
                         <span class="section-card__hint">
-                            成功：{{ overview.successful_delivery_count }} · UNKNOWN：{{
-                                overview.unknown_delivery_count
-                            }}
+                            成功：{{ overview.successful_delivery_count }} · 未知：{{ overview.unknown_delivery_count }}
                         </span>
                     </div>
                 </template>

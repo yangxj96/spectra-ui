@@ -221,18 +221,18 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
                             :value="item.value" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="Request ID">
+                <el-form-item label="请求编号">
                     <el-input
                         v-model="condition.request_id"
                         clearable
-                        placeholder="请输入 Request ID"
+                        placeholder="请输入请求编号"
                         style="width: 245px" />
                 </el-form-item>
-                <el-form-item label="收件用户 ID">
+                <el-form-item label="收件用户编号">
                     <el-input
                         v-model="condition.recipient_user_id"
                         clearable
-                        placeholder="请输入用户 ID"
+                        placeholder="请输入用户编号"
                         style="width: 245px" />
                 </el-form-item>
                 <el-form-item label="创建时间">
@@ -251,7 +251,7 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
                 </el-form-item>
             </el-form>
             <el-alert
-                title="未指定时间时默认查询最近 31 天；从请求详情进入任务时按 Request ID 精确定位。"
+                title="未指定时间时默认查询最近 31 天；从请求详情进入任务时按请求编号精确定位。"
                 type="info"
                 :closable="false"
                 show-icon />
@@ -260,8 +260,8 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
         <el-card shadow="never" class="table-card">
             <el-table :data="table_data" stripe>
                 <el-table-column type="index" label="序号" width="65" align="center" />
-                <el-table-column label="Task ID" prop="id" min-width="245" show-overflow-tooltip />
-                <el-table-column label="Request ID" prop="request_id" min-width="245" show-overflow-tooltip />
+                <el-table-column label="任务编号" prop="id" min-width="245" show-overflow-tooltip />
+                <el-table-column label="请求编号" prop="request_id" min-width="245" show-overflow-tooltip />
                 <el-table-column label="渠道" width="90">
                     <template #default="scope">{{ channelLabel(scope.row.channel) }}</template>
                 </el-table-column>
@@ -316,8 +316,8 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
             <div v-loading="detailLoading" class="detail-container">
                 <template v-if="detail">
                     <el-descriptions :column="3" border>
-                        <el-descriptions-item label="Task ID">{{ detail.id }}</el-descriptions-item>
-                        <el-descriptions-item label="Request ID">{{ detail.request_id }}</el-descriptions-item>
+                        <el-descriptions-item label="任务编号">{{ detail.id }}</el-descriptions-item>
+                        <el-descriptions-item label="请求编号">{{ detail.request_id }}</el-descriptions-item>
                         <el-descriptions-item label="状态">
                             <el-tag :type="statusTagType(detail.status)" size="small">
                                 {{ taskStatusLabel(detail.status) }}
@@ -325,7 +325,7 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
                         </el-descriptions-item>
                         <el-descriptions-item label="渠道">{{ channelLabel(detail.channel) }}</el-descriptions-item>
                         <el-descriptions-item label="用途">{{ purposeLabel(detail.purpose) }}</el-descriptions-item>
-                        <el-descriptions-item label="收件用户 ID">
+                        <el-descriptions-item label="收件用户编号">
                             {{ detail.recipient_user_id || "—" }}
                         </el-descriptions-item>
                         <el-descriptions-item label="收件地址">
@@ -365,10 +365,10 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
                         </span>
                     </div>
                     <el-table :data="detailDeliveries" stripe>
-                        <el-table-column label="Delivery ID" prop="id" min-width="230" show-overflow-tooltip />
+                        <el-table-column label="投递编号" prop="id" min-width="230" show-overflow-tooltip />
                         <el-table-column label="供应商" prop="provider_code" width="130" show-overflow-tooltip />
                         <el-table-column
-                            label="供应商消息 ID"
+                            label="供应商消息编号"
                             prop="provider_message_id"
                             min-width="180"
                             show-overflow-tooltip />

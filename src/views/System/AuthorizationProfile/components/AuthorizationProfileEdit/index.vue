@@ -1042,7 +1042,7 @@ onMounted(load);
                     <el-alert
                         class="profile-tip"
                         title="使用提示"
-                        description="授权方案不是运行时授权实例。套用后仍需根据当前用户完成 Preview/Apply，方案停用不会撤销已生效授权。"
+                        description="授权方案不是运行时授权实例。套用后仍需根据当前用户完成预览和应用，方案停用不会撤销已生效授权。"
                         type="info"
                         :closable="false"
                         show-icon />

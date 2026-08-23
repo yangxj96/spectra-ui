@@ -79,6 +79,20 @@ const editorChannelOptions = computed(() => {
     return channelOptions;
 });
 
+const showTitleTemplate = computed(() => editor.value.channel !== "SMS");
+const showHtmlTemplate = computed(() => editor.value.channel === "EMAIL");
+const showProviderTemplateCode = computed(() => editor.value.channel !== "IN_APP");
+const titleTemplateLabel = computed(() => (editor.value.channel === "EMAIL" ? "邮件主题模板" : "标题模板"));
+const channelFieldHint = computed(() => {
+    if (editor.value.channel === "SMS") {
+        return "短信渠道使用纯文本正文和供应商模板编码，不需要标题或 HTML 模板。";
+    }
+    if (editor.value.channel === "EMAIL") {
+        return "邮件渠道支持邮件主题、纯文本正文、HTML 正文和供应商模板编码。";
+    }
+    return "站内信使用标题和纯文本正文，不配置 HTML 模板或供应商模板编码。";
+});
+
 function createEditorForm(): TemplateEditorForm {
     return {
         template_group_code: "",
@@ -150,11 +164,29 @@ function validateTemplatePurposeChannel(purpose: string, channel: NotificationTe
     return true;
 }
 
+function normalizeChannelFields(): void {
+    if (!showTitleTemplate.value) editor.value.title_template = "";
+    if (!showHtmlTemplate.value) editor.value.html_template = "";
+    if (!showProviderTemplateCode.value) editor.value.provider_template_code = "";
+}
+
+function handleChannelChange(): void {
+    normalizeChannelFields();
+}
+
 function handlePurposeChange(): void {
     if (!editorChannelOptions.value.some(item => item.value === editor.value.channel)) {
         editor.value.channel = editor.value.purpose === "BIND_EMAIL_CODE" ? "EMAIL" : "SMS";
         ElMessage.info(`模板渠道已切换为${channelLabel(editor.value.channel)}`);
     }
+    normalizeChannelFields();
+}
+
+function activeTemplateFields(): { title: string; html: string } {
+    return {
+        title: showTitleTemplate.value ? editor.value.title_template : "",
+        html: showHtmlTemplate.value ? editor.value.html_template : ""
+    };
 }
 
 function validateTemplateDefinition(
@@ -253,6 +285,7 @@ async function load(): Promise<void> {
             version: detail.version,
             state: detail.state
         };
+        normalizeChannelFields();
     } catch (error: unknown) {
         ElMessage.error(errorMessage(error, "加载模板详情失败"));
         await router.push({ name: "DevopsNotificationTemplate" });
@@ -267,12 +300,13 @@ async function save(): Promise<void> {
 
     const parameterSchema = parseJsonObject(editor.value.parameter_schema_text, "参数 Schema");
     if (!parameterSchema || !validateTemplatePurposeChannel(editor.value.purpose, editor.value.channel)) return;
+    const templateFields = activeTemplateFields();
     if (
         !validateTemplateDefinition(
             parameterSchema,
-            editor.value.title_template,
+            templateFields.title,
             editor.value.content_template,
-            editor.value.html_template
+            templateFields.html
         )
     ) {
         return;
@@ -283,11 +317,11 @@ async function save(): Promise<void> {
         template_name: editor.value.template_name.trim(),
         channel: editor.value.channel,
         purpose: editor.value.purpose,
-        title_template: editor.value.title_template,
+        title_template: templateFields.title,
         content_template: editor.value.content_template,
-        html_template: editor.value.html_template,
+        html_template: templateFields.html,
         parameter_schema: parameterSchema,
-        provider_template_code: editor.value.provider_template_code.trim()
+        provider_template_code: showProviderTemplateCode.value ? editor.value.provider_template_code.trim() : ""
     };
     if (editor.value.id) {
         payload.id = editor.value.id;
@@ -314,11 +348,12 @@ async function save(): Promise<void> {
 async function preview(): Promise<void> {
     const parameterSchema = parseJsonObject(editor.value.parameter_schema_text, "参数 Schema");
     if (!parameterSchema || !validateTemplatePurposeChannel(editor.value.purpose, editor.value.channel)) return;
+    const templateFields = activeTemplateFields();
     const variables = validateTemplateDefinition(
         parameterSchema,
-        editor.value.title_template,
+        templateFields.title,
         editor.value.content_template,
-        editor.value.html_template
+        templateFields.html
     );
     if (!variables) return;
     const parameters = parseJsonObject(editor.value.sample_parameters_text, "示例参数");
@@ -348,9 +383,9 @@ async function preview(): Promise<void> {
         previewResult.value = await NotificationTemplateApi.preview({
             channel: editor.value.channel,
             purpose: editor.value.purpose,
-            title_template: editor.value.title_template,
+            title_template: templateFields.title,
             content_template: editor.value.content_template,
-            html_template: editor.value.html_template,
+            html_template: templateFields.html,
             parameter_schema: parameterSchema,
             parameters,
             sensitive_parameters: sensitiveParameters
@@ -401,7 +436,11 @@ onMounted(() => {
                     </el-col>
                     <el-col :span="12">
                         <el-form-item label="渠道" prop="channel">
-                            <el-select v-model="editor.channel" :disabled="Boolean(editingId)" style="width: 100%">
+                            <el-select
+                                v-model="editor.channel"
+                                :disabled="Boolean(editingId)"
+                                style="width: 100%"
+                                @change="handleChannelChange">
                                 <el-option
                                     v-for="item in editorChannelOptions"
                                     :key="item.value"
@@ -435,7 +474,14 @@ onMounted(() => {
                     </el-col>
                 </el-row>
 
-                <el-form-item label="标题模板">
+                <el-alert
+                    :title="channelFieldHint"
+                    type="info"
+                    :closable="false"
+                    show-icon
+                    class="channel-field-alert" />
+
+                <el-form-item v-if="showTitleTemplate" :label="titleTemplateLabel">
                     <el-input v-model="editor.title_template" placeholder="支持 {{变量名}} 占位符" />
                 </el-form-item>
                 <el-form-item label="正文模板" prop="content_template">
@@ -453,7 +499,7 @@ onMounted(() => {
                     class="content-alert" />
 
                 <el-divider content-position="left">高级模板设置</el-divider>
-                <el-form-item label="HTML 模板">
+                <el-form-item v-if="showHtmlTemplate" label="邮件 HTML 模板">
                     <el-input
                         v-model="editor.html_template"
                         type="textarea"
@@ -468,8 +514,8 @@ onMounted(() => {
                         placeholder='JSON Schema，例如 { "properties": { "code": { "type": "string", "sensitive": true } } }' />
                     <div class="form-help">properties 中的 sensitive: true 表示该参数必须从敏感参数通道传入。</div>
                 </el-form-item>
-                <el-form-item label="供应商模板编码">
-                    <el-input v-model="editor.provider_template_code" placeholder="短信/邮件供应商模板编码，可选" />
+                <el-form-item v-if="showProviderTemplateCode" label="供应商模板编码">
+                    <el-input v-model="editor.provider_template_code" placeholder="短信或邮件供应商模板编码，可选" />
                 </el-form-item>
 
                 <el-divider content-position="left">预览示例参数</el-divider>
@@ -579,6 +625,7 @@ h2 {
 }
 
 .content-alert,
+.channel-field-alert,
 .form-help {
     margin-bottom: 18px;
 }

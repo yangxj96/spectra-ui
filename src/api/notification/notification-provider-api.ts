@@ -16,5 +16,12 @@ export const NotificationProviderApi = {
 
     health(channel: NotificationAdminChannel): Promise<NotificationProviderHealthVO> {
         return post<NotificationProviderHealthVO>(`${PROVIDER_API}/${channel}/health`);
+    },
+
+    test(
+        channel: NotificationAdminChannel,
+        params: NotificationProviderTestParams
+    ): Promise<NotificationProviderTestVO> {
+        return post<NotificationProviderTestVO>(`${PROVIDER_API}/${channel}/test`, params);
     }
 };

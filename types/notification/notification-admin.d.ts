@@ -172,4 +172,20 @@ declare global {
         reason: string;
         checked_at: string;
     }
+
+    interface NotificationProviderTestParams {
+        recipient_address: string;
+        title: string;
+        content: string;
+        confirmation: string;
+    }
+
+    interface NotificationProviderTestVO {
+        channel: NotificationAdminChannel;
+        provider_code: string;
+        status: string;
+        provider_message_id?: string | null;
+        summary?: string | null;
+        tested_at: string;
+    }
 }

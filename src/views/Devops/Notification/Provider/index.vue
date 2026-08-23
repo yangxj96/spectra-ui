@@ -57,8 +57,18 @@ const overview = ref<NotificationOverviewVO>();
 const loading = ref(false);
 const savingChannel = ref<ExternalChannel>();
 const healthChannel = ref<ExternalChannel>();
+const testChannel = ref<ExternalChannel>();
+const testSending = ref(false);
+const testDialogVisible = ref(false);
+const testResult = ref<NotificationProviderTestVO>();
 const errorMessage = ref("");
 const lastHealthAt = reactive<Partial<Record<ExternalChannel, string>>>({});
+const testForm = reactive<NotificationProviderTestParams>({
+    recipient_address: "",
+    title: "Spectra Provider 测试消息",
+    content: "这是一条通知 Provider 测试消息，请确认渠道配置和投递结果。",
+    confirmation: ""
+});
 const editors = reactive<Record<ExternalChannel, ProviderEditor>>({
     SMS: createEditor(),
     EMAIL: createEditor()
@@ -211,6 +221,68 @@ async function checkHealth(channel: ExternalChannel): Promise<void> {
 
 function healthTime(channel: ExternalChannel): string {
     return lastHealthAt[channel] ? formatDateTime(lastHealthAt[channel]) : "尚未检查";
+}
+
+function clearTestForm(): void {
+    testForm.recipient_address = "";
+    testForm.title = "Spectra Provider 测试消息";
+    testForm.content = "这是一条通知 Provider 测试消息，请确认渠道配置和投递结果。";
+    testForm.confirmation = "";
+    testResult.value = undefined;
+    testChannel.value = undefined;
+}
+
+function openTestDialog(channel: ExternalChannel): void {
+    testChannel.value = channel;
+    testResult.value = undefined;
+    testForm.recipient_address = "";
+    testForm.confirmation = "";
+    testDialogVisible.value = true;
+}
+
+async function submitTest(): Promise<void> {
+    const channel = testChannel.value;
+    if (!channel) return;
+    if (!testForm.recipient_address.trim()) {
+        MessageUtils.notify.error("请输入明确的测试收件地址。", "测试发送");
+        return;
+    }
+    if (!testForm.title.trim() || !testForm.content.trim()) {
+        MessageUtils.notify.error("测试标题和正文不能为空。", "测试发送");
+        return;
+    }
+    if (testForm.confirmation !== "SEND_TEST") {
+        MessageUtils.notify.error("请输入确认词 SEND_TEST 后再发送。", "测试发送");
+        return;
+    }
+    try {
+        await MessageUtils.box.confirm(
+            `将向你填写的${channelLabel(channel)}测试地址发送一条真实 Provider 测试消息，继续吗？`,
+            "确认测试发送"
+        );
+    } catch {
+        return;
+    }
+    testSending.value = true;
+    try {
+        testResult.value = await NotificationProviderApi.test(channel, {
+            recipient_address: testForm.recipient_address.trim(),
+            title: testForm.title.trim(),
+            content: testForm.content.trim(),
+            confirmation: testForm.confirmation
+        });
+        if (testResult.value.status === "SENT") {
+            MessageUtils.notify.success("Provider 测试发送已返回成功结果。", "测试发送");
+        } else {
+            MessageUtils.notify.warning(`Provider 测试发送结果：${testResult.value.status}`, "测试发送");
+        }
+    } catch (error) {
+        MessageUtils.notify.error(error instanceof Error ? error.message : "Provider 测试发送失败", "测试发送");
+    } finally {
+        testSending.value = false;
+        testForm.recipient_address = "";
+        testForm.confirmation = "";
+    }
 }
 
 onMounted(() => {
@@ -372,6 +444,12 @@ onMounted(() => {
                                 </el-button>
                                 <el-button
                                     v-permission="'notification:provider:configure'"
+                                    :disabled="provider.state !== 'HEALTHY'"
+                                    @click="openTestDialog(provider.channel)">
+                                    测试发送
+                                </el-button>
+                                <el-button
+                                    v-permission="'notification:provider:configure'"
                                     type="primary"
                                     :loading="savingChannel === provider.channel"
                                     @click="void saveProvider(provider.channel)">
@@ -391,6 +469,53 @@ onMounted(() => {
             </el-col>
         </el-row>
         <el-empty v-else-if="!loading" description="暂无渠道配置" />
+
+        <el-dialog
+            v-model="testDialogVisible"
+            :title="`${testChannel ? channelLabel(testChannel) : ''} Provider 测试发送`"
+            width="560px"
+            destroy-on-close
+            @closed="clearTestForm">
+            <el-alert
+                title="仅填写你明确控制的测试地址；测试地址不会从用户数据中推导，也不会写入业务通知记录。"
+                type="warning"
+                show-icon
+                :closable="false"
+                class="test-alert" />
+            <el-form :model="testForm" label-position="top" class="test-form">
+                <el-form-item label="测试收件地址">
+                    <el-input
+                        v-model="testForm.recipient_address"
+                        :placeholder="testChannel === 'SMS' ? '+8613800138000' : 'test@example.com'"
+                        autocomplete="off" />
+                </el-form-item>
+                <el-form-item label="测试标题">
+                    <el-input v-model="testForm.title" maxlength="200" show-word-limit />
+                </el-form-item>
+                <el-form-item label="测试正文">
+                    <el-input v-model="testForm.content" type="textarea" :rows="4" maxlength="2000" show-word-limit />
+                </el-form-item>
+                <el-form-item label="确认词">
+                    <el-input v-model="testForm.confirmation" placeholder="请输入 SEND_TEST" autocomplete="off" />
+                </el-form-item>
+            </el-form>
+            <el-alert
+                v-if="testResult"
+                :title="`结果：${testResult.status}`"
+                :type="testResult.status === 'SENT' ? 'success' : 'error'"
+                show-icon
+                :closable="false">
+                <template #default>
+                    <div>Provider：{{ testResult.provider_code }}</div>
+                    <div v-if="testResult.provider_message_id">消息 ID：{{ testResult.provider_message_id }}</div>
+                    <div v-if="testResult.summary">摘要：{{ testResult.summary }}</div>
+                </template>
+            </el-alert>
+            <template #footer>
+                <el-button @click="testDialogVisible = false">关闭</el-button>
+                <el-button type="primary" :loading="testSending" @click="void submitTest()">发送测试消息</el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -510,6 +635,11 @@ onMounted(() => {
     color: var(--el-text-color-secondary);
     font-size: 12px;
     text-align: right;
+}
+
+.test-alert,
+.test-form {
+    margin-bottom: 16px;
 }
 
 .channel-summary {

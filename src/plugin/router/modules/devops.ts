@@ -38,7 +38,7 @@ export default [
             {
                 path: "notification/delivery-task",
                 name: "DevopsNotificationDeliveryTask",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
+                component: () => import("@/views/Devops/Notification/DeliveryTask/index.vue"),
                 meta: { title: "投递任务", requiresAuth: true, requiredMenu: "DevopsNotificationDeliveryTask" }
             },
             {

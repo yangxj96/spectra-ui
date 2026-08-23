@@ -1,4 +1,4 @@
-import { get } from "@/plugin/request/api.ts";
+import { del, get, post } from "@/plugin/request/api.ts";
 
 const ADMIN_API = "/api/notification/admin";
 
@@ -23,5 +23,21 @@ export const NotificationAdminApi = {
 
     pageTasks(params?: NotificationAdminTaskQuery): Promise<Page<NotificationTaskAdminVO>> {
         return get<Page<NotificationTaskAdminVO>>(`${ADMIN_API}/tasks`, params);
+    },
+
+    taskDetail(id: string): Promise<NotificationTaskAdminVO> {
+        return get<NotificationTaskAdminVO>(`${ADMIN_API}/tasks/${id}`);
+    },
+
+    pageDeliveries(params?: NotificationAdminDeliveryQuery): Promise<Page<NotificationDeliveryAdminVO>> {
+        return get<Page<NotificationDeliveryAdminVO>>(`${ADMIN_API}/deliveries`, params);
+    },
+
+    retryTask(id: string): Promise<void> {
+        return post<void>(`${ADMIN_API}/tasks/${id}/retry`);
+    },
+
+    cancelTask(id: string): Promise<void> {
+        return del<void>(`${ADMIN_API}/tasks/${id}`);
     }
 };

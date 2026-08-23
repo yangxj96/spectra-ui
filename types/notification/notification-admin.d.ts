@@ -72,6 +72,13 @@ declare global {
         end_time?: string;
     }
 
+    interface NotificationAdminDeliveryQuery extends BasePageParams {
+        task_id?: string;
+        status?: string;
+        start_time?: string;
+        end_time?: string;
+    }
+
     interface NotificationRequestAdminVO {
         id: string;
         business_type?: string | null;
@@ -107,5 +114,19 @@ declare global {
         expires_at?: string | null;
         created_at: string;
         updated_at: string;
+    }
+
+    interface NotificationDeliveryAdminVO {
+        id: string;
+        task_id: string;
+        template_id?: string | null;
+        template_version_no?: number | null;
+        template_version_digest?: string | null;
+        provider_code?: string | null;
+        provider_message_id?: string | null;
+        status: string;
+        response_summary?: string | null;
+        sent_at?: string | null;
+        created_at: string;
     }
 }

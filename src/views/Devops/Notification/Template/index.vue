@@ -83,6 +83,15 @@ const previewLoading = ref(false);
 const previewResult = ref<NotificationTemplatePreviewVO>();
 
 const TEMPLATE_VARIABLE_PATTERN = /\{\{\s*([A-Za-z0-9_.-]+)\s*}}/g;
+const INVALID_VARIABLE_PATTERN = /\{\{|}}/s;
+const VERIFICATION_CODE_PURPOSES = new Set(["LOGIN_CODE", "BIND_PHONE_CODE", "BIND_EMAIL_CODE", "RESET_PASSWORD_CODE"]);
+
+const editorChannelOptions = computed(() => {
+    if (VERIFICATION_CODE_PURPOSES.has(editor.value.purpose)) {
+        return channelOptions.filter(item => item.value === "SMS" || item.value === "EMAIL");
+    }
+    return channelOptions;
+});
 
 const editorRules: FormRules = {
     template_group_code: [{ required: true, message: "请输入模板组编码", trigger: "blur" }],
@@ -139,6 +148,21 @@ function collectTemplateVariables(...templates: Array<string | null | undefined>
     return variables;
 }
 
+function validateTemplatePurposeChannel(purpose: string, channel: NotificationTemplateChannel): boolean {
+    if (VERIFICATION_CODE_PURPOSES.has(purpose) && channel === "IN_APP") {
+        ElMessage.error("验证码模板只能使用短信或邮件渠道");
+        return false;
+    }
+    return true;
+}
+
+function handleEditorPurposeChange(): void {
+    if (!editorChannelOptions.value.some(item => item.value === editor.value.channel)) {
+        editor.value.channel = "SMS";
+        ElMessage.info("验证码模板已切换为短信渠道；也可以改为邮件");
+    }
+}
+
 function validateTemplateDefinition(
     schema: Record<string, unknown>,
     title: string | null | undefined,
@@ -165,8 +189,21 @@ function validateTemplateDefinition(
         return undefined;
     }
     const unsafeHtml = (html ?? "").toLowerCase();
-    if (unsafeHtml.includes("<script") || unsafeHtml.includes("javascript:") || /\bon[a-z]+\s*=/.test(unsafeHtml)) {
-        ElMessage.error("HTML 模板包含 script、事件属性或 javascript: 链接");
+    const hasIllegalPlaceholder = [title, content, html].some(template => {
+        if (!template) return false;
+        const remainder = template.replace(TEMPLATE_VARIABLE_PATTERN, "");
+        return INVALID_VARIABLE_PATTERN.test(remainder);
+    });
+    if (hasIllegalPlaceholder) {
+        ElMessage.error("模板包含非法占位符，只允许 {{变量名}} 格式");
+        return undefined;
+    }
+    if (
+        unsafeHtml.includes("<script") ||
+        /\bon[a-z]+\s*=/.test(unsafeHtml) ||
+        /\b(?:javascript|vbscript|data|file):/.test(unsafeHtml)
+    ) {
+        ElMessage.error("HTML 模板包含 script、事件属性或危险 URL 链接");
         return undefined;
     }
     return [...referenced];
@@ -264,6 +301,9 @@ async function saveEditor(): Promise<void> {
     if (!parameterSchema) {
         return;
     }
+    if (!validateTemplatePurposeChannel(editor.value.purpose, editor.value.channel)) {
+        return;
+    }
     if (
         !validateTemplateDefinition(
             parameterSchema,
@@ -311,6 +351,9 @@ async function saveEditor(): Promise<void> {
 async function previewEditor(): Promise<void> {
     const parameterSchema = parseJsonObject(editor.value.parameter_schema_text, "参数 Schema");
     if (!parameterSchema) {
+        return;
+    }
+    if (!validateTemplatePurposeChannel(editor.value.purpose, editor.value.channel)) {
         return;
     }
     const variables = validateTemplateDefinition(
@@ -373,6 +416,9 @@ async function confirmAction(
 }
 
 async function publish(row: NotificationTemplateVO): Promise<void> {
+    if (!validateTemplatePurposeChannel(row.purpose, row.channel)) {
+        return;
+    }
     const variables = validateTemplateDefinition(
         row.parameter_schema,
         row.title_template,
@@ -631,7 +677,7 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                         <el-form-item label="渠道" prop="channel">
                             <el-select v-model="editor.channel" :disabled="editorMode === 'edit'" style="width: 100%">
                                 <el-option
-                                    v-for="item in channelOptions"
+                                    v-for="item in editorChannelOptions"
                                     :key="item.value"
                                     :label="item.label"
                                     :value="item.value" />
@@ -640,7 +686,11 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                     </el-col>
                 </el-row>
                 <el-form-item label="通知用途" prop="purpose">
-                    <el-select v-model="editor.purpose" filterable style="width: 100%">
+                    <el-select
+                        v-model="editor.purpose"
+                        filterable
+                        style="width: 100%"
+                        @change="handleEditorPurposeChange">
                         <el-option
                             v-for="item in purposeOptions"
                             :key="item.value"

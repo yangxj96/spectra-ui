@@ -189,69 +189,74 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
 <template>
     <div class="notification-task-page">
         <el-row class="box__search">
-            <el-form :inline="true" :model="condition">
-                <el-form-item label="状态">
-                    <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 130px">
-                        <el-option
-                            v-for="item in taskStatusOptions"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="渠道">
-                    <el-select v-model="condition.channel" clearable placeholder="全部渠道" style="width: 120px">
-                        <el-option
-                            v-for="item in channelOptions"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="用途">
-                    <el-select
-                        v-model="condition.purpose"
-                        clearable
-                        filterable
-                        placeholder="全部用途"
-                        style="width: 160px">
-                        <el-option
-                            v-for="item in purposeOptions"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="请求编号">
-                    <el-input
-                        v-model="condition.request_id"
-                        clearable
-                        placeholder="请输入请求编号"
-                        style="width: 245px" />
-                </el-form-item>
-                <el-form-item label="收件用户编号">
-                    <el-input
-                        v-model="condition.recipient_user_id"
-                        clearable
-                        placeholder="请输入用户编号"
-                        style="width: 245px" />
-                </el-form-item>
-                <el-form-item label="创建时间">
-                    <el-date-picker
-                        v-model="dateRange"
-                        type="datetimerange"
-                        range-separator="至"
-                        start-placeholder="开始时间"
-                        end-placeholder="结束时间"
-                        :default-time="[new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 1, 1, 23, 59, 59)]"
-                        style="width: 340px" />
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="search">查询</el-button>
-                    <el-button @click="reset">重置</el-button>
-                </el-form-item>
+            <el-form :model="condition" class="search-form">
+                <div class="search-row">
+                    <el-form-item label="状态">
+                        <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 120px">
+                            <el-option
+                                v-for="item in taskStatusOptions"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="渠道">
+                        <el-select v-model="condition.channel" clearable placeholder="全部渠道" style="width: 110px">
+                            <el-option
+                                v-for="item in channelOptions"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="用途">
+                        <el-select
+                            v-model="condition.purpose"
+                            clearable
+                            filterable
+                            placeholder="全部用途"
+                            style="width: 150px">
+                            <el-option
+                                v-for="item in purposeOptions"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="请求编号">
+                        <el-input
+                            v-model="condition.request_id"
+                            clearable
+                            placeholder="请输入请求编号"
+                            style="width: 220px" />
+                    </el-form-item>
+                </div>
+                <div class="search-row">
+                    <el-form-item label="收件用户编号">
+                        <el-input
+                            v-model="condition.recipient_user_id"
+                            clearable
+                            placeholder="请输入用户编号"
+                            style="width: 200px" />
+                    </el-form-item>
+                    <el-form-item label="创建时间">
+                        <el-date-picker
+                            v-model="dateRange"
+                            type="datetimerange"
+                            range-separator="至"
+                            start-placeholder="开始时间"
+                            end-placeholder="结束时间"
+                            :default-time="[new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 1, 1, 23, 59, 59)]"
+                            style="width: 300px" />
+                    </el-form-item>
+                    <el-form-item class="search-actions">
+                        <el-button type="primary" @click="search">查询</el-button>
+                        <el-button @click="reset">重置</el-button>
+                    </el-form-item>
+                </div>
             </el-form>
             <el-alert
+                class="search-tip"
                 title="未指定时间时默认查询最近 31 天；从请求详情进入任务时按请求编号精确定位。"
                 type="info"
                 :closable="false"
@@ -413,6 +418,8 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
 
 <style scoped lang="scss">
 .notification-task-page {
+    display: grid;
+    grid-template-rows: minmax(148px, 18%) minmax(0, 1fr);
     height: 100%;
     min-height: 0;
     overflow: hidden;
@@ -422,44 +429,60 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
 
 .box__search {
     display: flex;
-    height: 14%;
-    min-height: 116px;
+    min-height: 0;
     flex-direction: column;
     align-items: stretch;
     justify-content: center;
+    gap: 6px;
     padding: 8px 20px;
     box-sizing: border-box;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
 }
 
-.box__search :deep(.el-form) {
+.search-form {
     display: flex;
     width: 100%;
     min-width: 0;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.search-row {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     flex-wrap: wrap;
     align-items: center;
+    gap: 6px 16px;
+    overflow-x: hidden;
 }
 
-.box__search :deep(.el-form-item) {
-    margin-bottom: 0;
-    margin-right: 16px;
+.search-row :deep(.el-form-item) {
     min-width: 0;
+    margin: 0;
 }
 
-.box__search :deep(.el-form-item .el-input),
-.box__search :deep(.el-form-item .el-select),
-.box__search :deep(.el-form-item .el-date-editor) {
+.search-row :deep(.el-form-item .el-input),
+.search-row :deep(.el-form-item .el-select),
+.search-row :deep(.el-form-item .el-date-editor) {
     max-width: 100%;
 }
 
-.box__search :deep(.el-alert) {
-    margin-top: 6px;
+.search-actions {
+    flex: 0 0 auto;
+}
+
+.search-tip {
+    width: 100%;
+    flex: 0 0 auto;
+    box-sizing: border-box;
 }
 
 .box__body {
     display: block;
-    height: 86%;
+    height: auto;
     min-height: 0;
     padding: 0 20px;
     box-sizing: border-box;

@@ -82,6 +82,8 @@ const previewVisible = ref(false);
 const previewLoading = ref(false);
 const previewResult = ref<NotificationTemplatePreviewVO>();
 
+const TEMPLATE_VARIABLE_PATTERN = /\{\{\s*([A-Za-z0-9_.-]+)\s*}}/g;
+
 const editorRules: FormRules = {
     template_group_code: [{ required: true, message: "请输入模板组编码", trigger: "blur" }],
     channel: [{ required: true, message: "请选择通知渠道", trigger: "change" }],
@@ -124,6 +126,50 @@ function parseJsonObject(value: string, label: string): Record<string, unknown> 
         ElMessage.error(`${label}不是合法的 JSON`);
         return undefined;
     }
+}
+
+function collectTemplateVariables(...templates: Array<string | null | undefined>): Set<string> {
+    const variables = new Set<string>();
+    for (const template of templates) {
+        if (!template) continue;
+        for (const match of template.matchAll(TEMPLATE_VARIABLE_PATTERN)) {
+            variables.add(match[1]);
+        }
+    }
+    return variables;
+}
+
+function validateTemplateDefinition(
+    schema: Record<string, unknown>,
+    title: string | null | undefined,
+    content: string | null | undefined,
+    html: string | null | undefined
+): string[] | undefined {
+    const properties = schema.properties;
+    if (!isObjectRecord(properties)) {
+        ElMessage.error("参数 Schema 必须包含 properties 对象");
+        return undefined;
+    }
+    const declared = new Set(Object.keys(properties));
+    const referenced = collectTemplateVariables(title, content, html);
+    const missing = [...referenced].filter(item => !declared.has(item));
+    const unused = [...declared].filter(item => !referenced.has(item));
+    if (missing.length || unused.length) {
+        const details = [
+            missing.length ? `模板未声明：${missing.join(", ")}` : "",
+            unused.length ? `Schema 多余：${unused.join(", ")}` : ""
+        ]
+            .filter(Boolean)
+            .join("；");
+        ElMessage.error(`变量声明与模板占位符不一致：${details}`);
+        return undefined;
+    }
+    const unsafeHtml = (html ?? "").toLowerCase();
+    if (unsafeHtml.includes("<script") || unsafeHtml.includes("javascript:") || /\bon[a-z]+\s*=/.test(unsafeHtml)) {
+        ElMessage.error("HTML 模板包含 script、事件属性或 javascript: 链接");
+        return undefined;
+    }
+    return [...referenced];
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -218,6 +264,16 @@ async function saveEditor(): Promise<void> {
     if (!parameterSchema) {
         return;
     }
+    if (
+        !validateTemplateDefinition(
+            parameterSchema,
+            editor.value.title_template,
+            editor.value.content_template,
+            editor.value.html_template
+        )
+    ) {
+        return;
+    }
 
     const payload: NotificationTemplateSaveParams = {
         template_group_code: editor.value.template_group_code.trim(),
@@ -257,8 +313,21 @@ async function previewEditor(): Promise<void> {
     if (!parameterSchema) {
         return;
     }
+    const variables = validateTemplateDefinition(
+        parameterSchema,
+        editor.value.title_template,
+        editor.value.content_template,
+        editor.value.html_template
+    );
+    if (!variables) {
+        return;
+    }
     const parameters = parseJsonObject(editor.value.sample_parameters_text, "示例参数");
     if (!parameters) {
+        return;
+    }
+    if (variables.some(variable => !(variable in parameters))) {
+        ElMessage.error("示例参数未覆盖全部模板变量");
         return;
     }
 
@@ -303,10 +372,19 @@ async function confirmAction(
     }
 }
 
-function publish(row: NotificationTemplateVO): Promise<void> {
+async function publish(row: NotificationTemplateVO): Promise<void> {
+    const variables = validateTemplateDefinition(
+        row.parameter_schema,
+        row.title_template,
+        row.content_template,
+        row.html_template
+    );
+    if (!variables) {
+        return;
+    }
     return confirmAction(
         row,
-        `确定发布模板「${row.template_group_code}」吗？发布后将成为当前渠道的生效版本。`,
+        `确定发布模板「${row.template_group_code}」吗？发布后将成为${channelLabel(row.channel)}当前生效版本；版本 ${row.version_no}，${variables.length} 个模板变量。`,
         NotificationTemplateApi.publish,
         "模板已发布"
     );

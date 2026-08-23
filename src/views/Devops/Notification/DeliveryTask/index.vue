@@ -3,6 +3,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { ref } from "vue";
 
 import { NotificationAdminApi } from "@/api/notification/notification-admin-api.ts";
+import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import useTable from "@/hooks/use-table.ts";
 import { formatDateTime } from "@/utils/date-utils.ts";
 
@@ -187,7 +188,7 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
 
 <template>
     <div class="notification-task-page">
-        <el-card shadow="never" class="search-card">
+        <el-row class="box__search">
             <el-form :inline="true" :model="condition">
                 <el-form-item label="状态">
                     <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 130px">
@@ -255,10 +256,10 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
                 type="info"
                 :closable="false"
                 show-icon />
-        </el-card>
+        </el-row>
 
-        <el-card shadow="never" class="table-card">
-            <el-table :data="table_data" class="notification-data-table" stripe>
+        <el-row class="box__body">
+            <el-table :data="table_data" height="92%" stripe empty-text="暂无通知投递任务">
                 <el-table-column type="index" label="序号" width="65" align="center" />
                 <el-table-column label="任务编号" prop="id" min-width="245" show-overflow-tooltip />
                 <el-table-column label="请求编号" prop="request_id" min-width="245" show-overflow-tooltip />
@@ -278,42 +279,47 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
                 </el-table-column>
                 <el-table-column label="重试" width="70" align="center" prop="retry_count" />
                 <el-table-column label="创建时间" prop="created_at" width="170" show-overflow-tooltip />
-                <el-table-column label="操作" width="180" fixed="right">
+                <el-table-column label="操作" width="150" fixed="right">
                     <template #default="scope">
-                        <el-button link type="primary" @click="void openDetail(scope.row)">详情</el-button>
-                        <el-button
-                            v-permission="'notification:admin:retry'"
-                            link
-                            type="warning"
-                            :disabled="!retryableStatuses.has(scope.row.status)"
-                            :loading="actionLoading === scope.row.id"
-                            @click="void retryTask(scope.row)">
-                            重试
-                        </el-button>
-                        <el-button
-                            v-permission="'notification:admin:cancel'"
-                            link
-                            type="danger"
-                            :disabled="!cancellableStatuses.has(scope.row.status)"
-                            :loading="actionLoading === scope.row.id"
-                            @click="void cancelTask(scope.row)">
-                            取消
-                        </el-button>
+                        <el-tooltip content="查看详情" placement="top">
+                            <el-button link type="primary" @click="void openDetail(scope.row)">
+                                <ComponentsIcons name="icon-eye" style="width: 1.4em; height: 1.4em" />
+                            </el-button>
+                        </el-tooltip>
+                        <el-tooltip content="重试任务" placement="top">
+                            <el-button
+                                v-permission="'notification:admin:retry'"
+                                link
+                                type="warning"
+                                :disabled="!retryableStatuses.has(scope.row.status)"
+                                :loading="actionLoading === scope.row.id"
+                                @click="void retryTask(scope.row)">
+                                <ComponentsIcons name="icon-enable" style="width: 1.4em; height: 1.4em" />
+                            </el-button>
+                        </el-tooltip>
+                        <el-tooltip content="取消任务" placement="top">
+                            <el-button
+                                v-permission="'notification:admin:cancel'"
+                                link
+                                type="danger"
+                                :disabled="!cancellableStatuses.has(scope.row.status)"
+                                :loading="actionLoading === scope.row.id"
+                                @click="void cancelTask(scope.row)">
+                                <ComponentsIcons name="icon-disable" style="width: 1.4em; height: 1.4em" />
+                            </el-button>
+                        </el-tooltip>
                     </template>
                 </el-table-column>
             </el-table>
-            <el-empty v-if="table_data.length === 0" description="暂无通知投递任务" />
             <el-pagination
                 layout="total, sizes, prev, pager, next"
                 :current-page="pagination.page"
                 :page-size="pagination.size"
                 :page-sizes="pagination.page_sizes"
                 :total="pagination.total"
-                background
-                size="small"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange" />
-        </el-card>
+        </el-row>
 
         <el-dialog v-model="detailVisible" title="通知投递任务详情" width="1180px" destroy-on-close>
             <div v-loading="detailLoading" class="detail-container">
@@ -407,48 +413,67 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
 
 <style scoped lang="scss">
 .notification-task-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
     height: 100%;
     min-height: 0;
-    padding: 14px;
+    overflow: hidden;
+    box-sizing: border-box;
+    background: var(--el-bg-color);
+}
+
+.box__search {
+    display: flex;
+    height: 14%;
+    min-height: 116px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    padding: 8px 20px;
+    box-sizing: border-box;
     overflow-x: hidden;
     overflow-y: auto;
+}
+
+.box__search :deep(.el-form) {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.box__search :deep(.el-form-item) {
+    margin-bottom: 0;
+    margin-right: 16px;
+    min-width: 0;
+}
+
+.box__search :deep(.el-form-item .el-input),
+.box__search :deep(.el-form-item .el-select),
+.box__search :deep(.el-form-item .el-date-editor) {
+    max-width: 100%;
+}
+
+.box__search :deep(.el-alert) {
+    margin-top: 6px;
+}
+
+.box__body {
+    display: block;
+    height: 86%;
+    min-height: 0;
+    padding: 0 20px;
     box-sizing: border-box;
-    background: var(--el-bg-color-page);
 }
 
-.search-card {
-    flex: 0 0 auto;
+.box__body :deep(.el-table) {
+    width: 100%;
 }
 
-.search-card :deep(.el-form-item) {
-    margin-bottom: 12px;
-}
-
-.table-card {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-height: 320px;
-}
-
-.table-card :deep(.el-card__body) {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-height: 0;
-}
-
-.notification-data-table {
-    flex: 1 1 auto;
-    min-height: 0;
-}
-
-.table-card :deep(.el-pagination) {
+.box__body :deep(.el-pagination) {
     justify-content: flex-end;
-    margin-top: 12px;
+    padding: 0 10px;
+    margin-top: 4px;
+    margin-left: auto;
 }
 
 .detail-container {

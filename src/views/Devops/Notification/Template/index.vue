@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { NotificationTemplateApi } from "@/api/notification/notification-template-api.ts";
+import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import useTable from "@/hooks/use-table.ts";
 
 const router = useRouter();
@@ -218,7 +219,7 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
 
 <template>
     <div class="notification-template-page">
-        <el-card shadow="never" class="search-card">
+        <el-row class="box__search">
             <el-form :inline="true" :model="condition">
                 <el-form-item label="模板组编码">
                     <el-input v-model="condition.template_group_code" clearable placeholder="请输入模板组编码" />
@@ -258,15 +259,16 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                 <el-form-item>
                     <el-button type="primary" @click="void handlerConditionQuery()">查询</el-button>
                     <el-button @click="resetCondition">重置</el-button>
-                    <el-button v-permission="'notification:template:write'" type="success" @click="openCreate">
-                        新增模板
+                    <el-button v-permission="'notification:template:write'" @click="openCreate">
+                        <ComponentsIcons name="icon-add" style="width: 1.1em; height: 1.1em" />
+                        &nbsp; 新增模板
                     </el-button>
                 </el-form-item>
             </el-form>
-        </el-card>
+        </el-row>
 
-        <el-card shadow="never" class="table-card">
-            <el-table :data="table_data" class="notification-data-table" stripe>
+        <el-row class="box__body">
+            <el-table :data="table_data" height="92%" stripe>
                 <el-table-column align="center" type="index" label="序号" width="70" />
                 <el-table-column
                     align="center"
@@ -308,60 +310,65 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                     </template>
                 </el-table-column>
                 <el-table-column align="center" label="更新时间" prop="updated_at" width="170" show-overflow-tooltip />
-                <el-table-column align="center" label="操作" width="470" fixed="right">
+                <el-table-column align="center" label="操作" width="280" fixed="right">
                     <template #default="scope">
-                        <el-button
-                            v-if="scope.row.state === 'DRAFT'"
-                            v-permission="'notification:template:write'"
-                            link
-                            type="primary"
-                            size="small"
-                            @click="openEdit(scope.row)">
-                            编辑
-                        </el-button>
-                        <el-button
-                            v-permission="'notification:template:write'"
-                            link
-                            type="info"
-                            size="small"
-                            @click="void copyTemplate(scope.row)">
-                            复制为新草稿
-                        </el-button>
-                        <el-button
-                            v-permission="'notification:template:read'"
-                            link
-                            type="info"
-                            size="small"
-                            @click="void openVersions(scope.row)">
-                            版本历史
-                        </el-button>
-                        <el-button
-                            v-if="scope.row.state === 'DRAFT'"
-                            v-permission="'notification:template:publish'"
-                            link
-                            type="success"
-                            size="small"
-                            @click="void publish(scope.row)">
-                            发布
-                        </el-button>
-                        <el-button
-                            v-if="scope.row.state === 'PUBLISHED'"
-                            v-permission="'notification:template:write'"
-                            link
-                            type="warning"
-                            size="small"
-                            @click="void disable(scope.row)">
-                            停用
-                        </el-button>
-                        <el-button
+                        <el-tooltip v-if="scope.row.state === 'DRAFT'" content="编辑模板" placement="top">
+                            <el-button
+                                v-permission="'notification:template:write'"
+                                link
+                                type="primary"
+                                @click="openEdit(scope.row)">
+                                <ComponentsIcons name="icon-edit" style="width: 1.4em; height: 1.4em" />
+                            </el-button>
+                        </el-tooltip>
+                        <el-tooltip content="复制为新草稿" placement="top">
+                            <el-button
+                                v-permission="'notification:template:write'"
+                                link
+                                type="primary"
+                                @click="void copyTemplate(scope.row)">
+                                <ComponentsIcons name="icon-file-config" style="width: 1.4em; height: 1.4em" />
+                            </el-button>
+                        </el-tooltip>
+                        <el-tooltip content="版本历史" placement="top">
+                            <el-button
+                                v-permission="'notification:template:read'"
+                                link
+                                type="primary"
+                                @click="void openVersions(scope.row)">
+                                <ComponentsIcons name="icon-code" style="width: 1.4em; height: 1.4em" />
+                            </el-button>
+                        </el-tooltip>
+                        <el-tooltip v-if="scope.row.state === 'DRAFT'" content="发布模板" placement="top">
+                            <el-button
+                                v-permission="'notification:template:publish'"
+                                link
+                                type="success"
+                                @click="void publish(scope.row)">
+                                <ComponentsIcons name="icon-enable" style="width: 1.4em; height: 1.4em" />
+                            </el-button>
+                        </el-tooltip>
+                        <el-tooltip v-if="scope.row.state === 'PUBLISHED'" content="停用模板" placement="top">
+                            <el-button
+                                v-permission="'notification:template:write'"
+                                link
+                                type="warning"
+                                @click="void disable(scope.row)">
+                                <ComponentsIcons name="icon-disable" style="width: 1.4em; height: 1.4em" />
+                            </el-button>
+                        </el-tooltip>
+                        <el-tooltip
                             v-if="scope.row.state === 'DRAFT' || scope.row.state === 'DISABLED'"
-                            v-permission="'notification:template:write'"
-                            link
-                            type="danger"
-                            size="small"
-                            @click="void archive(scope.row)">
-                            归档
-                        </el-button>
+                            content="归档模板"
+                            placement="top">
+                            <el-button
+                                v-permission="'notification:template:write'"
+                                link
+                                type="danger"
+                                @click="void archive(scope.row)">
+                                <ComponentsIcons name="icon-file-config" style="width: 1.4em; height: 1.4em" />
+                            </el-button>
+                        </el-tooltip>
                     </template>
                 </el-table-column>
             </el-table>
@@ -371,11 +378,9 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                 :page-size="pagination.size"
                 :page-sizes="pagination.page_sizes"
                 :total="pagination.total"
-                background
-                size="small"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange" />
-        </el-card>
+        </el-row>
 
         <el-dialog v-model="versionVisible" :title="`版本历史 - ${versionTemplateName}`" width="900px" destroy-on-close>
             <div v-loading="versionLoading" class="version-container">
@@ -462,48 +467,44 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
 
 <style scoped lang="scss">
 .notification-template-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
     height: 100%;
     min-height: 0;
-    padding: 14px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     box-sizing: border-box;
-    background: var(--el-bg-color-page);
+    background: var(--el-bg-color);
 }
 
-.search-card {
-    flex: 0 0 auto;
-}
-
-.search-card :deep(.el-form-item) {
-    margin-bottom: 12px;
-}
-
-.table-card {
+.box__search {
     display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-height: 320px;
+    height: 10%;
+    align-items: center;
+    padding-left: 20px;
 }
 
-.table-card :deep(.el-card__body) {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-height: 0;
+.box__search :deep(.el-form-item) {
+    margin-bottom: 0;
 }
 
-.notification-data-table {
-    flex: 1 1 auto;
-    min-height: 0;
+.box__search :deep(.el-input),
+.box__search :deep(.el-select) {
+    width: 200px;
 }
 
-.table-card :deep(.el-pagination) {
+.box__body {
+    display: block;
+    height: 90%;
+    padding: 0 20px;
+}
+
+.box__body :deep(.el-table) {
+    width: 100%;
+}
+
+.box__body :deep(.el-pagination) {
     justify-content: flex-end;
-    margin-top: 12px;
+    padding: 0 10px;
+    margin-left: auto;
+    margin-top: 4px;
 }
 
 .version-container {

@@ -12,6 +12,7 @@ declare global {
 
     type ServiceMonitorSummary = {
         cpu_usage: number;
+        cpu_logical_cores: number;
         system_memory_usage: number;
         system_memory_total_bytes: number;
         system_memory_used_bytes: number;

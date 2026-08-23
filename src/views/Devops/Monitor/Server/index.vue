@@ -25,6 +25,11 @@ let requestInFlight = false;
 
 const summary = computed(() => overview.value?.summary);
 const history = computed(() => overview.value?.history ?? []);
+const cpuEquivalentCores = computed(() => {
+    const usage = toNumber(summary.value?.cpu_usage);
+    const logicalCores = toNumber(summary.value?.cpu_logical_cores);
+    return (usage / 100) * logicalCores;
+});
 const statusTagType = computed<"success" | "warning" | "danger" | "info">(() => {
     switch (overview.value?.status) {
         case "HEALTHY":
@@ -238,6 +243,10 @@ onUnmounted(stopPolling);
                 <el-card shadow="never" class="metric-card">
                     <div class="metric-card__label">CPU 使用率</div>
                     <div class="metric-card__value">{{ formatPercent(summary?.cpu_usage) }}</div>
+                    <div class="metric-card__detail">
+                        折算 {{ formatNumber(cpuEquivalentCores, 1) }} /
+                        {{ toNumber(summary?.cpu_logical_cores) }} 逻辑核
+                    </div>
                     <el-progress
                         :percentage="summary?.cpu_usage ?? 0"
                         :show-text="false"
@@ -474,6 +483,12 @@ onUnmounted(stopPolling);
 .metric-card__value small {
     font-size: 13px;
     font-weight: 400;
+}
+
+.metric-card__detail {
+    min-height: 18px;
+    line-height: 18px;
+    white-space: nowrap;
 }
 
 .metric-card__empty {

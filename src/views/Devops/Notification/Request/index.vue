@@ -133,7 +133,7 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
             <el-form :model="condition" class="search-form">
                 <div class="search-row">
                     <el-form-item label="状态">
-                        <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 120px">
+                        <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 200px">
                             <el-option
                                 v-for="item in statusOptions"
                                 :key="item.value"
@@ -147,7 +147,7 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                             clearable
                             filterable
                             placeholder="全部用途"
-                            style="width: 150px">
+                            style="width: 200px">
                             <el-option
                                 v-for="item in purposeOptions"
                                 :key="item.value"
@@ -160,14 +160,14 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                             v-model="condition.source_module"
                             clearable
                             placeholder="请输入来源模块"
-                            style="width: 140px" />
+                            style="width: 200px" />
                     </el-form-item>
                     <el-form-item label="业务类型">
                         <el-input
                             v-model="condition.business_type"
                             clearable
                             placeholder="请输入业务类型"
-                            style="width: 140px" />
+                            style="width: 200px" />
                     </el-form-item>
                 </div>
                 <div class="search-row">
@@ -176,7 +176,7 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                             v-model="condition.business_id"
                             clearable
                             placeholder="请输入业务编号"
-                            style="width: 160px" />
+                            style="width: 200px" />
                     </el-form-item>
                     <el-form-item label="创建时间">
                         <el-date-picker

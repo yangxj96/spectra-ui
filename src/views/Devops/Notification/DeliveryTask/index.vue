@@ -192,7 +192,7 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
             <el-form :model="condition" class="search-form">
                 <div class="search-row">
                     <el-form-item label="状态">
-                        <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 120px">
+                        <el-select v-model="condition.status" clearable placeholder="全部状态" style="width: 200px">
                             <el-option
                                 v-for="item in taskStatusOptions"
                                 :key="item.value"
@@ -201,7 +201,7 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
                         </el-select>
                     </el-form-item>
                     <el-form-item label="渠道">
-                        <el-select v-model="condition.channel" clearable placeholder="全部渠道" style="width: 110px">
+                        <el-select v-model="condition.channel" clearable placeholder="全部渠道" style="width: 200px">
                             <el-option
                                 v-for="item in channelOptions"
                                 :key="item.value"
@@ -215,7 +215,7 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
                             clearable
                             filterable
                             placeholder="全部用途"
-                            style="width: 150px">
+                            style="width: 200px">
                             <el-option
                                 v-for="item in purposeOptions"
                                 :key="item.value"
@@ -228,7 +228,7 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
                             v-model="condition.request_id"
                             clearable
                             placeholder="请输入请求编号"
-                            style="width: 220px" />
+                            style="width: 200px" />
                     </el-form-item>
                 </div>
                 <div class="search-row">

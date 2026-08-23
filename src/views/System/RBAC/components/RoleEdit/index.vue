@@ -7,6 +7,8 @@ import { AuthorityApi } from "@/api/auth/authority-api.ts";
 import { AuthorizationApi } from "@/api/auth/authorization-api.ts";
 import { RoleApi } from "@/api/auth/role-api.ts";
 import { MenuApi } from "@/api/system/menu-api.ts";
+import StepNavigation from "@/components/StepNavigation/index.vue";
+import type { StepNavigationItem } from "@/components/StepNavigation/types.ts";
 import { roleConverter, roleKindLabels } from "@/converter/role-converter.ts";
 import { collectMenuIds } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -155,6 +157,15 @@ const editorNodes: { id: RoleEditorNode; title: string; description: string }[] 
     { id: "grantable", title: "可授予权限", description: "配置角色可向下授权的能力" },
     { id: "menus", title: "角色菜单", description: "配置角色可见的菜单" }
 ];
+
+const roleNavigationItems = computed<StepNavigationItem[]>(() =>
+    editorNodes.map((node, index) => ({
+        key: node.id,
+        title: node.title,
+        description: node.description,
+        disabled: index > maxStepIndex.value
+    }))
+);
 
 const nodeTips: Record<RoleEditorNode, { title: string; description: string; items: string[] }> = {
     basic: {
@@ -391,6 +402,12 @@ function selectNode(node: RoleEditorNode): void {
     void nextTick(applyCurrentStepSelection);
 }
 
+function handleStepSelection(key: string): void {
+    if (editorNodes.some(node => node.id === key)) {
+        selectNode(key as RoleEditorNode);
+    }
+}
+
 async function load(): Promise<void> {
     loading.value = true;
     try {
@@ -544,25 +561,12 @@ watch([menuSearch, menuView, selectedMenuIds], applyMenuFilter, { deep: true });
         <div class="role-edit-shell">
             <div class="role-edit-workspace">
                 <aside class="role-side role-side-left">
-                    <div class="role-step-nav">
-                        <button
-                            v-for="node in editorNodes"
-                            :key="node.id"
-                            type="button"
-                            class="role-step"
-                            :class="{
-                                'is-active': currentNode === node.id,
-                                'is-disabled': editorNodes.indexOf(node) > maxStepIndex
-                            }"
-                            :disabled="editorNodes.indexOf(node) > maxStepIndex"
-                            @click="selectNode(node.id)">
-                            <span class="role-step-index">{{ editorNodes.indexOf(node) + 1 }}</span>
-                            <span class="role-step-content">
-                                <strong>{{ node.title }}</strong>
-                                <small>{{ node.description }}</small>
-                            </span>
-                        </button>
-                    </div>
+                    <StepNavigation
+                        :items="roleNavigationItems"
+                        :active-key="currentNode"
+                        aria-label="角色编辑步骤"
+                        responsive-layout="grid"
+                        @select="handleStepSelection" />
                 </aside>
 
                 <main class="role-edit-section">
@@ -945,100 +949,6 @@ watch([menuSearch, menuView, selectedMenuIds], applyMenuFilter, { deep: true });
     max-width: 260px;
 }
 
-.role-step-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px;
-    border: 1px solid var(--el-border-color-extra-light);
-    border-radius: 12px;
-    background: var(--el-fill-color-lighter);
-}
-
-.role-step {
-    display: flex;
-    align-items: flex-start;
-    width: 100%;
-    gap: 12px;
-    padding: 12px;
-    border: 0;
-    border-radius: 8px;
-    outline: none;
-    background: transparent;
-    color: var(--el-text-color-secondary);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition:
-        background-color 0.2s ease,
-        color 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.role-step:hover,
-.role-step.is-active {
-    background: var(--el-bg-color);
-    color: var(--el-text-color-primary);
-    box-shadow: 0 4px 12px rgb(15 23 42 / 6%);
-}
-
-.role-step.is-disabled {
-    color: var(--el-text-color-placeholder);
-    cursor: not-allowed;
-    opacity: 0.65;
-}
-
-.role-step.is-disabled:hover {
-    background: transparent;
-    box-shadow: none;
-}
-
-.role-step:focus-visible {
-    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
-}
-
-.role-step-index {
-    display: inline-flex;
-    flex: 0 0 30px;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: 1px solid var(--el-border-color);
-    border-radius: 8px;
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-}
-
-.role-step.is-active .role-step-index {
-    border-color: var(--el-color-primary-light-5);
-    background: var(--el-color-primary-light-9);
-    color: var(--el-color-primary);
-}
-
-.role-step-content {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 3px;
-    padding-top: 1px;
-}
-
-.role-step-content strong {
-    color: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 20px;
-}
-
-.role-step-content small {
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-    line-height: 18px;
-}
-
 .role-edit-section {
     display: flex;
     min-width: 0;
@@ -1368,15 +1278,6 @@ watch([menuSearch, menuView, selectedMenuIds], applyMenuFilter, { deep: true });
         max-width: none;
     }
 
-    .role-step-nav {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .role-step {
-        min-width: 0;
-    }
-
     .role-edit-section {
         min-height: 0;
     }
@@ -1389,15 +1290,6 @@ watch([menuSearch, menuView, selectedMenuIds], applyMenuFilter, { deep: true });
 @media (max-width: 768px) {
     .role-edit-page {
         padding: 16px;
-    }
-
-    .role-step-nav {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .role-step-content small {
-        display: none;
     }
 
     .step-section-title {

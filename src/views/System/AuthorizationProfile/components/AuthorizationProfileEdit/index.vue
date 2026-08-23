@@ -7,6 +7,8 @@ import { AuthorityApi } from "@/api/auth/authority-api.ts";
 import { AuthorizationApi } from "@/api/auth/authorization-api.ts";
 import { RoleApi } from "@/api/auth/role-api.ts";
 import { DepartmentApi } from "@/api/user/department-api.ts";
+import StepNavigation from "@/components/StepNavigation/index.vue";
+import type { StepNavigationItem } from "@/components/StepNavigation/types.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -37,11 +39,20 @@ const saving = ref(false);
 const roleSelectionLoading = ref(false);
 const stepLoading = ref(false);
 const currentStep = ref(0);
-const profileEditSteps = [
-    { title: "基本信息", description: "填写方案基本资料" },
-    { title: "选择角色", description: "选择一个或多个角色" },
-    { title: "权限范围设置", description: "配置每个角色的权限范围" }
-] as const;
+const profileEditSteps = computed<StepNavigationItem[]>(() => [
+    { key: "0", title: "基本信息", description: "填写方案基本资料", complete: currentStep.value > 0 },
+    { key: "1", title: "选择角色", description: "选择一个或多个角色", complete: currentStep.value > 1 },
+    {
+        key: "2",
+        title: "权限范围设置",
+        description: "配置每个角色的权限范围",
+        children: form.assignments.map(assignment => ({
+            key: assignment.role_code,
+            title: `${roleName(assignment.role_code)}设置`,
+            description: assignment.role_code
+        }))
+    }
+]);
 const selectedRoleCodes = ref<string[]>([]);
 const form = reactive<ProfileForm>(createForm());
 const currentAssignmentIndex = ref(0);
@@ -545,6 +556,10 @@ async function handleStepNavigation(step: number): Promise<void> {
     await handleNextStep();
 }
 
+function handleStepSelection(key: string): void {
+    void handleStepNavigation(Number(key));
+}
+
 async function handleAssignmentNavigation(assignmentIndex: number): Promise<void> {
     if (
         stepLoading.value ||
@@ -562,6 +577,11 @@ async function handleAssignmentNavigation(assignmentIndex: number): Promise<void
     } finally {
         stepLoading.value = false;
     }
+}
+
+function handleAssignmentSelection(key: string): void {
+    const assignmentIndex = form.assignments.findIndex(assignment => assignment.role_code === key);
+    void handleAssignmentNavigation(assignmentIndex);
 }
 
 async function handleSave(): Promise<void> {
@@ -603,41 +623,14 @@ onMounted(load);
         <div class="profile-edit-shell">
             <div class="profile-edit-workspace">
                 <aside class="profile-side profile-side-left">
-                    <nav class="profile-step-nav" aria-label="授权方案编辑步骤">
-                        <template v-for="(step, index) in profileEditSteps" :key="step.title">
-                            <button
-                                class="profile-step"
-                                :class="{ 'is-active': currentStep === index, 'is-complete': currentStep > index }"
-                                type="button"
-                                :aria-current="currentStep === index ? 'step' : undefined"
-                                @click="handleStepNavigation(index)">
-                                <span class="profile-step-index">{{ String(index + 1).padStart(2, "0") }}</span>
-                                <span class="profile-step-content">
-                                    <strong>{{ step.title }}</strong>
-                                    <small>{{ step.description }}</small>
-                                </span>
-                            </button>
-
-                            <div
-                                v-if="index === 2 && currentStep === 2 && form.assignments.length"
-                                class="profile-substep-nav">
-                                <button
-                                    v-for="(assignment, assignmentIndex) in form.assignments"
-                                    :key="assignment.role_code"
-                                    class="profile-substep"
-                                    :class="{ 'is-active': currentAssignmentIndex === assignmentIndex }"
-                                    type="button"
-                                    :aria-current="currentAssignmentIndex === assignmentIndex ? 'step' : undefined"
-                                    @click="handleAssignmentNavigation(assignmentIndex)">
-                                    <span class="profile-substep-index">3.{{ assignmentIndex + 1 }}</span>
-                                    <span class="profile-substep-content">
-                                        <strong>{{ roleName(assignment.role_code) }}设置</strong>
-                                        <small>{{ assignment.role_code }}</small>
-                                    </span>
-                                </button>
-                            </div>
-                        </template>
-                    </nav>
+                    <StepNavigation
+                        :items="profileEditSteps"
+                        :active-key="String(currentStep)"
+                        :active-child-key="form.assignments[currentAssignmentIndex]?.role_code ?? ''"
+                        aria-label="授权方案编辑步骤"
+                        responsive-children="row"
+                        @select="handleStepSelection"
+                        @select-child="handleAssignmentSelection" />
                 </aside>
 
                 <section class="profile-edit-section">
@@ -1137,171 +1130,6 @@ onMounted(load);
     max-width: 260px;
 }
 
-.profile-step-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px;
-    border: 1px solid var(--el-border-color-extra-light);
-    border-radius: 12px;
-    background: var(--el-fill-color-lighter);
-}
-
-.profile-step {
-    display: flex;
-    align-items: flex-start;
-    width: 100%;
-    gap: 12px;
-    padding: 12px;
-    border: 0;
-    border-radius: 8px;
-    outline: none;
-    background: transparent;
-    color: var(--el-text-color-secondary);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition:
-        background-color 0.2s ease,
-        color 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.profile-step:hover {
-    background: var(--el-fill-color-light);
-    color: var(--el-text-color-primary);
-}
-
-.profile-step:focus-visible {
-    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
-}
-
-.profile-step.is-active {
-    background: var(--el-bg-color);
-    color: var(--el-text-color-primary);
-    box-shadow: 0 4px 12px rgb(15 23 42 / 6%);
-}
-
-.profile-step-index {
-    display: inline-flex;
-    flex: 0 0 30px;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: 1px solid var(--el-border-color);
-    border-radius: 8px;
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-}
-
-.profile-step.is-active .profile-step-index,
-.profile-step.is-complete .profile-step-index {
-    border-color: var(--el-color-primary-light-5);
-    background: var(--el-color-primary-light-9);
-    color: var(--el-color-primary);
-}
-
-.profile-step-content {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 3px;
-    padding-top: 1px;
-}
-
-.profile-step-content strong {
-    color: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 20px;
-}
-
-.profile-step-content small {
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-    line-height: 18px;
-}
-
-.profile-substep-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin: -2px 8px 4px 28px;
-    padding: 4px 0 4px 10px;
-    border-left: 1px solid var(--el-border-color-lighter);
-}
-
-.profile-substep {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    gap: 8px;
-    padding: 8px 10px;
-    border: 0;
-    border-radius: 7px;
-    outline: none;
-    background: transparent;
-    color: var(--el-text-color-secondary);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition:
-        background-color 0.2s ease,
-        color 0.2s ease;
-}
-
-.profile-substep:hover {
-    background: var(--el-fill-color-light);
-    color: var(--el-text-color-primary);
-}
-
-.profile-substep:focus-visible {
-    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
-}
-
-.profile-substep.is-active {
-    background: var(--el-color-primary-light-9);
-    color: var(--el-color-primary);
-}
-
-.profile-substep-index {
-    flex: 0 0 auto;
-    min-width: 28px;
-    color: inherit;
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    line-height: 18px;
-}
-
-.profile-substep-content {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 1px;
-}
-
-.profile-substep-content strong {
-    overflow: hidden;
-    color: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 18px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.profile-substep-content small {
-    overflow: hidden;
-    color: var(--el-text-color-secondary);
-    font-size: 11px;
-    line-height: 16px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .profile-side-right {
     grid-column: 3;
     min-width: 0;
@@ -1682,32 +1510,6 @@ onMounted(load);
         order: 0;
         width: 100%;
         max-width: none;
-    }
-
-    .profile-step-nav {
-        flex-wrap: wrap;
-        flex-direction: row;
-    }
-
-    .profile-step {
-        flex: 1 1 0;
-    }
-
-    .profile-substep-nav {
-        flex: 1 0 100%;
-        flex-direction: row;
-        margin: 0;
-        padding: 6px 0 0;
-        border-top: 1px solid var(--el-border-color-lighter);
-        border-left: 0;
-    }
-
-    .profile-substep {
-        flex: 1;
-    }
-
-    .profile-substep-content small {
-        display: none;
     }
 
     .profile-edit-section {

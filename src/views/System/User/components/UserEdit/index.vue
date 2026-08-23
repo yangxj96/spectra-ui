@@ -7,6 +7,8 @@ import { DepartmentApi } from "@/api/user/department-api.ts";
 import { UserApi } from "@/api/user/user-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
+import StepNavigation from "@/components/StepNavigation/index.vue";
+import type { StepNavigationItem } from "@/components/StepNavigation/types.ts";
 import { userConverter } from "@/converter/user-converter.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useDictStore } from "@/plugin/store/modules/use-dict-store.ts";
@@ -44,11 +46,20 @@ const stepTipTitle = computed(() => {
     if (activeStep.value === 1) return "授权方案提示";
     return "角色授权提示";
 });
-const userEditSteps = [
-    { title: "基本信息", description: "填写用户基础资料" },
-    { title: "授权方案", description: "选择方案或新增多个角色" },
-    { title: "角色授权", description: "分别配置每个角色的访问范围" }
-] as const;
+const userEditSteps = computed<StepNavigationItem[]>(() => [
+    { key: "0", title: "基本信息", description: "填写用户基础资料", complete: activeStep.value > 0 },
+    { key: "1", title: "授权方案", description: "选择方案或新增多个角色", complete: activeStep.value > 1 },
+    {
+        key: "2",
+        title: "角色授权",
+        description: "分别配置每个角色的访问范围",
+        children: roleSteps.value.map(roleStep => ({
+            key: roleStep.key,
+            title: `${roleStep.name}设置`,
+            description: roleStep.code
+        }))
+    }
+]);
 const userStatusOptions: Array<{ label: string; value: UserStatus }> = [
     { label: "正常", value: "ACTIVE" },
     { label: "锁定", value: "LOCKED" },
@@ -135,6 +146,10 @@ async function handleStepChange(step: number): Promise<void> {
         roleAssignmentEditor.value.selectRole(activeRoleStepKey.value);
     }
     activeStep.value = step;
+}
+
+function handleStepNavigation(key: string): void {
+    void handleStepChange(Number(key));
 }
 
 function handleRoleStepsChange(steps: RoleAssignmentStep[]): void {
@@ -228,40 +243,13 @@ onMounted(load);
         <div class="user-edit-shell">
             <div class="user-edit-workspace">
                 <aside class="user-edit-side user-edit-side-left">
-                    <nav class="user-edit-step-nav" aria-label="用户编辑步骤">
-                        <template v-for="(step, index) in userEditSteps" :key="step.title">
-                            <button
-                                class="user-edit-step"
-                                :class="{ 'is-active': activeStep === index, 'is-complete': activeStep > index }"
-                                type="button"
-                                :aria-current="activeStep === index ? 'step' : undefined"
-                                @click="handleStepChange(index)">
-                                <span class="user-edit-step-index">{{ String(index + 1).padStart(2, "0") }}</span>
-                                <span class="user-edit-step-content">
-                                    <strong>{{ step.title }}</strong>
-                                    <small>{{ step.description }}</small>
-                                </span>
-                            </button>
-                            <div
-                                v-if="index === 2 && activeStep === 2 && roleSteps.length"
-                                class="user-edit-substep-nav">
-                                <button
-                                    v-for="(roleStep, roleIndex) in roleSteps"
-                                    :key="roleStep.key"
-                                    class="user-edit-substep"
-                                    :class="{ 'is-active': activeRoleStepKey === roleStep.key }"
-                                    type="button"
-                                    :aria-current="activeRoleStepKey === roleStep.key ? 'step' : undefined"
-                                    @click="handleRoleStepChange(roleStep.key)">
-                                    <span class="user-edit-substep-index">3.{{ roleIndex + 1 }}</span>
-                                    <span class="user-edit-substep-content">
-                                        <strong>{{ roleStep.name }}设置</strong>
-                                        <small>{{ roleStep.code }}</small>
-                                    </span>
-                                </button>
-                            </div>
-                        </template>
-                    </nav>
+                    <StepNavigation
+                        :items="userEditSteps"
+                        :active-key="String(activeStep)"
+                        :active-child-key="activeRoleStepKey"
+                        aria-label="用户编辑步骤"
+                        @select="handleStepNavigation"
+                        @select-child="handleRoleStepChange" />
                 </aside>
 
                 <section class="user-edit-section">
@@ -512,172 +500,6 @@ onMounted(load);
     scrollbar-gutter: stable;
 }
 
-.user-edit-step-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px;
-    border: 1px solid var(--el-border-color-extra-light);
-    border-radius: 12px;
-    background: var(--el-fill-color-lighter);
-}
-
-.user-edit-step {
-    display: flex;
-    align-items: flex-start;
-    width: 100%;
-    gap: 12px;
-    padding: 12px;
-    border: 0;
-    border-radius: 8px;
-    outline: none;
-    background: transparent;
-    color: var(--el-text-color-secondary);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition:
-        background-color 0.2s ease,
-        color 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.user-edit-step:hover {
-    background: var(--el-fill-color-light);
-    color: var(--el-text-color-primary);
-}
-
-.user-edit-step:focus-visible {
-    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
-}
-
-.user-edit-step.is-active {
-    background: var(--el-bg-color);
-    color: var(--el-text-color-primary);
-    box-shadow: 0 4px 12px rgb(15 23 42 / 6%);
-}
-
-.user-edit-step-index {
-    display: inline-flex;
-    flex: 0 0 30px;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: 1px solid var(--el-border-color);
-    border-radius: 8px;
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-}
-
-.user-edit-step.is-active .user-edit-step-index,
-.user-edit-step.is-complete .user-edit-step-index {
-    border-color: var(--el-color-primary-light-5);
-    background: var(--el-color-primary-light-9);
-    color: var(--el-color-primary);
-}
-
-.user-edit-step-content {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 3px;
-    padding-top: 1px;
-}
-
-.user-edit-step-content strong {
-    color: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 20px;
-}
-
-.user-edit-step-content small {
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-    line-height: 18px;
-}
-
-.user-edit-substep-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin: -2px 8px 4px 28px;
-    padding: 4px 0 4px 10px;
-    border-left: 1px solid var(--el-border-color-lighter);
-}
-
-.user-edit-substep {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    gap: 8px;
-    padding: 8px 10px;
-    border: 0;
-    border-radius: 7px;
-    outline: none;
-    background: transparent;
-    color: var(--el-text-color-secondary);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition:
-        background-color 0.2s ease,
-        color 0.2s ease;
-}
-
-.user-edit-substep:hover {
-    background: var(--el-fill-color-light);
-    color: var(--el-text-color-primary);
-}
-
-.user-edit-substep:focus-visible {
-    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
-}
-
-.user-edit-substep.is-active {
-    background: var(--el-color-primary-light-9);
-    color: var(--el-color-primary);
-}
-
-.user-edit-substep-index {
-    flex: 0 0 auto;
-    min-width: 28px;
-    color: inherit;
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    line-height: 18px;
-}
-
-.user-edit-substep-content {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 1px;
-}
-
-.user-edit-substep-content strong,
-.user-edit-substep-content small {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.user-edit-substep-content strong {
-    color: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 18px;
-}
-
-.user-edit-substep-content small {
-    color: var(--el-text-color-secondary);
-    font-size: 11px;
-    line-height: 16px;
-}
-
 .section-title,
 .user-edit-actions {
     display: flex;
@@ -840,18 +662,6 @@ onMounted(load);
         order: 0;
     }
 
-    .user-edit-step-nav {
-        flex-direction: row;
-    }
-
-    .user-edit-step {
-        flex: 1;
-    }
-
-    .user-edit-substep-nav {
-        display: none;
-    }
-
     .user-edit-section {
         order: 1;
         min-height: 0;
@@ -870,21 +680,6 @@ onMounted(load);
     .section-title {
         align-items: flex-start;
         flex-direction: column;
-    }
-
-    .user-edit-step-nav {
-        padding: 6px;
-    }
-
-    .user-edit-step {
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px 8px;
-    }
-
-    .user-edit-step-content small {
-        display: none;
     }
 
     :deep(.el-col) {

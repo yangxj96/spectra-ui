@@ -582,6 +582,7 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                         {{ purposeLabel(scope.row.purpose) }}
                     </template>
                 </el-table-column>
+                <el-table-column prop="content_template" label="模板正文" min-width="240" show-overflow-tooltip />
                 <el-table-column align="center" label="版本" prop="version_no" width="75" />
                 <el-table-column align="center" label="版本摘要" width="135" show-overflow-tooltip>
                     <template #default="scope">

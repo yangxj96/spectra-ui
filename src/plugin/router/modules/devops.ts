@@ -32,7 +32,7 @@ export default [
             {
                 path: "notification/request",
                 name: "DevopsNotificationRequest",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
+                component: () => import("@/views/Devops/Notification/Request/index.vue"),
                 meta: { title: "通知请求", requiresAuth: true, requiredMenu: "DevopsNotificationRequest" }
             },
             {

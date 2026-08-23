@@ -49,4 +49,63 @@ declare global {
         trend: NotificationOverviewTrendPoint[];
         recent_errors: NotificationOverviewErrorSummary[];
     }
+
+    interface NotificationAdminRequestQuery extends BasePageParams {
+        request_id?: string;
+        status?: string;
+        purpose?: string;
+        source_module?: string;
+        business_type?: string;
+        business_id?: string;
+        start_time?: string;
+        end_time?: string;
+    }
+
+    interface NotificationAdminTaskQuery extends BasePageParams {
+        request_id?: string;
+        task_id?: string;
+        recipient_user_id?: string;
+        status?: string;
+        channel?: NotificationAdminChannel;
+        purpose?: string;
+        start_time?: string;
+        end_time?: string;
+    }
+
+    interface NotificationRequestAdminVO {
+        id: string;
+        business_type?: string | null;
+        business_id?: string | null;
+        template_code: string;
+        template_snapshot?: Record<string, unknown> | null;
+        purpose: string;
+        source_module?: string | null;
+        recipient_count: number;
+        task_count: number;
+        status: string;
+        scheduled_at?: string | null;
+        expires_at?: string | null;
+        created_at: string;
+        updated_at: string;
+        priority?: number | null;
+    }
+
+    interface NotificationTaskAdminVO {
+        id: string;
+        request_id: string;
+        template_id?: string | null;
+        template_version_no?: number | null;
+        template_version_digest?: string | null;
+        recipient_user_id?: string | null;
+        recipient_address?: string | null;
+        channel: NotificationAdminChannel;
+        purpose: string;
+        status: string;
+        retry_count: number;
+        last_error?: string | null;
+        scheduled_at?: string | null;
+        expires_at?: string | null;
+        created_at: string;
+        updated_at: string;
+    }
 }

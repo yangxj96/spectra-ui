@@ -3,6 +3,9 @@ export {};
 declare global {
     type NotificationAdminChannel = "IN_APP" | "SMS" | "EMAIL";
 
+    type NotificationProviderType = "HTTP_JSON" | "MOCK" | "IN_APP";
+    type NotificationProviderState = "NOT_CONFIGURED" | "DISABLED" | "HEALTHY" | "UNHEALTHY" | "BLOCKED";
+
     interface NotificationChannelAvailabilityVO {
         channel: NotificationAdminChannel;
         available: boolean;
@@ -134,5 +137,39 @@ declare global {
         error_message?: string | null;
         sent_at?: string | null;
         created_at: string;
+    }
+
+    interface NotificationProviderVO {
+        channel: NotificationAdminChannel;
+        provider_type?: NotificationProviderType | string | null;
+        state: NotificationProviderState;
+        enabled: boolean;
+        reason?: string | null;
+        endpoint?: string | null;
+        timeout_ms: number;
+        rate_limit_per_second: number;
+        max_attempts: number;
+        template_code?: string | null;
+        secret_configured: boolean;
+        secret_key_id?: string | null;
+        updated_at?: string | null;
+    }
+
+    interface NotificationProviderSaveParams {
+        provider_type: NotificationProviderType;
+        enabled: boolean;
+        endpoint: string;
+        timeout_ms: number;
+        rate_limit_per_second: number;
+        max_attempts: number;
+        template_code: string;
+        secret?: string;
+        clear_secret: boolean;
+    }
+
+    interface NotificationProviderHealthVO {
+        state: NotificationProviderState;
+        reason: string;
+        checked_at: string;
     }
 }

@@ -1,0 +1,539 @@
+<script setup lang="ts">
+import { Refresh } from "@element-plus/icons-vue";
+import { onMounted, reactive, ref } from "vue";
+
+import { NotificationAdminApi } from "@/api/notification/notification-admin-api.ts";
+import { NotificationProviderApi } from "@/api/notification/notification-provider-api.ts";
+import { formatDateTime } from "@/utils/date-utils.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
+
+type ExternalChannel = Exclude<NotificationAdminChannel, "IN_APP">;
+
+interface ProviderEditor {
+    provider_type: "HTTP_JSON" | "MOCK";
+    enabled: boolean;
+    endpoint: string;
+    timeout_ms: number;
+    rate_limit_per_second: number;
+    max_attempts: number;
+    template_code: string;
+    secret: string;
+    clear_secret: boolean;
+}
+
+const channelLabels: Record<NotificationAdminChannel, string> = {
+    IN_APP: "站内信",
+    SMS: "短信",
+    EMAIL: "邮件"
+};
+
+const stateLabels: Record<NotificationProviderState, string> = {
+    NOT_CONFIGURED: "未配置",
+    DISABLED: "已禁用",
+    HEALTHY: "健康",
+    UNHEALTHY: "未健康检查",
+    BLOCKED: "已阻断"
+};
+
+const reasonLabels: Record<string, string> = {
+    IN_APP_READY: "站内信由系统内置投递",
+    PROVIDER_NOT_CONFIGURED: "尚未选择外部 Provider",
+    DISABLED_BY_CONFIGURATION: "已被配置为禁用",
+    HEALTH_CHECK_REQUIRED: "保存配置后需要执行健康检查",
+    SECRET_NOT_CONFIGURED: "尚未配置 Secret",
+    SECRET_UNAVAILABLE: "Secret 无法解密，已阻断",
+    PROVIDER_CONFIGURATION_INVALID: "Provider 配置不完整或不合法",
+    PROVIDER_NOT_REGISTERED: "当前运行环境未注册该 Provider",
+    HEALTH_CHECK_OK: "健康检查通过",
+    HEALTH_CHECK_UNAVAILABLE: "Provider 端点不可达",
+    HEALTH_CHECK_HTTP_400: "Provider 健康检查返回 HTTP 400",
+    HEALTH_CHECK_HTTP_401: "Provider 健康检查返回 HTTP 401",
+    HEALTH_CHECK_HTTP_403: "Provider 健康检查返回 HTTP 403",
+    MODULE_DISABLED: "通知模块已关闭"
+};
+
+const providers = ref<NotificationProviderVO[]>([]);
+const overview = ref<NotificationOverviewVO>();
+const loading = ref(false);
+const savingChannel = ref<ExternalChannel>();
+const healthChannel = ref<ExternalChannel>();
+const errorMessage = ref("");
+const lastHealthAt = reactive<Partial<Record<ExternalChannel, string>>>({});
+const editors = reactive<Record<ExternalChannel, ProviderEditor>>({
+    SMS: createEditor(),
+    EMAIL: createEditor()
+});
+
+function createEditor(): ProviderEditor {
+    return {
+        provider_type: "HTTP_JSON",
+        enabled: false,
+        endpoint: "",
+        timeout_ms: 5000,
+        rate_limit_per_second: 10,
+        max_attempts: 3,
+        template_code: "",
+        secret: "",
+        clear_secret: false
+    };
+}
+
+function channelLabel(channel: NotificationAdminChannel): string {
+    return channelLabels[channel] ?? channel;
+}
+
+function stateLabel(state: NotificationProviderState): string {
+    return stateLabels[state] ?? state;
+}
+
+function stateTagType(state: NotificationProviderState): "success" | "warning" | "danger" | "info" {
+    if (state === "HEALTHY") return "success";
+    if (state === "UNHEALTHY") return "warning";
+    if (state === "BLOCKED") return "danger";
+    return "info";
+}
+
+function reasonLabel(reason: string | null | undefined): string {
+    if (!reason) return "—";
+    return reasonLabels[reason] ?? reason;
+}
+
+function editor(channel: ExternalChannel): ProviderEditor {
+    return editors[channel];
+}
+
+function overviewChannel(channel: NotificationAdminChannel): NotificationOverviewChannelSummary | undefined {
+    return overview.value?.channels.find(item => item.availability.channel === channel);
+}
+
+function syncEditor(provider: NotificationProviderVO): void {
+    if (provider.channel === "IN_APP") return;
+    editors[provider.channel] = {
+        provider_type: provider.provider_type === "MOCK" ? "MOCK" : "HTTP_JSON",
+        enabled: provider.enabled,
+        endpoint: provider.endpoint ?? "",
+        timeout_ms: provider.timeout_ms || 5000,
+        rate_limit_per_second: provider.rate_limit_per_second || 10,
+        max_attempts: provider.max_attempts || 3,
+        template_code: provider.template_code ?? "",
+        secret: "",
+        clear_secret: false
+    };
+}
+
+async function loadData(): Promise<void> {
+    loading.value = true;
+    try {
+        const [providerData, overviewData] = await Promise.all([
+            NotificationProviderApi.list(),
+            NotificationAdminApi.overview(24, { loading: false })
+        ]);
+        providers.value = providerData;
+        overview.value = overviewData;
+        providerData.forEach(syncEditor);
+        errorMessage.value = "";
+    } catch {
+        errorMessage.value = "通知渠道配置加载失败，当前保留上一次成功数据。";
+        if (providers.value.length === 0) MessageUtils.error(errorMessage.value);
+    } finally {
+        loading.value = false;
+    }
+}
+
+function validateEditor(channel: ExternalChannel, form: ProviderEditor): boolean {
+    if (form.provider_type === "HTTP_JSON" && !form.endpoint.trim()) {
+        MessageUtils.error(`${channelLabel(channel)} Provider 端点不能为空。`);
+        return false;
+    }
+    if (form.clear_secret && form.secret.trim()) {
+        MessageUtils.error("清除 Secret 时不能同时填写新的 Secret。");
+        return false;
+    }
+    return true;
+}
+
+async function saveProvider(channel: ExternalChannel): Promise<void> {
+    const form = editor(channel);
+    if (!validateEditor(channel, form)) return;
+    try {
+        await MessageUtils.box.confirm(
+            `确定保存${channelLabel(channel)} Provider 配置吗？Secret 只会覆盖或清除，不会回显旧值。`,
+            "保存渠道配置"
+        );
+    } catch {
+        return;
+    }
+    savingChannel.value = channel;
+    try {
+        const result = await NotificationProviderApi.save(channel, {
+            provider_type: form.provider_type,
+            enabled: form.enabled,
+            endpoint: form.endpoint.trim(),
+            timeout_ms: form.timeout_ms,
+            rate_limit_per_second: form.rate_limit_per_second,
+            max_attempts: form.max_attempts,
+            template_code: form.template_code.trim(),
+            secret: form.secret.trim() || undefined,
+            clear_secret: form.clear_secret
+        });
+        const index = providers.value.findIndex(item => item.channel === channel);
+        if (index >= 0) providers.value[index] = result;
+        syncEditor(result);
+        MessageUtils.success(`${channelLabel(channel)} Provider 配置已保存，请执行健康检查后再发送。`);
+    } catch (error) {
+        MessageUtils.error(error instanceof Error ? error.message : "Provider 配置保存失败");
+    } finally {
+        savingChannel.value = undefined;
+    }
+}
+
+async function checkHealth(channel: ExternalChannel): Promise<void> {
+    healthChannel.value = channel;
+    try {
+        const result = await NotificationProviderApi.health(channel);
+        const provider = providers.value.find(item => item.channel === channel);
+        if (provider) {
+            provider.state = result.state;
+            provider.reason = result.reason;
+        }
+        lastHealthAt[channel] = result.checked_at;
+        if (result.state === "HEALTHY") {
+            MessageUtils.success(`${channelLabel(channel)} 健康检查通过。`);
+        } else {
+            MessageUtils.warning(`${channelLabel(channel)} 未通过健康检查：${reasonLabel(result.reason)}`);
+        }
+    } catch (error) {
+        MessageUtils.error(error instanceof Error ? error.message : "Provider 健康检查失败");
+    } finally {
+        healthChannel.value = undefined;
+    }
+}
+
+function healthTime(channel: ExternalChannel): string {
+    return lastHealthAt[channel] ? formatDateTime(lastHealthAt[channel]) : "尚未检查";
+}
+
+onMounted(() => {
+    void loadData();
+});
+</script>
+
+<template>
+    <div v-loading="loading" class="provider-page">
+        <div class="page-toolbar">
+            <div>
+                <h2>通知渠道配置</h2>
+                <p>Provider 配置属于单体系统全局配置；Secret 不回显，渠道健康检查通过后才允许投递。</p>
+            </div>
+            <el-button :loading="loading" @click="void loadData()">
+                <el-icon><Refresh /></el-icon>
+                刷新
+            </el-button>
+        </div>
+
+        <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
+
+        <div v-if="overview" class="summary-grid">
+            <el-card shadow="never" class="summary-card">
+                <span>窗口成功投递</span>
+                <strong class="summary-card__success">{{ overview.successful_delivery_count }}</strong>
+                <small>最近 24 小时</small>
+            </el-card>
+            <el-card shadow="never" class="summary-card">
+                <span>窗口失败投递</span>
+                <strong class="summary-card__danger">{{ overview.failed_delivery_count }}</strong>
+                <small>失败与阻断结果</small>
+            </el-card>
+            <el-card shadow="never" class="summary-card">
+                <span>窗口 UNKNOWN</span>
+                <strong class="summary-card__warning">{{ overview.unknown_delivery_count }}</strong>
+                <small>需要人工确认</small>
+            </el-card>
+            <el-card shadow="never" class="summary-card">
+                <span>当前待处理</span>
+                <strong>{{ overview.pending_task_count }}</strong>
+                <small>所有通知渠道</small>
+            </el-card>
+        </div>
+
+        <el-row v-if="providers.length" :gutter="12" class="provider-grid">
+            <el-col v-for="provider in providers" :key="provider.channel" :xs="24" :lg="12">
+                <el-card shadow="never" class="provider-card">
+                    <template #header>
+                        <div class="provider-card__header">
+                            <div>
+                                <h3>{{ channelLabel(provider.channel) }}</h3>
+                                <p>{{ provider.provider_type || "尚未选择 Provider" }}</p>
+                            </div>
+                            <el-tag :type="stateTagType(provider.state)">{{ stateLabel(provider.state) }}</el-tag>
+                        </div>
+                    </template>
+
+                    <el-alert
+                        :title="reasonLabel(provider.reason)"
+                        :type="
+                            provider.state === 'HEALTHY'
+                                ? 'success'
+                                : provider.state === 'BLOCKED'
+                                  ? 'error'
+                                  : 'warning'
+                        "
+                        show-icon
+                        :closable="false" />
+
+                    <template v-if="provider.channel === 'IN_APP'">
+                        <el-descriptions :column="1" border class="readonly-descriptions">
+                            <el-descriptions-item label="投递方式">系统内置收件箱</el-descriptions-item>
+                            <el-descriptions-item label="运行状态">由通知 Worker 负责幂等写入</el-descriptions-item>
+                            <el-descriptions-item label="当前积压">
+                                {{ overviewChannel(provider.channel)?.pending_task_count ?? 0 }}
+                            </el-descriptions-item>
+                        </el-descriptions>
+                    </template>
+
+                    <template v-else>
+                        <el-form :model="editor(provider.channel)" label-position="top" class="provider-form">
+                            <el-row :gutter="12">
+                                <el-col :span="12">
+                                    <el-form-item label="Provider 类型">
+                                        <el-select v-model="editor(provider.channel).provider_type" style="width: 100%">
+                                            <el-option label="通用 HTTP JSON" value="HTTP_JSON" />
+                                            <el-option label="Mock（仅测试）" value="MOCK" />
+                                        </el-select>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="启用状态">
+                                        <el-switch
+                                            v-model="editor(provider.channel).enabled"
+                                            active-text="启用"
+                                            inactive-text="停用" />
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-form-item label="HTTP 端点">
+                                <el-input
+                                    v-model="editor(provider.channel).endpoint"
+                                    placeholder="https://provider.example/api/send"
+                                    :disabled="editor(provider.channel).provider_type === 'MOCK'" />
+                            </el-form-item>
+                            <el-row :gutter="12">
+                                <el-col :span="8">
+                                    <el-form-item label="超时（毫秒）">
+                                        <el-input-number
+                                            v-model="editor(provider.channel).timeout_ms"
+                                            :min="100"
+                                            :max="30000" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="8">
+                                    <el-form-item label="每秒限流">
+                                        <el-input-number
+                                            v-model="editor(provider.channel).rate_limit_per_second"
+                                            :min="1"
+                                            :max="10000" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="8">
+                                    <el-form-item label="最大尝试次数">
+                                        <el-input-number
+                                            v-model="editor(provider.channel).max_attempts"
+                                            :min="1"
+                                            :max="5" />
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-form-item label="供应商模板编码">
+                                <el-input v-model="editor(provider.channel).template_code" placeholder="可选" />
+                            </el-form-item>
+                            <el-form-item label="Secret（只覆盖更新，不回显）">
+                                <el-input
+                                    v-model="editor(provider.channel).secret"
+                                    type="password"
+                                    show-password
+                                    autocomplete="new-password"
+                                    placeholder="留空表示保持当前 Secret" />
+                            </el-form-item>
+                            <div class="secret-status">
+                                <span>
+                                    Secret：{{ provider.secret_configured ? "已配置" : "未配置" }}
+                                    <template v-if="provider.secret_key_id">（{{ provider.secret_key_id }}）</template>
+                                </span>
+                                <el-checkbox v-model="editor(provider.channel).clear_secret">
+                                    清除当前 Secret
+                                </el-checkbox>
+                            </div>
+                            <div class="provider-actions">
+                                <el-button
+                                    v-permission="'notification:provider:configure'"
+                                    :loading="healthChannel === provider.channel"
+                                    @click="void checkHealth(provider.channel)">
+                                    健康检查
+                                </el-button>
+                                <el-button
+                                    v-permission="'notification:provider:configure'"
+                                    type="primary"
+                                    :loading="savingChannel === provider.channel"
+                                    @click="void saveProvider(provider.channel)">
+                                    保存配置
+                                </el-button>
+                            </div>
+                            <div class="health-time">最近健康检查：{{ healthTime(provider.channel) }}</div>
+                        </el-form>
+                    </template>
+
+                    <div v-if="overviewChannel(provider.channel)" class="channel-summary">
+                        <span>待处理 {{ overviewChannel(provider.channel)?.pending_task_count ?? 0 }}</span>
+                        <span>失败 {{ overviewChannel(provider.channel)?.failed_task_count ?? 0 }}</span>
+                        <span>UNKNOWN {{ overviewChannel(provider.channel)?.unknown_task_count ?? 0 }}</span>
+                    </div>
+                </el-card>
+            </el-col>
+        </el-row>
+        <el-empty v-else-if="!loading" description="暂无渠道配置" />
+    </div>
+</template>
+
+<style scoped lang="scss">
+.provider-page {
+    min-height: 100%;
+    padding: 14px;
+    overflow: auto;
+    background: var(--el-bg-color-page);
+}
+
+.page-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.page-toolbar h2,
+.provider-card h3 {
+    margin: 0;
+    color: var(--el-text-color-primary);
+}
+
+.page-toolbar p,
+.provider-card__header p {
+    margin: 6px 0 0;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.summary-card span,
+.summary-card small {
+    color: var(--el-text-color-secondary);
+}
+
+.summary-card strong {
+    color: var(--el-text-color-primary);
+    font-size: 26px;
+}
+
+.summary-card__success {
+    color: var(--el-color-success) !important;
+}
+
+.summary-card__danger {
+    color: var(--el-color-danger) !important;
+}
+
+.summary-card__warning {
+    color: var(--el-color-warning) !important;
+}
+
+.provider-grid {
+    margin-bottom: 12px;
+}
+
+.provider-card {
+    height: 100%;
+    margin-bottom: 12px;
+}
+
+.provider-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.provider-form {
+    margin-top: 16px;
+}
+
+.provider-form :deep(.el-input-number) {
+    width: 100%;
+}
+
+.readonly-descriptions {
+    margin-top: 16px;
+}
+
+.secret-status,
+.provider-actions,
+.channel-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.secret-status {
+    justify-content: space-between;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+}
+
+.provider-actions {
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+.health-time {
+    margin-top: 10px;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    text-align: right;
+}
+
+.channel-summary {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--el-border-color-lighter);
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+}
+
+@media (max-width: 900px) {
+    .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .page-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

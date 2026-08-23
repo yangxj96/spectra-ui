@@ -44,7 +44,7 @@ export default [
             {
                 path: "notification/delivery-record",
                 name: "DevopsNotificationDeliveryRecord",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
+                component: () => import("@/views/Devops/Notification/DeliveryRecord/index.vue"),
                 meta: { title: "投递记录", requiresAuth: true, requiredMenu: "DevopsNotificationDeliveryRecord" }
             },
             {

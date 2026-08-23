@@ -33,6 +33,10 @@ export const NotificationAdminApi = {
         return get<Page<NotificationDeliveryAdminVO>>(`${ADMIN_API}/deliveries`, params);
     },
 
+    deliveryDetail(id: string): Promise<NotificationDeliveryAdminVO> {
+        return get<NotificationDeliveryAdminVO>(`${ADMIN_API}/deliveries/${id}`);
+    },
+
     retryTask(id: string): Promise<void> {
         return post<void>(`${ADMIN_API}/tasks/${id}/retry`);
     },

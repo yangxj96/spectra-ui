@@ -73,8 +73,11 @@ declare global {
     }
 
     interface NotificationAdminDeliveryQuery extends BasePageParams {
+        request_id?: string;
         task_id?: string;
+        recipient_user_id?: string;
         status?: string;
+        channel?: NotificationAdminChannel;
         start_time?: string;
         end_time?: string;
     }
@@ -122,10 +125,13 @@ declare global {
         template_id?: string | null;
         template_version_no?: number | null;
         template_version_digest?: string | null;
+        channel: NotificationAdminChannel;
         provider_code?: string | null;
         provider_message_id?: string | null;
         status: string;
         response_summary?: string | null;
+        error_code?: string | null;
+        error_message?: string | null;
         sent_at?: string | null;
         created_at: string;
     }

@@ -15,5 +15,15 @@ export const ServiceMonitorApi = {
         options?: Pick<RequestOptions<"/api/service/monitor/overview">, "loading">
     ): Promise<ServiceMonitorOverview> {
         return get<ServiceMonitorOverview>("/api/service/monitor/overview", undefined, options);
+    },
+
+    /**
+     * 获取服务监控历史趋势
+     */
+    getHistory(
+        range: ServiceMonitorHistoryRange,
+        options?: Pick<RequestOptions<"/api/service/monitor/history">, "loading">
+    ): Promise<ServiceMonitorHistory> {
+        return get<ServiceMonitorHistory>("/api/service/monitor/history", { range }, options);
     }
 };

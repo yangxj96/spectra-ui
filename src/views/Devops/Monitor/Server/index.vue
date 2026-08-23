@@ -20,11 +20,19 @@ const loading = ref(true);
 const refreshing = ref(false);
 const errorMessage = ref("");
 const refreshSeconds = ref(10);
+const historyRange = ref<ServiceMonitorHistoryRange>("30m");
+const historical = ref<ServiceMonitorHistory>();
+const historyLoading = ref(false);
 let pollingTimer: ReturnType<typeof setInterval> | undefined;
 let requestInFlight = false;
 
 const summary = computed(() => overview.value?.summary);
-const history = computed(() => overview.value?.history ?? []);
+const history = computed(() => {
+    if (historyRange.value === "30m") {
+        return overview.value?.history?.length ? overview.value.history : (historical.value?.points ?? []);
+    }
+    return historical.value?.points ?? [];
+});
 const cpuEquivalentCores = computed(() => {
     const usage = toNumber(summary.value?.cpu_usage);
     const logicalCores = toNumber(summary.value?.cpu_logical_cores);
@@ -38,6 +46,18 @@ const statusTagType = computed<"success" | "warning" | "danger" | "info">(() => 
             return "warning";
         case "DEGRADED":
         case "DOWN":
+            return "danger";
+        default:
+            return "info";
+    }
+});
+const freshnessTagType = computed<"success" | "warning" | "danger" | "info">(() => {
+    switch (overview.value?.data_freshness) {
+        case "CURRENT":
+            return "success";
+        case "DELAYED":
+            return "warning";
+        case "STALE":
             return "danger";
         default:
             return "info";
@@ -103,13 +123,14 @@ const requestChartOption = computed<EChartsOption>(() => {
     };
 });
 
-async function loadData(showLoading = false) {
+async function loadData(showLoading = false, loadHistoryData = false) {
     if (requestInFlight) return;
     requestInFlight = true;
     if (showLoading) loading.value = true;
     else refreshing.value = true;
     try {
         overview.value = await ServiceMonitorApi.getOverview({ loading: showLoading });
+        if (loadHistoryData) await loadHistory();
         errorMessage.value = "";
     } catch {
         errorMessage.value = "服务监控数据加载失败，请稍后重试。";
@@ -118,6 +139,19 @@ async function loadData(showLoading = false) {
         loading.value = false;
         refreshing.value = false;
         requestInFlight = false;
+    }
+}
+
+async function loadHistory() {
+    historyLoading.value = true;
+    try {
+        historical.value = await ServiceMonitorApi.getHistory(historyRange.value, { loading: false });
+    } catch {
+        if (historical.value) {
+            errorMessage.value = "历史趋势加载失败，当前保留上一次数据。";
+        }
+    } finally {
+        historyLoading.value = false;
     }
 }
 
@@ -135,6 +169,10 @@ function stopPolling() {
 
 function changeRefreshInterval() {
     startPolling();
+}
+
+function changeHistoryRange() {
+    void loadHistory();
 }
 
 function lineSeries(name: string, data: number[], color: string) {
@@ -198,6 +236,31 @@ function dependencyStatusText(status: ServiceMonitorDependency["status"]) {
     return status === "UP" ? "正常" : "不可用";
 }
 
+function freshnessText(value: ServiceMonitorDataFreshness | undefined) {
+    return {
+        CURRENT: "数据正常",
+        DELAYED: "数据延迟",
+        STALE: "数据过期",
+        UNAVAILABLE: "数据不可用"
+    }[value ?? "UNAVAILABLE"];
+}
+
+function healthTagType(status: ServiceMonitorHealthComponent["status"]) {
+    if (status === "UP") return "success";
+    if (status === "DOWN") return "danger";
+    if (status === "OUT_OF_SERVICE") return "warning";
+    return "info";
+}
+
+function healthStatusText(status: ServiceMonitorHealthComponent["status"]) {
+    return {
+        UP: "正常",
+        DOWN: "异常",
+        OUT_OF_SERVICE: "不可用",
+        UNKNOWN: "未知"
+    }[status];
+}
+
 function formatUptime(seconds: NumericValue) {
     const value = Math.max(toNumber(seconds), 0);
     const days = Math.floor(value / 86_400);
@@ -207,7 +270,7 @@ function formatUptime(seconds: NumericValue) {
 }
 
 onMounted(() => {
-    void loadData(true);
+    void loadData(true, true);
     startPolling();
 });
 
@@ -222,8 +285,15 @@ onUnmounted(stopPolling);
             <div class="status-notice">
                 <div class="status-notice__summary">
                     <el-tag :type="statusTagType">{{ overview.status }}</el-tag>
-                    <span>{{ overview.status_message }}</span>
+                    <span class="status-notice__message">{{ overview.status_message }}</span>
                     <span class="status-notice__time">（运行 {{ formatUptime(overview.uptime_seconds) }}）</span>
+                </div>
+                <div class="status-notice__freshness">
+                    <span class="status-notice__label">数据新鲜度</span>
+                    <el-tag :type="freshnessTagType" effect="plain">
+                        {{ freshnessText(overview.data_freshness) }}
+                    </el-tag>
+                    <span class="status-notice__freshness-age">距现在 {{ overview.data_age_seconds }} 秒</span>
                 </div>
                 <div class="status-notice__actions">
                     <span class="last-collected">最近采集：{{ formatDateTime(overview.collected_at) }}</span>
@@ -232,7 +302,7 @@ onUnmounted(stopPolling);
                         <el-option :value="10" label="10 秒刷新" />
                         <el-option :value="30" label="30 秒刷新" />
                     </el-select>
-                    <el-button :loading="refreshing" @click="void loadData()">
+                    <el-button :loading="refreshing" @click="void loadData(false, true)">
                         <el-icon><Refresh /></el-icon>
                         刷新
                     </el-button>
@@ -313,16 +383,34 @@ onUnmounted(stopPolling);
             </div>
 
             <div class="monitor-scroll">
+                <div class="trend-toolbar">
+                    <div>
+                        <div class="trend-toolbar__title">监控趋势</div>
+                        <div class="trend-toolbar__subtitle">查看资源使用和请求指标的历史变化</div>
+                    </div>
+                    <div class="trend-toolbar__control">
+                        <span class="trend-toolbar__label">趋势时间范围</span>
+                        <el-radio-group
+                            v-model="historyRange"
+                            class="trend-range-group"
+                            size="small"
+                            :disabled="historyLoading"
+                            @change="changeHistoryRange">
+                            <el-radio-button value="30m">30 分钟</el-radio-button>
+                            <el-radio-button value="6h">6 小时</el-radio-button>
+                            <el-radio-button value="24h">24 小时</el-radio-button>
+                        </el-radio-group>
+                    </div>
+                </div>
                 <el-row :gutter="16" class="chart-row">
                     <el-col :span="14">
                         <el-card shadow="never" class="chart-card">
                             <template #header>
-                                <div class="card-header">
-                                    <span>资源使用趋势</span>
-                                    <span class="card-header__hint">最近 30 分钟</span>
-                                </div>
+                                <div class="card-header"><span>资源使用趋势</span></div>
                             </template>
-                            <VChart :option="resourceChartOption" autoresize class="monitor-chart" />
+                            <div v-loading="historyLoading">
+                                <VChart :option="resourceChartOption" autoresize class="monitor-chart" />
+                            </div>
                         </el-card>
                     </el-col>
                     <el-col :span="10">
@@ -376,6 +464,31 @@ onUnmounted(stopPolling);
                                     <span class="card-header__hint">只读概览</span>
                                 </div>
                             </template>
+                            <div class="health-section">
+                                <div class="health-section__header">
+                                    <span>应用健康组件</span>
+                                    <span class="card-header__hint">
+                                        检查耗时 {{ overview.health_check_latency_ms }} ms
+                                    </span>
+                                </div>
+                                <div v-if="overview.health_components.length" class="health-list">
+                                    <div
+                                        v-for="component in overview.health_components"
+                                        :key="component.name"
+                                        class="health-item">
+                                        <span class="health-item__name">{{ component.name }}</span>
+                                        <el-tag :type="healthTagType(component.status)" size="small">
+                                            {{ healthStatusText(component.status) }}
+                                        </el-tag>
+                                        <span class="health-item__message">
+                                            {{ component.message }} · 最近检查
+                                            {{ formatDateTime(component.checked_at) }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <el-empty v-else description="暂无健康组件数据" :image-size="48" />
+                            </div>
+                            <el-divider />
                             <div class="runtime-grid">
                                 <span>服务名称</span>
                                 <strong>{{ overview.service_name }}</strong>
@@ -410,8 +523,7 @@ onUnmounted(stopPolling);
     background: var(--el-bg-color-page);
 }
 
-.card-header,
-.status-notice {
+.card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -426,6 +538,7 @@ onUnmounted(stopPolling);
 }
 
 .status-notice__summary,
+.status-notice__freshness,
 .status-notice__actions {
     display: flex;
     align-items: center;
@@ -437,6 +550,9 @@ onUnmounted(stopPolling);
 }
 
 .status-notice {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
     gap: 16px;
     margin-top: 16px;
     padding: 12px 14px;
@@ -445,12 +561,38 @@ onUnmounted(stopPolling);
     background: var(--el-fill-color-blank);
 }
 
+.status-notice__summary {
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.status-notice__message {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.status-notice__freshness {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: var(--el-fill-color-light);
+    white-space: nowrap;
+}
+
+.status-notice__label,
+.status-notice__freshness-age {
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+}
+
 .status-notice__time {
     white-space: nowrap;
 }
 
 .status-notice__actions {
-    margin-left: auto;
+    flex-shrink: 0;
 }
 
 .metric-grid {
@@ -506,9 +648,51 @@ onUnmounted(stopPolling);
     padding-right: 4px;
 }
 
+.trend-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 4px;
+    background: var(--el-fill-color-blank);
+}
+
+.trend-toolbar__title {
+    color: var(--el-text-color-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.trend-toolbar__subtitle {
+    margin-top: 4px;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+}
+
+.trend-toolbar__control {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+}
+
+.trend-range-group {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.trend-toolbar__label {
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
 .chart-row,
 .detail-row {
-    margin-top: 16px;
+    margin-top: 12px;
 }
 
 .chart-card,
@@ -538,6 +722,42 @@ onUnmounted(stopPolling);
     white-space: nowrap;
 }
 
+.health-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    color: var(--el-text-color-primary);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.health-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.health-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+}
+
+.health-item__name {
+    overflow: hidden;
+    color: var(--el-text-color-primary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.health-item__message {
+    grid-column: 1 / -1;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+}
+
 @media (max-width: 1400px) {
     .metric-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -546,18 +766,46 @@ onUnmounted(stopPolling);
 
 @media (max-width: 900px) {
     .status-notice {
+        display: flex;
         align-items: flex-start;
         flex-direction: column;
         gap: 12px;
     }
 
+    .status-notice__summary,
+    .status-notice__freshness,
     .status-notice__actions {
         width: 100%;
         flex-wrap: wrap;
     }
 
+    .status-notice__freshness {
+        white-space: normal;
+    }
+
+    .trend-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .trend-toolbar__control {
+        width: 100%;
+    }
+
     .metric-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1200px) and (min-width: 901px) {
+    .status-notice {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .status-notice__freshness {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-self: start;
     }
 }
 </style>

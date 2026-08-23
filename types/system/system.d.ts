@@ -3,11 +3,22 @@ export {};
 declare global {
     type ServiceMonitorStatus = "HEALTHY" | "WARNING" | "DEGRADED" | "DOWN";
 
+    type ServiceMonitorDataFreshness = "CURRENT" | "DELAYED" | "STALE" | "UNAVAILABLE";
+
+    type ServiceMonitorHistoryRange = "30m" | "6h" | "24h";
+
     type ServiceMonitorDependency = {
         name: string;
         status: "UP" | "DOWN";
         latency_ms: number;
         message: string;
+    };
+
+    type ServiceMonitorHealthComponent = {
+        name: string;
+        status: "UP" | "DOWN" | "OUT_OF_SERVICE" | "UNKNOWN";
+        message: string;
+        checked_at: string;
     };
 
     type ServiceMonitorSummary = {
@@ -46,6 +57,8 @@ declare global {
         collected_at: string;
         status: ServiceMonitorStatus;
         status_message: string;
+        data_freshness: ServiceMonitorDataFreshness;
+        data_age_seconds: number;
         service_name: string;
         host_name: string;
         os_name: string;
@@ -53,5 +66,14 @@ declare global {
         summary: ServiceMonitorSummary;
         history: ServiceMonitorPoint[];
         dependencies: ServiceMonitorDependency[];
+        health_components: ServiceMonitorHealthComponent[];
+        health_check_latency_ms: number;
+    };
+
+    type ServiceMonitorHistory = {
+        range: ServiceMonitorHistoryRange;
+        from: string;
+        to: string;
+        points: ServiceMonitorPoint[];
     };
 }

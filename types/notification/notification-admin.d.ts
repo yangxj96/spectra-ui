@@ -3,7 +3,7 @@ export {};
 declare global {
     type NotificationAdminChannel = "IN_APP" | "SMS" | "EMAIL";
 
-    type NotificationProviderType = "HTTP_JSON" | "MOCK" | "IN_APP";
+    type NotificationProviderType = "ALIYUN_SMS" | "TENCENT_SMS" | "SMTP" | "HTTP_JSON" | "MOCK" | "IN_APP";
     type NotificationProviderState = "NOT_CONFIGURED" | "DISABLED" | "HEALTHY" | "UNHEALTHY" | "BLOCKED";
 
     interface NotificationChannelAvailabilityVO {
@@ -146,10 +146,20 @@ declare global {
         enabled: boolean;
         reason?: string | null;
         endpoint?: string | null;
+        port: number;
+        region?: string | null;
+        credential_id?: string | null;
+        app_id?: string | null;
+        sign_name?: string | null;
+        sender_address?: string | null;
+        sender_name?: string | null;
+        ssl_enabled: boolean;
+        starttls_enabled: boolean;
         timeout_ms: number;
         rate_limit_per_second: number;
         max_attempts: number;
         template_code?: string | null;
+        template_parameter_order?: string | null;
         secret_configured: boolean;
         secret_key_id?: string | null;
         updated_at?: string | null;
@@ -159,10 +169,20 @@ declare global {
         provider_type: NotificationProviderType;
         enabled: boolean;
         endpoint: string;
+        port: number;
+        region: string;
+        credential_id: string;
+        app_id: string;
+        sign_name: string;
+        sender_address: string;
+        sender_name: string;
+        ssl_enabled: boolean;
+        starttls_enabled: boolean;
         timeout_ms: number;
         rate_limit_per_second: number;
         max_attempts: number;
         template_code: string;
+        template_parameter_order: string;
         secret?: string;
         clear_secret: boolean;
     }

@@ -44,8 +44,16 @@ const statusLabels: Record<string, string> = {
 
 const trendOption = computed<EChartsOption>(() => ({
     tooltip: { trigger: "axis" },
-    legend: { data: ["成功", "失败/阻断", "未知"] },
-    grid: { left: 42, right: 20, top: 38, bottom: 32 },
+    legend: {
+        data: ["成功", "失败/阻断", "未知"],
+        top: 0,
+        left: 0,
+        right: 0,
+        itemGap: 16,
+        itemWidth: 12,
+        itemHeight: 10
+    },
+    grid: { left: 42, right: 20, top: 56, bottom: 32, containLabel: true },
     xAxis: {
         type: "category",
         data: (overview.value?.trend ?? []).map(item => formatTrendTime(item.bucket_at)),
@@ -177,15 +185,29 @@ onUnmounted(() => {
         <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
         <div class="overview-toolbar">
+            <div class="overview-toolbar__summary">
+                <span class="overview-toolbar__title">运行数据</span>
+                <span class="overview-toolbar__hint">查看通知队列、渠道状态和投递结果</span>
+            </div>
             <div class="overview-toolbar__actions">
-                <el-select v-model="rangeHours" style="width: 150px" @change="changeRange">
-                    <el-option v-for="item in rangeOptions" :key="item.value" :label="item.label" :value="item.value" />
-                </el-select>
-                <el-select v-model="refreshSeconds" style="width: 120px" @change="changeRefreshInterval">
-                    <el-option :value="15" label="15 秒刷新" />
-                    <el-option :value="30" label="30 秒刷新" />
-                    <el-option :value="60" label="60 秒刷新" />
-                </el-select>
+                <div class="overview-toolbar__control">
+                    <span class="overview-toolbar__label">统计窗口</span>
+                    <el-select v-model="rangeHours" style="width: 150px" @change="changeRange">
+                        <el-option
+                            v-for="item in rangeOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value" />
+                    </el-select>
+                </div>
+                <div class="overview-toolbar__control">
+                    <span class="overview-toolbar__label">刷新频率</span>
+                    <el-select v-model="refreshSeconds" style="width: 120px" @change="changeRefreshInterval">
+                        <el-option :value="15" label="15 秒" />
+                        <el-option :value="30" label="30 秒" />
+                        <el-option :value="60" label="60 秒" />
+                    </el-select>
+                </div>
                 <el-button :loading="refreshing" @click="void loadData(false)">
                     <el-icon><Refresh /></el-icon>
                     刷新
@@ -304,24 +326,64 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .notification-overview-page {
+    display: flex;
     height: 100%;
     min-height: 0;
-    padding: 14px;
+    flex-direction: column;
+    padding: 12px;
     overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-gutter: stable;
     box-sizing: border-box;
     background: var(--el-bg-color-page);
+}
+
+.notification-overview-page > :deep(.el-alert) {
+    flex: 0 0 auto;
+    margin-bottom: 12px;
 }
 
 .overview-toolbar {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 16px;
-    margin-bottom: 14px;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 4px;
+    background: var(--el-fill-color-blank);
+}
+
+.overview-toolbar__summary {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.overview-toolbar__title {
+    color: var(--el-text-color-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.overview-toolbar__hint,
+.overview-toolbar__label {
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
 }
 
 .overview-toolbar__actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.overview-toolbar__control {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -330,7 +392,15 @@ onUnmounted(() => {
 .metric-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
+}
+
+.metric-card {
+    min-height: 100px;
+}
+
+.metric-card :deep(.el-card__body) {
+    padding: 14px;
 }
 
 .metric-card__label {
@@ -339,7 +409,7 @@ onUnmounted(() => {
 }
 
 .metric-card__value {
-    margin: 8px 0;
+    margin: 6px 0;
     color: var(--el-text-color-primary);
     font-size: 26px;
     font-weight: 600;
@@ -364,11 +434,30 @@ onUnmounted(() => {
 
 .overview-row,
 .trend-card {
-    margin-top: 12px;
+    margin-top: 10px;
 }
 
 .section-card {
     height: auto;
+    width: 100%;
+}
+
+.trend-card {
+    display: flex;
+    min-height: 0;
+    flex: 0 0 auto;
+    flex-direction: column;
+}
+
+.trend-card :deep(.el-card__body) {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+
+.overview-row .el-col {
+    display: flex;
 }
 
 .section-card__header {
@@ -384,9 +473,29 @@ onUnmounted(() => {
     font-weight: 400;
 }
 
+.section-card :deep(.el-card__header) {
+    padding: 14px 16px;
+}
+
+.section-card :deep(.el-card__body) {
+    padding: 0 16px 14px;
+}
+
+.trend-card :deep(.el-card__body) {
+    padding: 10px 16px 14px;
+}
+
 .trend-chart {
+    display: block;
+    min-height: 300px;
     width: 100%;
-    height: 300px;
+    height: auto;
+    flex: 1 1 auto;
+}
+
+.trend-card :deep(.el-empty) {
+    min-height: 300px;
+    flex: 1 1 auto;
 }
 
 @media (max-width: 1100px) {
@@ -410,9 +519,21 @@ onUnmounted(() => {
         flex-direction: column;
     }
 
+    .overview-toolbar__summary {
+        width: 100%;
+    }
+
     .overview-toolbar__actions {
         width: 100%;
         flex-wrap: wrap;
+    }
+
+    .overview-toolbar__control {
+        flex: 1;
+    }
+
+    .overview-toolbar__control .el-select {
+        flex: 1;
     }
 
     .metric-grid {

@@ -10,13 +10,23 @@ import { MessageUtils } from "@/utils/message-utils.ts";
 type ExternalChannel = Exclude<NotificationAdminChannel, "IN_APP">;
 
 interface ProviderEditor {
-    provider_type: "HTTP_JSON" | "MOCK";
+    provider_type: Exclude<NotificationProviderType, "IN_APP">;
     enabled: boolean;
     endpoint: string;
+    port: number;
+    region: string;
+    credential_id: string;
+    app_id: string;
+    sign_name: string;
+    sender_address: string;
+    sender_name: string;
+    ssl_enabled: boolean;
+    starttls_enabled: boolean;
     timeout_ms: number;
     rate_limit_per_second: number;
     max_attempts: number;
     template_code: string;
+    template_parameter_order: string;
     secret: string;
     clear_secret: boolean;
 }
@@ -36,9 +46,16 @@ const stateLabels: Record<NotificationProviderState, string> = {
 };
 
 const providerTypeLabels: Record<string, string> = {
+    IN_APP: "系统内置收件箱",
+    ALIYUN_SMS: "阿里云短信",
+    TENCENT_SMS: "腾讯云短信",
+    SMTP: "SMTP 邮件",
     HTTP_JSON: "通用 HTTP JSON",
     MOCK: "模拟服务（仅测试）"
 };
+
+const smsProviderTypes = ["ALIYUN_SMS", "TENCENT_SMS", "HTTP_JSON", "MOCK"] as const;
+const emailProviderTypes = ["SMTP", "HTTP_JSON", "MOCK"] as const;
 
 const testStatusLabels: Record<string, string> = {
     SENT: "已发送",
@@ -61,7 +78,10 @@ const reasonLabels: Record<string, string> = {
     HEALTH_CHECK_HTTP_400: "渠道服务健康检查返回 HTTP 400",
     HEALTH_CHECK_HTTP_401: "渠道服务健康检查返回 HTTP 401",
     HEALTH_CHECK_HTTP_403: "渠道服务健康检查返回 HTTP 403",
-    MODULE_DISABLED: "通知模块已关闭"
+    HEALTH_CHECK_INVALID_RESPONSE: "渠道服务返回了无效响应",
+    MODULE_DISABLED: "通知模块已关闭",
+    MOCK_PROVIDER_READY: "内置模拟服务已就绪",
+    HEALTH_CHECK_PROVIDER_REJECTED: "供应商拒绝健康检查请求"
 };
 
 const providers = ref<NotificationProviderVO[]>([]);
@@ -95,13 +115,23 @@ const editors = reactive<Record<ExternalChannel, ProviderEditor>>({
 
 function createEditor(): ProviderEditor {
     return {
-        provider_type: "HTTP_JSON",
+        provider_type: "MOCK",
         enabled: false,
         endpoint: "",
+        port: 587,
+        region: "",
+        credential_id: "",
+        app_id: "",
+        sign_name: "",
+        sender_address: "",
+        sender_name: "",
+        ssl_enabled: false,
+        starttls_enabled: true,
         timeout_ms: 5000,
         rate_limit_per_second: 10,
         max_attempts: 3,
         template_code: "",
+        template_parameter_order: "",
         secret: "",
         clear_secret: false
     };
@@ -135,8 +165,121 @@ function reasonLabel(reason: string | null | undefined): string {
     return reasonLabels[reason] ?? reason;
 }
 
+function providerEditorDirty(provider: NotificationProviderVO): boolean {
+    if (provider.channel === "IN_APP") return false;
+    const form = editor(provider.channel);
+    if (provider.state === "NOT_CONFIGURED") return true;
+    return (
+        form.provider_type !== (provider.provider_type ?? "MOCK") ||
+        form.enabled !== provider.enabled ||
+        form.endpoint !== (provider.endpoint ?? "") ||
+        form.port !== provider.port ||
+        form.region !== (provider.region ?? "") ||
+        form.credential_id !== (provider.credential_id ?? "") ||
+        form.app_id !== (provider.app_id ?? "") ||
+        form.sign_name !== (provider.sign_name ?? "") ||
+        form.sender_address !== (provider.sender_address ?? "") ||
+        form.sender_name !== (provider.sender_name ?? "") ||
+        form.ssl_enabled !== provider.ssl_enabled ||
+        form.starttls_enabled !== provider.starttls_enabled ||
+        form.timeout_ms !== provider.timeout_ms ||
+        form.rate_limit_per_second !== provider.rate_limit_per_second ||
+        form.max_attempts !== provider.max_attempts ||
+        form.template_code !== (provider.template_code ?? "") ||
+        form.template_parameter_order !== (provider.template_parameter_order ?? "") ||
+        form.secret.trim() !== "" ||
+        form.clear_secret
+    );
+}
+
+function displayedProviderType(provider: NotificationProviderVO): string | null | undefined {
+    if (provider.channel === "IN_APP") return provider.provider_type;
+    return providerEditorDirty(provider) ? editor(provider.channel).provider_type : provider.provider_type;
+}
+
 function editor(channel: ExternalChannel): ProviderEditor {
     return editors[channel];
+}
+
+function providerOptions(channel: ExternalChannel): readonly string[] {
+    return channel === "SMS" ? smsProviderTypes : emailProviderTypes;
+}
+
+function isSmsProvider(form: ProviderEditor): boolean {
+    return form.provider_type === "ALIYUN_SMS" || form.provider_type === "TENCENT_SMS";
+}
+
+function isSmtpProvider(form: ProviderEditor): boolean {
+    return form.provider_type === "SMTP";
+}
+
+function isHttpProvider(form: ProviderEditor): boolean {
+    return form.provider_type === "HTTP_JSON";
+}
+
+function isMockProvider(form: ProviderEditor): boolean {
+    return form.provider_type === "MOCK";
+}
+
+function credentialLabel(form: ProviderEditor): string {
+    if (form.provider_type === "ALIYUN_SMS") return "AccessKey ID";
+    if (form.provider_type === "TENCENT_SMS") return "SecretId";
+    if (form.provider_type === "SMTP") return "SMTP 用户名";
+    return "接入凭据标识（可选）";
+}
+
+function secretLabel(form: ProviderEditor): string {
+    if (form.provider_type === "ALIYUN_SMS") return "AccessKey Secret";
+    if (form.provider_type === "TENCENT_SMS") return "SecretKey";
+    if (form.provider_type === "SMTP") return "SMTP 密码或应用专用密码";
+    return "访问密钥（只覆盖更新，不回显）";
+}
+
+function endpointLabel(form: ProviderEditor): string {
+    if (isSmtpProvider(form)) return "SMTP 主机";
+    if (isHttpProvider(form)) return "HTTP 端点";
+    return "API 端点（可选）";
+}
+
+function endpointPlaceholder(form: ProviderEditor): string {
+    if (form.provider_type === "ALIYUN_SMS") return "留空使用 dysmsapi.aliyuncs.com";
+    if (form.provider_type === "TENCENT_SMS") return "留空使用 sms.tencentcloudapi.com";
+    if (form.provider_type === "SMTP") return "smtp.example.com";
+    return "https://provider.example/api/send";
+}
+
+function providerDescription(form: ProviderEditor): string {
+    if (form.provider_type === "ALIYUN_SMS") {
+        return "需要阿里云 AccessKey、已审核短信签名和 TemplateCode；模板参数按名称发送。";
+    }
+    if (form.provider_type === "TENCENT_SMS") {
+        return "需要腾讯云 SecretId/SecretKey、SmsSdkAppId、已审核签名和 TemplateId；参数按下方顺序发送。";
+    }
+    if (form.provider_type === "SMTP") {
+        return "邮件通过 SMTP 投递，465 通常使用隐式 SSL，587 通常使用 STARTTLS。密码不会回显。";
+    }
+    if (form.provider_type === "HTTP_JSON") {
+        return "适合接入内部短信/邮件网关；服务端会发送标准 JSON，不建议把第三方密钥直接放在浏览器。";
+    }
+    return "内置模拟服务不访问第三方，只在服务端日志输出脱敏发送信息，并继续写入真实投递结果。";
+}
+
+function providerTypeChanged(channel: ExternalChannel): void {
+    const form = editor(channel);
+    form.endpoint = "";
+    form.port = form.provider_type === "SMTP" ? 587 : 0;
+    form.region = "";
+    form.credential_id = "";
+    form.app_id = "";
+    form.sign_name = "";
+    form.sender_address = "";
+    form.sender_name = "";
+    form.ssl_enabled = false;
+    form.starttls_enabled = form.provider_type === "SMTP";
+    form.template_code = "";
+    form.template_parameter_order = "";
+    form.secret = "";
+    form.clear_secret = false;
 }
 
 function overviewChannel(channel: NotificationAdminChannel): NotificationOverviewChannelSummary | undefined {
@@ -145,14 +288,27 @@ function overviewChannel(channel: NotificationAdminChannel): NotificationOvervie
 
 function syncEditor(provider: NotificationProviderVO): void {
     if (provider.channel === "IN_APP") return;
+    const isMockProviderType = provider.provider_type === "MOCK";
     editors[provider.channel] = {
-        provider_type: provider.provider_type === "MOCK" ? "MOCK" : "HTTP_JSON",
+        provider_type: providerOptions(provider.channel).includes(provider.provider_type as never)
+            ? (provider.provider_type as ProviderEditor["provider_type"])
+            : "MOCK",
         enabled: provider.enabled,
         endpoint: provider.endpoint ?? "",
-        timeout_ms: provider.timeout_ms || 5000,
-        rate_limit_per_second: provider.rate_limit_per_second || 10,
-        max_attempts: provider.max_attempts || 3,
+        port: provider.port || (provider.provider_type === "SMTP" ? 587 : 0),
+        region: provider.region ?? "",
+        credential_id: provider.credential_id ?? "",
+        app_id: provider.app_id ?? "",
+        sign_name: provider.sign_name ?? "",
+        sender_address: provider.sender_address ?? "",
+        sender_name: provider.sender_name ?? "",
+        ssl_enabled: provider.ssl_enabled ?? false,
+        starttls_enabled: provider.starttls_enabled ?? false,
+        timeout_ms: isMockProviderType ? 0 : provider.timeout_ms || 5000,
+        rate_limit_per_second: isMockProviderType ? 0 : provider.rate_limit_per_second || 10,
+        max_attempts: isMockProviderType ? 1 : provider.max_attempts || 3,
         template_code: provider.template_code ?? "",
+        template_parameter_order: provider.template_parameter_order ?? "",
         secret: "",
         clear_secret: false
     };
@@ -178,8 +334,31 @@ async function loadData(): Promise<void> {
 }
 
 function validateEditor(channel: ExternalChannel, form: ProviderEditor): boolean {
-    if (form.provider_type === "HTTP_JSON" && !form.endpoint.trim()) {
-        MessageUtils.error(`${channelLabel(channel)} 渠道服务地址不能为空。`);
+    if (isHttpProvider(form) && !form.endpoint.trim()) {
+        MessageUtils.error(`${channelLabel(channel)} 的 HTTP 端点不能为空。`);
+        return false;
+    }
+    if (isSmsProvider(form) && !form.credential_id.trim()) {
+        MessageUtils.error(`${providerTypeLabel(form.provider_type)}必须填写凭据标识。`);
+        return false;
+    }
+    if (form.provider_type === "ALIYUN_SMS" && (!form.sign_name.trim() || !form.template_code.trim())) {
+        MessageUtils.error("阿里云短信必须填写已审核的短信签名和 TemplateCode。 ");
+        return false;
+    }
+    if (
+        form.provider_type === "TENCENT_SMS" &&
+        (!form.app_id.trim() || !form.sign_name.trim() || !form.template_code.trim())
+    ) {
+        MessageUtils.error("腾讯云短信必须填写 SmsSdkAppId、已审核签名和 TemplateId。 ");
+        return false;
+    }
+    if (isSmtpProvider(form) && (!form.endpoint.trim() || !form.credential_id.trim() || !form.sender_address.trim())) {
+        MessageUtils.error("SMTP 必须填写主机、用户名和发件地址。 ");
+        return false;
+    }
+    if (isSmtpProvider(form) && form.ssl_enabled && form.starttls_enabled) {
+        MessageUtils.error("SMTP 不能同时启用隐式 SSL 和 STARTTLS。 ");
         return false;
     }
     if (form.clear_secret && form.secret.trim()) {
@@ -206,10 +385,20 @@ async function saveProvider(channel: ExternalChannel): Promise<void> {
             provider_type: form.provider_type,
             enabled: form.enabled,
             endpoint: form.endpoint.trim(),
+            port: form.port,
+            region: form.region.trim(),
+            credential_id: form.credential_id.trim(),
+            app_id: form.app_id.trim(),
+            sign_name: form.sign_name.trim(),
+            sender_address: form.sender_address.trim(),
+            sender_name: form.sender_name.trim(),
+            ssl_enabled: form.ssl_enabled,
+            starttls_enabled: form.starttls_enabled,
             timeout_ms: form.timeout_ms,
             rate_limit_per_second: form.rate_limit_per_second,
             max_attempts: form.max_attempts,
             template_code: form.template_code.trim(),
+            template_parameter_order: form.template_parameter_order.trim(),
             secret: form.secret.trim() || undefined,
             clear_secret: form.clear_secret
         });
@@ -225,6 +414,11 @@ async function saveProvider(channel: ExternalChannel): Promise<void> {
 }
 
 async function checkHealth(channel: ExternalChannel): Promise<void> {
+    const provider = providers.value.find(item => item.channel === channel);
+    if (provider && providerEditorDirty(provider)) {
+        MessageUtils.warning("当前渠道服务配置尚未保存，请先点击“保存配置”，再执行健康检查。 ");
+        return;
+    }
     healthChannel.value = channel;
     try {
         const result = await NotificationProviderApi.health(channel);
@@ -320,6 +514,10 @@ onMounted(() => {
 <template>
     <div v-loading="loading" class="provider-page">
         <div class="provider-toolbar">
+            <div class="provider-toolbar__summary">
+                <span class="provider-toolbar__title">渠道配置</span>
+                <span class="provider-toolbar__hint">配置外部通知渠道并执行健康检查</span>
+            </div>
             <el-button :loading="loading" @click="void loadData()">
                 <el-icon><Refresh /></el-icon>
                 刷新
@@ -361,20 +559,26 @@ onMounted(() => {
                         <div class="provider-card__header">
                             <div>
                                 <h3>{{ channelLabel(provider.channel) }}</h3>
-                                <p>{{ providerTypeLabel(provider.provider_type) }}</p>
+                                <p>{{ providerTypeLabel(displayedProviderType(provider)) }}</p>
                             </div>
                             <el-tag :type="stateTagType(provider.state)">{{ stateLabel(provider.state) }}</el-tag>
                         </div>
                     </template>
 
                     <el-alert
-                        :title="reasonLabel(provider.reason)"
+                        :title="
+                            providerEditorDirty(provider)
+                                ? '当前渠道服务配置尚未保存，请先点击保存配置。'
+                                : reasonLabel(provider.reason)
+                        "
                         :type="
-                            provider.state === 'HEALTHY'
-                                ? 'success'
-                                : provider.state === 'BLOCKED'
-                                  ? 'error'
-                                  : 'warning'
+                            providerEditorDirty(provider)
+                                ? 'warning'
+                                : provider.state === 'HEALTHY'
+                                  ? 'success'
+                                  : provider.state === 'BLOCKED'
+                                    ? 'error'
+                                    : 'warning'
                         "
                         show-icon
                         :closable="false" />
@@ -394,9 +598,15 @@ onMounted(() => {
                             <el-row :gutter="12">
                                 <el-col :span="12">
                                     <el-form-item label="渠道服务类型">
-                                        <el-select v-model="editor(provider.channel).provider_type" style="width: 100%">
-                                            <el-option label="通用 HTTP JSON" value="HTTP_JSON" />
-                                            <el-option label="模拟服务（仅测试）" value="MOCK" />
+                                        <el-select
+                                            v-model="editor(provider.channel).provider_type"
+                                            style="width: 100%"
+                                            @change="providerTypeChanged(provider.channel)">
+                                            <el-option
+                                                v-for="type in providerOptions(provider.channel)"
+                                                :key="type"
+                                                :label="providerTypeLabel(type)"
+                                                :value="type" />
                                         </el-select>
                                     </el-form-item>
                                 </el-col>
@@ -409,13 +619,114 @@ onMounted(() => {
                                     </el-form-item>
                                 </el-col>
                             </el-row>
-                            <el-form-item label="HTTP 端点">
+                            <el-alert
+                                :title="providerDescription(editor(provider.channel))"
+                                type="info"
+                                show-icon
+                                :closable="false"
+                                class="provider-description" />
+                            <el-form-item
+                                v-if="!isMockProvider(editor(provider.channel))"
+                                :label="endpointLabel(editor(provider.channel))">
                                 <el-input
                                     v-model="editor(provider.channel).endpoint"
-                                    placeholder="https://provider.example/api/send"
-                                    :disabled="editor(provider.channel).provider_type === 'MOCK'" />
+                                    :placeholder="endpointPlaceholder(editor(provider.channel))" />
                             </el-form-item>
-                            <el-row :gutter="12">
+                            <el-row
+                                v-if="
+                                    !isMockProvider(editor(provider.channel)) &&
+                                    !isHttpProvider(editor(provider.channel))
+                                "
+                                :gutter="12">
+                                <el-col :span="12">
+                                    <el-form-item v-if="isSmtpProvider(editor(provider.channel))" label="SMTP 端口">
+                                        <el-input-number
+                                            v-model="editor(provider.channel).port"
+                                            :min="1"
+                                            :max="65535"
+                                            style="width: 100%" />
+                                    </el-form-item>
+                                    <el-form-item v-else label="云服务地域">
+                                        <el-input
+                                            v-model="editor(provider.channel).region"
+                                            placeholder="例如 cn-hangzhou / ap-guangzhou" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item :label="credentialLabel(editor(provider.channel))">
+                                        <el-input
+                                            v-model="editor(provider.channel).credential_id"
+                                            autocomplete="off"
+                                            :placeholder="
+                                                isSmtpProvider(editor(provider.channel))
+                                                    ? 'SMTP 登录用户名'
+                                                    : '仅填写标识，不要填写 Secret'
+                                            " />
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-row v-if="isSmsProvider(editor(provider.channel))" :gutter="12">
+                                <el-col :span="12">
+                                    <el-form-item label="已审核短信签名">
+                                        <el-input
+                                            v-model="editor(provider.channel).sign_name"
+                                            placeholder="例如 Spectra" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item
+                                        :label="
+                                            editor(provider.channel).provider_type === 'TENCENT_SMS'
+                                                ? 'TemplateId'
+                                                : 'TemplateCode'
+                                        ">
+                                        <el-input
+                                            v-model="editor(provider.channel).template_code"
+                                            placeholder="供应商控制台已审核模板编码" />
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-form-item
+                                v-if="editor(provider.channel).provider_type === 'TENCENT_SMS'"
+                                label="SmsSdkAppId">
+                                <el-input
+                                    v-model="editor(provider.channel).app_id"
+                                    placeholder="腾讯云短信应用的 SDK AppID" />
+                            </el-form-item>
+                            <el-form-item
+                                v-if="editor(provider.channel).provider_type === 'TENCENT_SMS'"
+                                label="模板参数顺序">
+                                <el-input
+                                    v-model="editor(provider.channel).template_parameter_order"
+                                    placeholder="按腾讯模板占位参数顺序填写，例如 code,userName" />
+                            </el-form-item>
+                            <template v-if="isSmtpProvider(editor(provider.channel))">
+                                <el-row :gutter="12">
+                                    <el-col :span="12">
+                                        <el-form-item label="发件地址">
+                                            <el-input
+                                                v-model="editor(provider.channel).sender_address"
+                                                placeholder="no-reply@example.com" />
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-form-item label="发件人名称">
+                                            <el-input
+                                                v-model="editor(provider.channel).sender_name"
+                                                placeholder="Spectra 通知中心" />
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                                <div class="smtp-options">
+                                    <el-checkbox v-model="editor(provider.channel).ssl_enabled">
+                                        隐式 SSL（通常 465）
+                                    </el-checkbox>
+                                    <el-checkbox v-model="editor(provider.channel).starttls_enabled">
+                                        STARTTLS（通常 587）
+                                    </el-checkbox>
+                                </div>
+                            </template>
+                            <el-row v-if="!isMockProvider(editor(provider.channel))" :gutter="12">
                                 <el-col :span="8">
                                     <el-form-item label="超时（毫秒）">
                                         <el-input-number
@@ -441,20 +752,19 @@ onMounted(() => {
                                     </el-form-item>
                                 </el-col>
                             </el-row>
-                            <el-form-item label="供应商模板编码">
-                                <el-input v-model="editor(provider.channel).template_code" placeholder="可选" />
-                            </el-form-item>
-                            <el-form-item label="密钥（只覆盖更新，不回显）">
+                            <el-form-item
+                                v-if="!isMockProvider(editor(provider.channel))"
+                                :label="secretLabel(editor(provider.channel))">
                                 <el-input
                                     v-model="editor(provider.channel).secret"
                                     type="password"
                                     show-password
                                     autocomplete="new-password"
-                                    placeholder="留空表示保持当前密钥" />
+                                    placeholder="留空表示保持当前凭据" />
                             </el-form-item>
-                            <div class="secret-status">
+                            <div v-if="!isMockProvider(editor(provider.channel))" class="secret-status">
                                 <span>
-                                    密钥：{{ provider.secret_configured ? "已配置" : "未配置" }}
+                                    凭据：{{ provider.secret_configured ? "已配置" : "未配置" }}
                                     <template v-if="provider.secret_key_id">（{{ provider.secret_key_id }}）</template>
                                 </span>
                                 <el-checkbox v-model="editor(provider.channel).clear_secret">清除当前密钥</el-checkbox>
@@ -545,9 +855,11 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .provider-page {
+    display: flex;
     height: 100%;
     min-height: 0;
-    padding: 14px;
+    flex-direction: column;
+    padding: 12px;
     overflow-x: hidden;
     overflow-y: auto;
     box-sizing: border-box;
@@ -556,8 +868,38 @@ onMounted(() => {
 
 .provider-toolbar {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
-    margin-bottom: 14px;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 4px;
+    background: var(--el-fill-color-blank);
+}
+
+.provider-page > :deep(.el-alert) {
+    flex: 0 0 auto;
+    margin-bottom: 10px;
+}
+
+.provider-toolbar__summary {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.provider-toolbar__title {
+    color: var(--el-text-color-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.provider-toolbar__hint {
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
 }
 
 .provider-card h3 {
@@ -574,14 +916,19 @@ onMounted(() => {
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 .summary-card {
+    min-height: 100px;
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+.summary-card :deep(.el-card__body) {
+    padding: 14px;
 }
 
 .summary-card span,
@@ -591,7 +938,7 @@ onMounted(() => {
 
 .summary-card strong {
     color: var(--el-text-color-primary);
-    font-size: 26px;
+    font-size: 24px;
 }
 
 .summary-card__success {
@@ -609,19 +956,28 @@ onMounted(() => {
 .provider-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 .provider-column {
     display: flex;
     min-width: 0;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
 .provider-card {
     height: auto;
+    width: 100%;
+}
+
+.provider-card :deep(.el-card__header) {
+    padding: 14px 16px;
+}
+
+.provider-card :deep(.el-card__body) {
+    padding: 0 16px 14px;
 }
 
 .provider-card__header {
@@ -632,7 +988,15 @@ onMounted(() => {
 }
 
 .provider-form {
-    margin-top: 16px;
+    margin-top: 12px;
+}
+
+.provider-description {
+    margin-bottom: 12px;
+}
+
+.provider-form :deep(.el-form-item) {
+    margin-bottom: 12px;
 }
 
 .provider-form :deep(.el-input-number) {
@@ -640,15 +1004,21 @@ onMounted(() => {
 }
 
 .readonly-descriptions {
-    margin-top: 16px;
+    margin-top: 12px;
 }
 
 .secret-status,
+.smtp-options,
 .provider-actions,
 .channel-summary {
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+.smtp-options {
+    flex-wrap: wrap;
+    margin: -2px 0 12px;
 }
 
 .secret-status {
@@ -659,11 +1029,11 @@ onMounted(() => {
 
 .provider-actions {
     justify-content: flex-end;
-    margin-top: 14px;
+    margin-top: 12px;
 }
 
 .health-time {
-    margin-top: 10px;
+    margin-top: 8px;
     color: var(--el-text-color-secondary);
     font-size: 12px;
     text-align: right;
@@ -671,12 +1041,12 @@ onMounted(() => {
 
 .test-alert,
 .test-form {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .channel-summary {
-    margin-top: 16px;
-    padding-top: 12px;
+    margin-top: 12px;
+    padding-top: 10px;
     border-top: 1px solid var(--el-border-color-lighter);
     color: var(--el-text-color-secondary);
     font-size: 12px;
@@ -693,6 +1063,15 @@ onMounted(() => {
 }
 
 @media (max-width: 600px) {
+    .provider-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .provider-toolbar__summary {
+        width: 100%;
+    }
+
     .summary-grid {
         grid-template-columns: 1fr;
     }

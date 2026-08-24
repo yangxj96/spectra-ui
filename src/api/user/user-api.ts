@@ -11,9 +11,13 @@ export const UserApi = {
     /**
      * 分页获取用户列表
      * @param params 分页参数
+     * @param options 请求选项
      */
-    async page(params?: UserPageParams): Promise<Page<UserPageVO>> {
-        return get<Page<UserPageVO>>("/api/user/page", params);
+    async page(
+        params?: UserPageParams,
+        options?: Pick<RequestOptions<"/api/user/page">, "loading">
+    ): Promise<Page<UserPageVO>> {
+        return get<Page<UserPageVO>>("/api/user/page", params, options);
     },
     /**
      * 获取管理员用户详情

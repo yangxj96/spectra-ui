@@ -56,7 +56,7 @@ const accountRules: FormRules = {
     default_timezone: [{ required: true, message: "请输入默认时区", trigger: "blur" }],
     security_profile: [{ required: true, message: "请选择安全策略", trigger: "change" }],
     username: [{ required: true, message: "请输入 DEV_OPS 用户账号", trigger: "blur" }],
-    real_name: [{ required: true, message: "请输入真实姓名", trigger: "blur" }],
+    real_name: [{ required: true, message: "请输入姓名", trigger: "blur" }],
     password: [
         { required: true, message: "请输入密码", trigger: "blur" },
         { min: 12, max: 128, message: "密码长度必须为 12-128 位", trigger: "blur" }
@@ -325,7 +325,7 @@ onMounted(() => {
                         <el-form-item label="DEV_OPS 用户账号" prop="username">
                             <el-input v-model="accountForm.username" autocomplete="username" clearable />
                         </el-form-item>
-                        <el-form-item label="真实姓名" prop="real_name">
+                        <el-form-item label="姓名" prop="real_name">
                             <el-input v-model="accountForm.real_name" autocomplete="name" clearable />
                         </el-form-item>
                         <el-form-item label="登录密码" prop="password">

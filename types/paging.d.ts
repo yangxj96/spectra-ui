@@ -41,7 +41,7 @@ declare global {
     type UserPageParams = BasePageParams & {
         real_name?: string;
         employee_no?: string;
-        email?: string;
+        username?: string;
         status?: UserStatus;
         department_id?: string;
     };

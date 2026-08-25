@@ -12,9 +12,8 @@ export const userConverter = {
             id: "",
             employee_no: "",
             real_name: "",
+            username: "",
             status: undefined,
-            phone: "",
-            email: "",
             language: defaults.language ?? "",
             timezone: defaults.timezone ?? "",
             department_id: ""
@@ -27,9 +26,8 @@ export const userConverter = {
             id: datum.id ?? "",
             employee_no: datum.employee_no ?? "",
             real_name: datum.real_name ?? "",
+            username: datum.username ?? "",
             status: datum.status ?? undefined,
-            phone: datum.phone ?? "",
-            email: datum.email ?? "",
             language: datum.language ?? "",
             timezone: datum.timezone ?? "",
             department_id: datum.department_id ?? ""
@@ -41,9 +39,8 @@ export const userConverter = {
             id: form.id || undefined,
             employee_no: form.employee_no,
             real_name: form.real_name,
+            username: form.username,
             status: form.status ?? undefined,
-            phone: form.phone,
-            email: form.email,
             language: form.language,
             timezone: form.timezone,
             department_id: form.department_id

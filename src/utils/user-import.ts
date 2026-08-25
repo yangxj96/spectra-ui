@@ -1,23 +1,26 @@
 /** 用户批量导入 Excel 模板字段；工号由后端生成，组织和授权配置在页面上统一选择。 */
-export const USER_IMPORT_HEADERS = ["real_name", "phone", "email"] as const;
+export const USER_IMPORT_HEADERS = ["real_name", "username", "phone", "email"] as const;
 
 export type UserImportHeader = (typeof USER_IMPORT_HEADERS)[number];
 
 /** 用户批量导入页面展示字段。 */
 export const USER_IMPORT_HEADER_LABELS: Record<UserImportHeader, string> = {
-    real_name: "真实姓名",
+    real_name: "姓名",
+    username: "登录用户名",
     phone: "手机号码",
     email: "邮箱"
 };
 
 /** 用户批量导入模板对外展示的中文表头。 */
-export const USER_IMPORT_TEMPLATE_HEADERS = ["真实姓名", "手机号码", "邮箱"] as const;
+export const USER_IMPORT_TEMPLATE_HEADERS = ["姓名", "登录用户名", "手机号码", "邮箱"] as const;
 
 const USER_IMPORT_HEADER_ALIASES: Record<string, UserImportHeader> = {
     real_name: "real_name",
+    username: "username",
     phone: "phone",
     email: "email",
-    真实姓名: "real_name",
+    姓名: "real_name",
+    登录用户名: "username",
     手机号码: "phone",
     邮箱: "email"
 };

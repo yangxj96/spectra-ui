@@ -502,6 +502,7 @@ declare global {
         id: string;
         employee_no: string;
         real_name?: string;
+        username?: string;
         avatar?: string;
         phone?: string;
         email?: string;

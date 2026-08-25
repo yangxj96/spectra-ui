@@ -52,6 +52,7 @@ declare global {
     /** 批量导入 Excel 中的一行用户数据。 */
     type UserImportRow = {
         real_name: string;
+        username: string;
         phone: string;
         email: string;
     };
@@ -138,12 +139,10 @@ declare global {
         departed_at?: string;
         // 授权状态
         authorization_status: UserAuthorizationStatus;
-        // 真实姓名
+        // 姓名
         real_name: string;
-        // 手机号码
-        phone: string;
-        // 邮箱
-        email: string;
+        // 登录用户名
+        username: string;
         // 语言
         language: string;
         // 时区
@@ -177,14 +176,12 @@ declare global {
         id: string;
         // 工号
         employee_no: string;
-        // 真实姓名
+        // 姓名
         real_name: string;
+        // 登录用户名
+        username: string;
         // 状态
         status: UserStatus | undefined;
-        // 手机号码
-        phone: string;
-        // 邮箱
-        email: string;
         // 语言
         language: string;
         // 时区
@@ -199,14 +196,12 @@ declare global {
         id?: string;
         // 工号
         employee_no: string;
-        // 真实姓名
+        // 姓名
         real_name: string;
+        // 登录用户名
+        username: string;
         // 状态
         status: UserStatus | undefined;
-        // 手机号码
-        phone: string;
-        // 邮箱
-        email: string;
         // 语言
         language: string;
         // 时区
@@ -227,16 +222,14 @@ declare global {
         id: string;
         /** 工号 */
         employee_no: string;
-        /** 真实姓名 */
+        /** 登录用户名 */
+        username: string;
+        /** 姓名 */
         real_name: string;
         /** 头像 */
         avatar: string;
         /** 状态 */
         status: UserStatus;
-        /** 手机号 */
-        phone: string;
-        /** 邮箱 */
-        email: string;
         /** 语言 */
         language: string;
         /** 时区 */
@@ -261,12 +254,8 @@ declare global {
 
     /** 更新用户信息入参 */
     type UserProfileFrom = {
-        /** 真实姓名 */
+        /** 姓名 */
         real_name: string;
-        /** 手机号 */
-        phone: string;
-        /** 邮箱 */
-        email: string;
         /** 语言 */
         language: string;
         /** 时区 */

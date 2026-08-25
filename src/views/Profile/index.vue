@@ -21,11 +21,10 @@ const profileLoading = ref(true);
 const userInfo = ref<UserProfileVO>({
     id: "",
     employee_no: "",
+    username: "",
     real_name: "",
     avatar: "",
     status: "ACTIVE",
-    phone: "",
-    email: "",
     language: "",
     timezone: "",
     department_id: "",
@@ -56,7 +55,10 @@ onMounted(() => {
             <el-card class="avatar-card">
                 <div class="avatar-section">
                     <el-avatar :src="userInfo.avatar || avatar" :size="100" class="avatar-image" />
-                    <h3 class="username">{{ userInfo.real_name }}</h3>
+                    <div class="display-name">
+                        <span class="display-name__label">姓名</span>
+                        <span class="display-name__value">{{ userInfo.real_name }}</span>
+                    </div>
                     <p class="department">{{ userInfo.department_name }}</p>
                     <div class="role-tags">
                         <el-tag v-for="role in userInfo.roles" :key="role.id" size="small" type="info">
@@ -70,12 +72,8 @@ onMounted(() => {
                             <span class="info-value">{{ userInfo.employee_no }}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">邮箱</span>
-                            <span class="info-value">{{ userInfo.email }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">手机</span>
-                            <span class="info-value">{{ userInfo.phone }}</span>
+                            <span class="info-label">登录用户名</span>
+                            <span class="info-value">{{ userInfo.username }}</span>
                         </div>
                     </div>
                 </div>
@@ -141,11 +139,22 @@ onMounted(() => {
     margin-bottom: 12px;
 }
 
-.username {
-    margin: 0 0 4px 0;
+.display-name {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0 0 4px;
+}
+
+.display-name__label {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+}
+
+.display-name__value {
+    color: var(--el-text-color-primary);
     font-size: 18px;
     font-weight: 600;
-    color: var(--el-text-color-primary);
 }
 
 .department {

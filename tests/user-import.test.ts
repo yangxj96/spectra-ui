@@ -22,19 +22,20 @@ describe("用户批量导入工具", () => {
         const rows = [
             {
                 real_name: "张三",
+                username: "zhangsan",
                 phone: "13800000000",
                 email: "zhangsan@example.com"
             }
         ];
 
-        expect(serializeUserImportRows(rows)).toBe('[["张三","13800000000","zhangsan@example.com"]]');
+        expect(serializeUserImportRows(rows)).toBe('[["张三","zhangsan","13800000000","zhangsan@example.com"]]');
     });
 
     it("应读取 Excel 第一个工作表的固定模板", async () => {
         const workbook = utils.book_new();
         const sheet = utils.aoa_to_sheet([
-            ["real_name", "phone", "email"],
-            ["张三", "13800000000", "zhangsan@example.com"]
+            ["real_name", "username", "phone", "email"],
+            ["张三", "zhangsan", "13800000000", "zhangsan@example.com"]
         ]);
         utils.book_append_sheet(workbook, sheet, "用户");
         const file = new File([write(workbook, { type: "array", bookType: "xlsx" })], "users.xlsx");
@@ -42,6 +43,7 @@ describe("用户批量导入工具", () => {
         const rows = await parseUserImportFile(file);
         expect(rows[0]).toEqual({
             real_name: "张三",
+            username: "zhangsan",
             phone: "13800000000",
             email: "zhangsan@example.com"
         });

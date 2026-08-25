@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { type AutocompleteData, type FormInstance, type FormRules } from "element-plus";
+import { type FormInstance, type FormRules } from "element-plus";
 import { computed, onMounted, reactive, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import { UserApi } from "@/api/user/user-api.ts";
-import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
 import StepNavigation from "@/components/StepNavigation/index.vue";
 import type { StepNavigationItem } from "@/components/StepNavigation/types.ts";
 import { userConverter } from "@/converter/user-converter.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
-import { useDictStore } from "@/plugin/store/modules/use-dict-store.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
-import { email, mobile } from "@/utils/verify-rules.ts";
 
 import RoleAssignmentEditor from "../RoleAssignmentEditor/index.vue";
 
@@ -36,7 +33,6 @@ type RoleAssignmentStep = {
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
-const dictStore = useDictStore();
 const userId = computed(() => String(route.params.id ?? ""));
 const isEditing = computed(() => Boolean(userId.value));
 const editorTitle = computed(() => (isEditing.value ? "编辑用户" : "新建用户"));
@@ -73,7 +69,6 @@ const form = reactive<UserForm>(
     })
 );
 const departmentTree = ref<DepartmentTreeVO[]>([]);
-const emailSuffixes = ref<string[]>([]);
 const loading = ref(false);
 const submitting = ref(false);
 const roleSteps = ref<RoleAssignmentStep[]>([]);
@@ -88,14 +83,7 @@ const roleAssignmentEditor = useTemplateRef<RoleAssignmentEditorExpose>("roleAss
 const rules: FormRules<UserForm> = {
     employee_no: [{ required: true, message: "请输入工号", trigger: "blur" }],
     real_name: [{ required: true, message: "请输入姓名", trigger: "blur" }],
-    email: [
-        { required: true, message: "请输入邮箱", trigger: "blur" },
-        { validator: email, trigger: "blur" }
-    ],
-    phone: [
-        { required: true, message: "请输入手机号码", trigger: "blur" },
-        { validator: mobile, trigger: "blur" }
-    ],
+    username: [{ required: true, message: "请输入登录用户名", trigger: "blur" }],
     status: [{ required: true, message: "请选择状态", trigger: "change" }],
     language: [{ required: true, message: "请选择语言", trigger: "change" }],
     timezone: [{ required: true, message: "请选择时区", trigger: "change" }],
@@ -105,12 +93,8 @@ const rules: FormRules<UserForm> = {
 async function load(): Promise<void> {
     loading.value = true;
     try {
-        const [departments, suffixes] = await Promise.all([
-            DepartmentApi.tree(),
-            dictStore.getDictData("sys_email_suffix")
-        ]);
+        const departments = await DepartmentApi.tree();
         departmentTree.value = departments ?? [];
-        emailSuffixes.value = (suffixes ?? []).map(item => item.value);
 
         if (isEditing.value) {
             Object.assign(form, userConverter.toForm(await UserApi.detail(userId.value)));
@@ -209,32 +193,6 @@ async function handleSubmit(): Promise<void> {
     }
 }
 
-function handleEmailSuggestions(query: string, callback: (results: AutocompleteData) => void): void {
-    if (!query) {
-        callback([]);
-        return;
-    }
-
-    let name = "";
-    let domainPart = "";
-    if (query.includes("@")) {
-        [name = "", domainPart = ""] = query.split("@");
-    } else {
-        name = query;
-    }
-
-    if (!name) {
-        callback([]);
-        return;
-    }
-
-    callback(
-        emailSuffixes.value
-            .filter(suffix => !domainPart || suffix.includes(domainPart))
-            .map(suffix => ({ value: `${name}@${suffix}` }))
-    );
-}
-
 onMounted(load);
 </script>
 
@@ -299,6 +257,11 @@ onMounted(load);
                                     </el-form-item>
                                 </el-col>
                                 <el-col :span="12">
+                                    <el-form-item label="登录用户名" prop="username">
+                                        <el-input v-model="form.username" clearable placeholder="请输入登录用户名" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
                                     <el-form-item label="状态" prop="status">
                                         <el-select v-model="form.status" clearable placeholder="请选择状态">
                                             <el-option
@@ -307,31 +270,6 @@ onMounted(load);
                                                 :label="option.label"
                                                 :value="option.value" />
                                         </el-select>
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item label="手机号码" prop="phone">
-                                        <el-input v-model="form.phone" clearable placeholder="请输入手机号码" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item label="邮箱" prop="email">
-                                        <el-autocomplete
-                                            v-model="form.email"
-                                            :fetch-suggestions="handleEmailSuggestions"
-                                            clearable
-                                            placeholder="请输入邮箱">
-                                            <template #suffix>
-                                                <el-tooltip
-                                                    effect="dark"
-                                                    content="同时也作为默认登录账号"
-                                                    placement="right">
-                                                    <ComponentsIcons
-                                                        name="icon-hint"
-                                                        style="margin-left: 10px; width: 1.4em; height: 1.4em" />
-                                                </el-tooltip>
-                                            </template>
-                                        </el-autocomplete>
                                     </el-form-item>
                                 </el-col>
                                 <el-col :span="12">

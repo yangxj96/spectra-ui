@@ -141,8 +141,8 @@ onMounted(async () => {
             <el-form-item label="姓名" prop="real_name">
                 <el-input v-model="condition.real_name" class="search-field" placeholder="请输入姓名" clearable />
             </el-form-item>
-            <el-form-item label="邮箱" prop="email">
-                <el-input v-model="condition.email" class="search-field" placeholder="请输入邮箱" clearable />
+            <el-form-item label="登录用户名" prop="username">
+                <el-input v-model="condition.username" class="search-field" placeholder="请输入登录用户名" clearable />
             </el-form-item>
             <el-form-item label="状态" prop="status">
                 <el-select v-model="condition.status" class="search-field" placeholder="请选择状态" clearable>
@@ -193,8 +193,7 @@ onMounted(async () => {
                     show-overflow-tooltip
                     label="姓名"
                     prop="real_name" />
-                <el-table-column align="center" width="250" show-overflow-tooltip label="邮箱" prop="email" />
-                <el-table-column align="center" width="120" show-overflow-tooltip label="手机号码" prop="phone" />
+                <el-table-column align="center" width="220" show-overflow-tooltip label="登录用户名" prop="username" />
                 <el-table-column align="center" width="150" show-overflow-tooltip label="语言" prop="language">
                     <template v-slot:default="scope">
                         {{ dictStore.getDictItemSync("sys_language", scope.row.language)?.label }}

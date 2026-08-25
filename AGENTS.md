@@ -1,104 +1,21 @@
-# AGENTS.md
+# spectra-ui Agent 指令
 
-## 项目概述
+## 项目边界
 
-Vue 3 SPA 管理后台（光谱后端管理系统）— `spectra-admin` 的 **Web 前端**。TypeScript, Vite, Element Plus, Pinia, Vue Router。
+- Vue 3、TypeScript、Vite、Element Plus、Pinia、Vue Router Web 管理后台。
+- 修改 Web 代码时使用 `$spectra-ui-spec`。
+- 后端 API 契约由 `spectra-admin` 定义；修改端点、字段或响应时同步更新 `src/api/` 和相关测试。
 
-- 后端 API：`spectra-admin`（Spring Boot，端口 4004）
-- 开发服务器：端口 5173
-- 所有 API 调用指向 `VITE_API_URL`（新克隆模板默认 `https://127.0.0.1:4004/`；Vite 本地开发服务器同时使用共享 P12 证书启用 HTTPS）
+## 实现约束
 
-编码规范由 `spectra/spectra-ui-spec` skill 控制（修改前端代码时自动加载）。
+- 使用项目自定义请求客户端 `src/plugin/request/`，不要新增 Axios 或直接使用 fetch。
+- 遵循现有 API、Store、Hook、组件和类型结构；不要为局部需求引入平行抽象。
+- SFC 遵循项目 lint 规定的块顺序；类型保持严格，不用 `any` 绕过约束。
+- `pnpm start` 已通过 `prestart` 执行启动前检查，不要重复串联格式化、lint 和类型检查。
+- 修改 `logicflow-plugin-flowable` 后，先构建或监听构建插件，再验证 Web。
 
-## mise 与开发启动
+## 验证
 
-本项目的 `mise.toml` 固定 Node 24.14.0 和 pnpm 11.0.9。正常开发终端已经在 PowerShell profile 中执行：
-
-```powershell
-(&mise activate pwsh) | Out-String | Invoke-Expression
-```
-
-进入本目录后直接启动 Web 开发服务器；不需要每次重复安装或手动选择 Node/pnpm 版本：
-
-```powershell
-Set-Location .\spectra-ui
-pnpm start
-```
-
-启动前应先让 `spectra-admin` 完成打包并运行。`pnpm start` 的 `prestart` 已自动执行 format、lint 和 type-check，不要在启动命令中再次串联这些检查。
-
-## 常用命令
-
-- `pnpm start` — 开发服务器（**先执行 format + lint:fix + type-check**，通过 `prestart` 钩子）
-- `pnpm run build` — 生产构建
-- `pnpm run lint` — ESLint（带缓存）
-- `pnpm run lint:fix` — ESLint + 自动修复
-- `pnpm run format` — Prettier
-- `pnpm run format:check` — Prettier 只检查不改写
-- `pnpm run type-check` — vue-tsc（composite: false）
-- `pnpm run test` — Vitest 单次运行
-- `pnpm run test:watch` — Vitest 监视模式
-
-验证顺序：`format:check → lint → type-check → test → build`
-
-## 工具链
-
-- Vite 8, Vue 3.5, TypeScript 5.9, ESLint 9, Prettier 3
-- 测试：Vitest 4 + happy-dom + @vue/test-utils + @pinia/testing
-- Node/pnpm 版本及 npm 镜像配置见根 `AGENTS.md`
-
-## 项目结构
-
-```
-src/
-  api/            # API 模块（auth/, common/, system/, user/）
-  assets/         # 静态资源
-  components/     # 共享组件（DictSelect, FileUpload, IconPicker 等）
-  converter/      # 数据转换器（实体 → 显示格式）
-  directive/      # 自定义 Vue 指令（v-owner）
-  hooks/          # 组合式函数（useTable, useFileUpload）
-  plugin/
-    element/      # Element Plus 主题/scss 覆盖
-    request/      # HTTP 客户端（http.ts, api.ts, auth.ts, cache.ts）
-    router/       # Vue Router 配置
-    store/        # Pinia stores（模块：app, dict, props, user）
-  utils/          # 工具函数（common, crypto, message, route, verify）
-  views/          # 页面组件（Dashboard, Login, Devops, System, Example, Common）
-types/            # 全局 .d.ts 类型声明
-tests/            # 测试文件（扁平结构，无子目录）
-```
-
-## HTTP 客户端
-
-自定义 `request()` 在 `src/plugin/request/http.ts` 中——非 Axios。核心特性：
-
-- Token 401 自动刷新
-- 请求去重（进行中映射表）和重复请求时中止上一个
-- 优先级队列：`high`(10) / `normal`(6) / `low`(2) 并发限制
-- 可选缓存和重试
-- 路径参数通过模板字面量：`request("/api/users/{id}", { pathParams: { id } })`
-- FormData 上传自动将 snake_case 键转为 camelCase
-
-API 辅助函数：`get()`, `post()`, `put()`, `del()`, `upload()`, `download()` 在 `src/plugin/request/api.ts`。
-
-## 测试
-
-- 测试文件位于 `tests/`（扁平结构），命名格式 `*.test.ts`
-- 设置文件：`tests/setup.ts` — 全局 stub `RouterLink`
-- 测试使用 `createTestingPinia`、`@vue/test-utils` mount 和 `vi.mock` 处理 stores
-- 运行单个测试：`pnpm run test -- DictSelect`（vitest name filter）
-
-## 环境变量
-
-- `VITE_API_URL` — 后端 API 基础 URL（指向 `spectra-admin`）
-- 系统名称由启动阶段 `/api/system/bootstrap` 返回，页面标题根据系统名称和当前路由动态生成
-- 仓库只提交 `.env.example`；新克隆复制为被忽略的 `.env.development`，生产值由部署环境注入，不假设仓库存在 `.env.production`
-
-## 注意事项
-
-- `pnpm start` 会在启动开发服务器前自动执行 format、lint 和 type-check（通过 `prestart` 脚本）。不要手动串联这些命令。
-- `pnpm-workspace.yaml` 存在但仅配置了 `allowBuilds`——本项目不是 monorepo。
-- 视图使用 `vue/block-order` 规则：SFC 中 script 必须在 template 之前。
-- `RequestOptions` 类型使用模板字面量类型实现类型安全的路径参数——添加新 API 函数时请遵循该模式。
-- `RequestOptions` 的泛型 `U extends string` 将 URL 字符串传入以实现路径参数类型推断。
-- API 端点和响应格式由 `spectra-admin` 定义——若后端更改端点，需同步更新此处的 `src/api/` 模块。
+- 开发中优先执行目标测试或 `pnpm run type-check`。
+- 交付前按需执行 `pnpm run format:check`、`pnpm run lint`、`pnpm run type-check`、`pnpm run test`、`pnpm run build`。
+- 完整命令和环境说明见 `docs/50-开发指南/20-常见命令.md` 与 `docs/20-前端/10-spectra-ui.md`。

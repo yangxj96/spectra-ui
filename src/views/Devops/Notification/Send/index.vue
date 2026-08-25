@@ -155,8 +155,19 @@ const previewAvailability = computed(() =>
         .filter((availability): availability is NotificationControlledSendChannelAvailability => Boolean(availability))
 );
 
+const skippedReasonLabels: Record<string, string> = {
+    OUT_OF_SCOPE_OR_INACTIVE: "超出数据范围或用户未启用",
+    CHANNEL_UNAVAILABLE: "发送渠道不可用",
+    MISSING_CHANNEL_ADDRESS: "缺少渠道地址",
+    PREFERENCE_DISABLED_OR_QUIET: "用户偏好已关闭或当前处于免打扰时段"
+};
+
 const skippedRows = computed(() =>
-    Object.entries(previewResult.value?.skipped_counts ?? {}).map(([reason, count]) => ({ reason, count }))
+    (previewResult.value?.skipped_details ?? []).map(item => ({
+        channel: channelLabel(item.channel),
+        reason: skippedReasonLabels[item.reason] ?? item.reason,
+        count: item.count
+    }))
 );
 
 const canApply = computed(() => {
@@ -248,6 +259,10 @@ function prepareParameters(): Record<string, unknown> | undefined {
 
 function channelLabel(channel: NotificationAdminChannel): string {
     return channelLabels[channel] ?? channel;
+}
+
+function templateLabel(template: NotificationTemplateVO): string {
+    return `${template.template_name}(${template.template_group_code})·v${template.version_no}`;
 }
 
 function purposeLabel(purpose: string): string {
@@ -376,7 +391,7 @@ function buildRequest(): NotificationControlledSendParams | undefined {
     const selectedAudienceCount =
         form.audience.user_ids.length + form.audience.department_ids.length + form.audience.role_ids.length;
     if (!selectedAudienceCount) {
-        validationMessage.value = "至少选择一个用户、部门或角色作为受众";
+        validationMessage.value = "至少选择一个明确用户、部门范围或角色范围作为发送对象";
         MessageUtils.error(validationMessage.value);
         return undefined;
     }
@@ -531,7 +546,7 @@ onMounted(() => {
                                 <div class="template-selector__label">{{ channelLabel(item.channel) }}</div>
                                 <div v-if="item.options.length === 1" class="template-selector__selected">
                                     <span>
-                                        {{ item.options[0]?.template_group_code }} · v{{ item.options[0]?.version_no }}
+                                        {{ item.options[0] ? templateLabel(item.options[0]) : "" }}
                                     </span>
                                     <el-tag type="success" size="small">自动选择</el-tag>
                                 </div>
@@ -545,9 +560,9 @@ onMounted(() => {
                                     <el-option
                                         v-for="template in item.options"
                                         :key="template.id"
-                                        :label="`${template.template_group_code} · v${template.version_no}`"
+                                        :label="templateLabel(template)"
                                         :value="template.id">
-                                        <span>{{ template.template_group_code }} · v{{ template.version_no }}</span>
+                                        <span>{{ templateLabel(template) }}</span>
                                         <small>{{ template.content_template }}</small>
                                     </el-option>
                                 </el-select>
@@ -619,11 +634,14 @@ onMounted(() => {
                     <template #header>
                         <div class="section-header">
                             <span>发送对象与业务信息</span>
-                            <el-tag type="info" size="small">可选补充</el-tag>
+                            <el-tag type="warning" size="small">发送对象必选，业务信息可选</el-tag>
                         </div>
                     </template>
                     <el-form label-position="top" class="send-form">
                         <div class="subsection-title">发送给</div>
+                        <div class="form-hint target-hint">
+                            至少选择一个明确用户、部门范围或角色范围；业务类型、业务编号和站内跳转链接为可选补充。
+                        </div>
                         <el-form-item label="明确用户">
                             <el-select
                                 v-model="form.audience.user_ids"
@@ -797,7 +815,8 @@ onMounted(() => {
                 <el-row :gutter="12" class="preview-section">
                     <el-col :xs="24" :md="12">
                         <div class="preview-section__title">跳过原因</div>
-                        <el-table :data="skippedRows" stripe size="small">
+                        <el-table v-if="skippedRows.length" :data="skippedRows" stripe size="small">
+                            <el-table-column label="渠道" prop="channel" width="85" />
                             <el-table-column label="原因" prop="reason" min-width="180" />
                             <el-table-column label="数量" prop="count" width="75" align="right" />
                         </el-table>

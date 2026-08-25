@@ -46,6 +46,12 @@ declare global {
         recipient_masked: string;
     }
 
+    interface NotificationControlledSendSkippedDetailVO {
+        channel: NotificationAdminChannel;
+        reason: string;
+        count: number;
+    }
+
     interface NotificationControlledSendPreviewVO {
         preview_id: string;
         preview_token: string;
@@ -55,6 +61,7 @@ declare global {
         eligible_task_count: number;
         skipped_task_count: number;
         skipped_counts: Record<string, number>;
+        skipped_details: NotificationControlledSendSkippedDetailVO[];
         channel_availability: Partial<Record<NotificationAdminChannel, NotificationControlledSendChannelAvailability>>;
         templates: Partial<Record<NotificationAdminChannel, NotificationControlledSendTemplateVO>>;
         samples: NotificationControlledSendSampleVO[];

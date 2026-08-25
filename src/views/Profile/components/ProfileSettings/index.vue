@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CopyDocument, Lock, Plus } from "@element-plus/icons-vue";
+import { CopyDocument, Lock } from "@element-plus/icons-vue";
 import QRCode from "qrcode";
 import { nextTick, onMounted, ref, useTemplateRef } from "vue";
 
@@ -64,6 +64,14 @@ async function handleEnableMfa() {
     } finally {
         mfaLoading.value = false;
     }
+}
+
+function handleMfaSwitchChange(enabled: boolean) {
+    if (enabled) {
+        void handleEnableMfa();
+        return;
+    }
+    handleOpenDisableMfa();
 }
 
 async function handleConfirmMfa() {
@@ -146,17 +154,16 @@ onMounted(() => {
                     <h5>两步验证（MFA）</h5>
                     <p>启用后，密码、短信或邮箱登录完成后还需要验证身份验证器</p>
                 </div>
-                <div class="mfa-state">
-                    <el-tag :type="mfaStatus.enabled ? 'success' : 'info'" effect="plain">
+                <div class="setting-state mfa-state">
+                    <el-tag class="setting-status-tag" :type="mfaStatus.enabled ? 'success' : 'info'" effect="plain">
                         {{ mfaStatus.enabled ? "已启用" : "未启用" }}
                     </el-tag>
-                    <el-button v-if="!mfaStatus.enabled" type="primary" :loading="mfaLoading" @click="handleEnableMfa">
-                        <el-icon><Plus /></el-icon>
-                        启用
-                    </el-button>
-                    <el-button v-else type="danger" plain :loading="mfaLoading" @click="handleOpenDisableMfa">
-                        停用
-                    </el-button>
+                    <el-switch
+                        :model-value="mfaStatus.enabled"
+                        :loading="mfaLoading"
+                        :disabled="mfaLoading || mfaDisableLoading"
+                        aria-label="切换两步验证"
+                        @change="handleMfaSwitchChange" />
                 </div>
             </div>
             <div class="setting-item">
@@ -164,7 +171,15 @@ onMounted(() => {
                     <h5>登录通知</h5>
                     <p>新设备登录时发送通知，当前功能暂未实现</p>
                 </div>
-                <el-switch v-model="securitySettings.login_notification" />
+                <div class="setting-state">
+                    <el-tag
+                        class="setting-status-tag"
+                        :type="securitySettings.login_notification ? 'success' : 'info'"
+                        effect="plain">
+                        {{ securitySettings.login_notification ? "已启用" : "未启用" }}
+                    </el-tag>
+                    <el-switch v-model="securitySettings.login_notification" aria-label="切换登录通知" />
+                </div>
             </div>
         </div>
         <el-divider />
@@ -270,11 +285,23 @@ onMounted(() => {
     align-items: flex-start;
 }
 
-.mfa-state {
+.setting-state {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
+}
+
+.mfa-state {
+    align-items: flex-start;
+}
+
+.setting-status-tag {
+    order: 0;
+}
+
+.setting-state .el-switch {
+    order: 1;
 }
 
 .setting-info {

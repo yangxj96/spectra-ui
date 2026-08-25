@@ -19,6 +19,7 @@ const loginTypeMap: Record<string, { label: string; component: Component }> = {
 
 // 已绑定账号列表
 const identityBindings = ref<AuthenticationIdentityVO[]>([]);
+const bindingLoading = ref(false);
 
 // 当前登录方式
 const currentLoginType = ref("PASSWORD");
@@ -50,8 +51,9 @@ const isEmailBound = computed(() => {
 
 // 加载绑定列表
 async function loadBindings() {
+    bindingLoading.value = true;
     try {
-        const list = await AuthenticationIdentityApi.list();
+        const list = await AuthenticationIdentityApi.list({ loading: false });
         identityBindings.value = list;
 
         // 找到当前登录方式
@@ -62,6 +64,8 @@ async function loadBindings() {
         }
     } catch (error) {
         console.error("加载绑定列表失败:", error);
+    } finally {
+        bindingLoading.value = false;
     }
 }
 
@@ -256,7 +260,7 @@ onMounted(() => {
 
         <div class="binding-section">
             <h4 class="section-title">已绑定账号</h4>
-            <el-table :data="identityBindings" stripe class="binding-table">
+            <el-table v-loading="bindingLoading" :data="identityBindings" stripe class="binding-table">
                 <el-table-column label="类型" width="120">
                     <template #default="{ row }">
                         <div class="type-cell">

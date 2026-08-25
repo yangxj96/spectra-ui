@@ -23,7 +23,7 @@ async function handleSaveInfo() {
             language: userInfo.value.language,
             timezone: userInfo.value.timezone
         };
-        await UserApi.updateProfile(params);
+        await UserApi.updateProfile(params, { loading: false });
         ElMessage.success("保存成功");
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "保存失败";

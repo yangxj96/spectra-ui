@@ -82,7 +82,7 @@ function purposeLabel(purpose: NotificationPurpose): string {
 async function loadNotificationPreferences(): Promise<void> {
     preferenceLoading.value = true;
     try {
-        const preferences = await NotificationApi.preferences();
+        const preferences = await NotificationApi.preferences({ loading: false });
         preferenceRows.value = buildPreferenceRows(preferences);
     } catch (error: unknown) {
         MessageUtils.error(error instanceof Error ? error.message : "通知偏好加载失败");
@@ -94,12 +94,15 @@ async function loadNotificationPreferences(): Promise<void> {
 async function handlePreferenceChange(row: NotificationPreferenceRow): Promise<void> {
     setPreferenceSaving(row, true);
     try {
-        await NotificationApi.savePreference({
-            purpose: row.purpose,
-            channel: row.channel,
-            enabled: row.enabled,
-            doNotDisturb: row.doNotDisturb
-        });
+        await NotificationApi.savePreference(
+            {
+                purpose: row.purpose,
+                channel: row.channel,
+                enabled: row.enabled,
+                doNotDisturb: row.doNotDisturb
+            },
+            { loading: false }
+        );
         MessageUtils.success(`${purposeLabel(row.purpose)}·${channelLabel(row.channel)}偏好已保存`);
     } catch (error: unknown) {
         await loadNotificationPreferences();

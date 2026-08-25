@@ -9,8 +9,12 @@ import { del, get, post } from "@/plugin/request/api.ts";
  */
 export const AuthenticationIdentityApi = {
     /** 获取当前用户的有效认证身份列表。 */
-    async list(): Promise<AuthenticationIdentityVO[]> {
-        return get<AuthenticationIdentityVO[]>("/api/security/identities");
+    async list(
+        options?: Pick<RequestOptions<"/api/security/identities">, "loading">
+    ): Promise<AuthenticationIdentityVO[]> {
+        return options
+            ? get<AuthenticationIdentityVO[]>("/api/security/identities", undefined, options)
+            : get<AuthenticationIdentityVO[]>("/api/security/identities");
     },
 
     /** 绑定手机号认证身份。 */

@@ -11,7 +11,7 @@ function getContainer(): HTMLElement {
 const DEFAULT_OPTIONS: Partial<MessageOptions> = {
     appendTo: getContainer(),
     showClose: true,
-    duration: 3000
+    duration: 5000
 };
 
 /**
@@ -52,7 +52,7 @@ function createMessage(type: MessageType) {
 function createNotification(type: MessageType) {
     return (message: unknown, title = "提示", options?: Partial<NotificationOptions>) => {
         ElNotification({
-            duration: 4e3,
+            duration: 5000,
             ...options,
             type,
             title,

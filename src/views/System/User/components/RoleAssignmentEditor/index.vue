@@ -106,6 +106,7 @@ const rolePermissionOptions = (draft: RoleAssignmentDraft) => {
     const permissionCodes = new Set(draft.authorization?.permission_codes ?? []);
     return permissionCatalog.value.filter(permission => permissionCodes.has(permission.code));
 };
+const hasRolePermissions = (draft: RoleAssignmentDraft) => (draft.authorization?.permission_codes?.length ?? 0) > 0;
 const grantablePermissionCodes = (draft: RoleAssignmentDraft) =>
     new Set(draft.authorization?.grantable_permission_codes ?? []);
 const isRoleEditable = (draft: RoleAssignmentDraft) => Boolean(roleById(draft.roleId)?.state && draft.authorization);
@@ -263,11 +264,14 @@ function validateDraft(draft: RoleAssignmentDraft): boolean {
         MessageUtils.warning(`角色“${roleLabel(draft)}”不可编辑，请移除该角色后再提交`);
         return false;
     }
-    if (!draft.boundaries.length) {
-        MessageUtils.warning(`角色“${roleLabel(draft)}”至少需要配置一个权限访问范围`);
-        return false;
-    }
     const rolePermissionCodes = new Set(draft.authorization?.permission_codes ?? []);
+    if (!draft.boundaries.length) {
+        if (rolePermissionCodes.size > 0) {
+            MessageUtils.warning(`角色“${roleLabel(draft)}”至少需要配置一个权限访问范围`);
+            return false;
+        }
+        return true;
+    }
     for (const boundary of draft.boundaries) {
         if (!rolePermissionCodes.has(boundary.permission)) {
             MessageUtils.warning(`角色“${roleLabel(draft)}”未声明权限：${boundary.permission}`);
@@ -457,7 +461,13 @@ onMounted(load);
                     :closable="false" />
 
                 <template v-else>
-                    <div class="boundary-add-row">
+                    <el-alert
+                        v-if="!hasRolePermissions(activeDraft)"
+                        title="当前角色没有配置业务权限，保存后可以正常登录，但不能访问需要权限的业务功能。"
+                        type="info"
+                        :closable="false" />
+
+                    <div v-else class="boundary-add-row">
                         <strong class="authorization-tool-title">添加访问范围</strong>
                         <div class="boundary-add-controls">
                             <el-select
@@ -475,12 +485,6 @@ onMounted(load);
                             </el-select>
                         </div>
                     </div>
-
-                    <el-alert
-                        v-if="!rolePermissionOptions(activeDraft).length"
-                        title="当前角色没有可配置的权限，不能提交空的访问范围。"
-                        type="error"
-                        :closable="false" />
 
                     <el-card
                         v-for="boundary in activeDraft.boundaries"
@@ -556,7 +560,13 @@ onMounted(load);
                             </template>
                         </el-form>
                     </el-card>
-                    <el-empty v-if="!activeDraft.boundaries.length" description="尚未配置权限访问范围" />
+                    <el-empty
+                        v-if="!activeDraft.boundaries.length"
+                        :description="
+                            hasRolePermissions(activeDraft)
+                                ? '尚未配置权限访问范围'
+                                : '该角色无已声明权限，无需配置权限访问范围'
+                        " />
                 </template>
             </template>
             <el-empty v-else description="请返回第 02 步至少选择一个角色" />

@@ -50,15 +50,20 @@ export const UserApi = {
     /**
      * 获取当前用户详情
      */
-    async getProfile(): Promise<UserProfileVO> {
-        return get<UserProfileVO>("/api/user/profile");
+    async getProfile(options?: Pick<RequestOptions<"/api/user/profile">, "loading">): Promise<UserProfileVO> {
+        return options
+            ? get<UserProfileVO>("/api/user/profile", undefined, options)
+            : get<UserProfileVO>("/api/user/profile");
     },
     /**
      * 更新当前用户信息
      * @param params 用户信息
      */
-    async updateProfile(params: UserProfileFrom): Promise<void> {
-        return put<void>("/api/user/profile", params);
+    async updateProfile(
+        params: UserProfileFrom,
+        options?: Pick<RequestOptions<"/api/user/profile">, "loading">
+    ): Promise<void> {
+        return put<void>("/api/user/profile", params, options);
     },
     /**
      * 修改密码

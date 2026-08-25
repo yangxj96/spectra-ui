@@ -61,14 +61,22 @@ export const NotificationApi = {
     /**
      * 获取当前用户用途×渠道偏好
      */
-    preferences(): Promise<NotificationPreference[]> {
-        return get<NotificationPreference[]>("/api/notification-center/preferences");
+    preferences(
+        options?: Pick<RequestOptions<"/api/notification-center/preferences">, "loading">
+    ): Promise<NotificationPreference[]> {
+        return options
+            ? get<NotificationPreference[]>("/api/notification-center/preferences", undefined, options)
+            : get<NotificationPreference[]>("/api/notification-center/preferences");
     },
     /**
      * 保存当前用户可选通知偏好；后端使用 query 参数接收表单
      */
-    savePreference(params: NotificationPreferenceUpdate): Promise<void> {
+    savePreference(
+        params: NotificationPreferenceUpdate,
+        options?: Pick<RequestOptions<"/api/notification-center/preferences">, "loading">
+    ): Promise<void> {
         return put<void>("/api/notification-center/preferences", undefined, {
+            ...options,
             params: {
                 purpose: params.purpose,
                 channel: params.channel,

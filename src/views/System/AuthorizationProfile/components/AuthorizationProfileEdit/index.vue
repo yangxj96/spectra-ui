@@ -153,6 +153,10 @@ function permissionOptions(assignment: ProfileAssignmentDraft): AuthorityTree[] 
     return permissionCatalog.value.filter(permission => permissionCodes.has(permission.code));
 }
 
+function hasRolePermissions(assignment: ProfileAssignmentDraft): boolean {
+    return (roleAuthorization(assignment.role_code)?.permission_codes.length ?? 0) > 0;
+}
+
 function grantablePermissions(assignment: ProfileAssignmentDraft): Set<string> {
     return new Set(roleAuthorization(assignment.role_code)?.grantable_permission_codes ?? []);
 }
@@ -457,13 +461,16 @@ function validateAssignments(): boolean {
             MessageUtils.warning(`${assignment.role_code} 的角色版本已变化，请重新选择角色`);
             return false;
         }
-        if (!assignment.boundaries.length) {
-            MessageUtils.warning(`${assignment.role_code} 至少需要一个权限访问范围`);
-            return false;
-        }
         const permissionCodes = new Set<string>();
         const rolePermissionCodes = new Set(authorization.permission_codes);
         const grantableCodes = new Set(authorization.grantable_permission_codes);
+        if (!assignment.boundaries.length) {
+            if (rolePermissionCodes.size > 0) {
+                MessageUtils.warning(`角色「${roleName(assignment.role_code)}」至少需要一个权限访问范围`);
+                return false;
+            }
+            continue;
+        }
         for (const boundary of assignment.boundaries) {
             if (!permissionCodes.add(boundary.permission)) {
                 MessageUtils.warning(`权限不能重复配置：${boundary.permission}`);
@@ -740,7 +747,13 @@ onMounted(load);
                                     </div>
 
                                     <template v-if="assignment.role_code">
-                                        <div class="permission-add-row">
+                                        <el-alert
+                                            v-if="!hasRolePermissions(assignment)"
+                                            type="info"
+                                            :closable="false"
+                                            title="该角色当前未配置任何业务权限，保存后可以正常登录，但不能访问需要权限的业务功能。" />
+
+                                        <div v-else class="permission-add-row">
                                             <el-select
                                                 v-model="assignment.permission_to_add"
                                                 placeholder="选择角色已声明的权限"
@@ -1023,7 +1036,11 @@ onMounted(load);
 
                                         <el-empty
                                             v-if="!assignment.boundaries.length"
-                                            description="尚未配置权限访问范围" />
+                                            :description="
+                                                hasRolePermissions(assignment)
+                                                    ? '尚未配置权限访问范围'
+                                                    : '该角色无已声明权限，无需配置权限访问范围'
+                                            " />
                                     </template>
                                 </div>
                             </template>

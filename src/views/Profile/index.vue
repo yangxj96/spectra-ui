@@ -16,6 +16,7 @@ defineOptions({
 
 const route = useRoute();
 const activeTab = ref(route.query.tab === "password" ? "password" : "info");
+const profileLoading = ref(true);
 
 const userInfo = ref<UserProfileVO>({
     id: "",
@@ -34,10 +35,12 @@ const userInfo = ref<UserProfileVO>({
 
 async function loadUserProfile() {
     try {
-        const profile = await UserApi.getProfile();
+        const profile = await UserApi.getProfile({ loading: false });
         userInfo.value = profile;
     } catch (error) {
         console.error("加载用户信息失败:", error);
+    } finally {
+        profileLoading.value = false;
     }
 }
 
@@ -47,7 +50,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="profile-container">
+    <div v-loading="profileLoading" class="profile-container">
         <!-- 左侧：头像与基本信息 -->
         <div class="left-panel">
             <el-card class="avatar-card">

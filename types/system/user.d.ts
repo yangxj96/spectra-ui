@@ -39,6 +39,12 @@ declare global {
         secret: string;
     };
 
+    /** 当前用户的 MFA 状态。 */
+    type MfaStatus = {
+        enabled: boolean;
+        factor_type?: "TOTP";
+    };
+
     type UserAuthorizationStatus = "UNCONFIGURED" | "INCOMPLETE" | "ACTIVE" | "PARTIAL";
 
     type UserStatus = "ACTIVE" | "LOCKED" | "DISABLED" | "DEPARTED";

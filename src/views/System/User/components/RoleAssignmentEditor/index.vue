@@ -36,6 +36,8 @@ type RoleAssignmentStep = {
     code: string;
 };
 
+const DEFAULT_USER_ROLE_CODE = "ROLE_USER";
+
 const props = withDefaults(
     defineProps<{
         userId?: string;
@@ -67,7 +69,12 @@ const draftAssignments = ref<RoleAssignmentDraft[]>([]);
 const loading = ref(false);
 const applyingProfile = ref(false);
 
-const initialActiveAssignments = computed(() => assignments.value.filter(assignment => assignment.state === "ACTIVE"));
+const initialActiveAssignments = computed(() =>
+    assignments.value.filter(
+        assignment => assignment.state === "ACTIVE" && assignment.role_code !== DEFAULT_USER_ROLE_CODE
+    )
+);
+const defaultUserRole = computed(() => roles.value.find(role => role.code === DEFAULT_USER_ROLE_CODE));
 const activeProfiles = computed(() => profiles.value.filter(profile => profile.state === "ACTIVE"));
 const permissionCatalog = computed(() => flattenAuthorityPermissions(authorityTree.value));
 const departmentByCode = computed(() => {
@@ -76,7 +83,11 @@ const departmentByCode = computed(() => {
     return result;
 });
 const selectedRoleIds = computed(() => new Set(draftAssignments.value.map(draft => draft.roleId)));
-const selectableRoles = computed(() => roles.value.filter(role => role.state && !selectedRoleIds.value.has(role.id)));
+const selectableRoles = computed(() =>
+    roles.value.filter(
+        role => role.state && role.code !== DEFAULT_USER_ROLE_CODE && !selectedRoleIds.value.has(role.id)
+    )
+);
 const activeDraft = computed(() => draftAssignments.value.find(draft => draft.key === activeDraftKey.value));
 const roleSteps = computed<RoleAssignmentStep[]>(() =>
     draftAssignments.value.map(draft => {
@@ -208,6 +219,9 @@ async function applyProfile(): Promise<void> {
                 MessageUtils.warning(`方案依赖的角色不存在或已停用：${profileAssignment.role_code}`);
                 continue;
             }
+            if (role.code === DEFAULT_USER_ROLE_CODE) {
+                continue;
+            }
             if (existingRoleIds.has(role.id) || selectedIds.has(role.id)) {
                 duplicateRoles.push(role.name);
                 continue;
@@ -305,25 +319,16 @@ function validateDraft(draft: RoleAssignmentDraft): boolean {
 
 async function validateSelection(): Promise<boolean> {
     if (roleIdsToAdd.value.length) await addRoles();
-    if (!draftAssignments.value.length) {
-        MessageUtils.warning("至少选择一个角色后才能继续");
-        return false;
-    }
     return true;
 }
 
 function validateDetails(): boolean {
-    if (!draftAssignments.value.length) {
-        MessageUtils.warning("至少选择一个角色后才能提交");
-        return false;
-    }
     return draftAssignments.value.every(validateDraft);
 }
 
 function validateCurrent(): boolean {
     if (!activeDraft.value) {
-        MessageUtils.warning("至少选择一个角色后才能继续");
-        return false;
+        return draftAssignments.value.length === 0;
     }
     return validateDraft(activeDraft.value);
 }
@@ -426,9 +431,12 @@ onMounted(load);
             <div class="selected-role-panel">
                 <div class="selected-role-header">
                     <strong class="authorization-tool-title">已选择角色</strong>
-                    <el-text type="info" size="small">至少保留一个角色</el-text>
+                    <el-text type="info" size="small">基础角色由系统自动提供，业务角色可选</el-text>
                 </div>
-                <div v-if="draftAssignments.length" class="selected-role-list">
+                <div v-if="defaultUserRole || draftAssignments.length" class="selected-role-list">
+                    <el-tag v-if="defaultUserRole" size="large" type="success">
+                        {{ defaultUserRole.name }}（{{ defaultUserRole.code }}）·系统自动提供
+                    </el-tag>
                     <el-tag
                         v-for="draft in draftAssignments"
                         :key="draft.key"
@@ -439,7 +447,7 @@ onMounted(load);
                         {{ roleLabel(draft) }}
                     </el-tag>
                 </div>
-                <el-empty v-else description="尚未选择角色" :image-size="70" />
+                <el-empty v-else description="尚未选择业务角色" :image-size="70" />
             </div>
         </template>
 
@@ -569,7 +577,7 @@ onMounted(load);
                         " />
                 </template>
             </template>
-            <el-empty v-else description="请返回第 02 步至少选择一个角色" />
+            <el-empty v-else description="当前没有业务角色，基础角色无需配置权限范围" />
         </template>
     </template>
 </template>

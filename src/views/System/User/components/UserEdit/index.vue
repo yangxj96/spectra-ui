@@ -157,7 +157,11 @@ function handleRoleStepPrevious(): void {
 }
 
 async function handleRoleStepNext(): Promise<void> {
-    if (!roleAssignmentEditor.value || activeRoleStepIndex.value < 0) return;
+    if (!roleAssignmentEditor.value) return;
+    if (activeRoleStepIndex.value < 0) {
+        await handleSubmit();
+        return;
+    }
     if (!roleAssignmentEditor.value.validateCurrent()) return;
 
     const nextRoleStep = roleSteps.value[activeRoleStepIndex.value + 1];
@@ -351,8 +355,8 @@ onMounted(load);
                                     </p>
                                     <p>
                                         角色的新增、套用和移除都在本步骤完成，
-                                        <strong>至少保留一个角色</strong>
-                                        后才能进入下一步。
+                                        <strong>业务角色可以不选择</strong>
+                                        ，系统会自动提供普通用户基础角色。
                                     </p>
                                     <p>
                                         如果方案中的角色已经存在当前用户，系统会

@@ -61,10 +61,12 @@ const currentAssignments = computed(() => {
     return assignment ? [assignment] : [];
 });
 
+const DEFAULT_USER_ROLE_CODE = "ROLE_USER";
+
 const editingId = computed(() => String(route.params.id ?? ""));
 const editorTitle = computed(() => (editingId.value ? "编辑授权方案" : "新建授权方案"));
 const permissionCatalog = computed(() => flattenPermissions(authorityTree.value));
-const activeRoles = computed(() => roles.value.filter(role => role.state));
+const activeRoles = computed(() => roles.value.filter(role => role.state && role.code !== DEFAULT_USER_ROLE_CODE));
 
 const scopeModeOptions: { value: ScopeMode; label: string }[] = [
     { value: "NONE", label: "NONE（仅能力，不限定数据范围）" },

@@ -15,6 +15,13 @@ const DEFAULT_OPTIONS: Partial<MessageOptions> = {
 };
 
 /**
+ * 相同类型和内容的消息在短时间内只展示一次。
+ * 请求封装层和页面 catch 可能会同时处理同一个异常，避免因此重复提示。
+ */
+const DUPLICATE_MESSAGE_WINDOW = 1000;
+const recentMessages = new Map<string, number>();
+
+/**
  * 标准化错误信息
  *
  * @param message 消息
@@ -33,11 +40,22 @@ function resolveMessage(message: unknown): string {
  */
 function createMessage(type: MessageType) {
     return (message: unknown, onClose?: CloseCallback, options?: Partial<MessageOptions>) => {
+        const resolvedMessage = resolveMessage(message);
+        const key = `${type}:${resolvedMessage}`;
+        const now = Date.now();
+        const lastShownAt = recentMessages.get(key);
+        if (lastShownAt && now - lastShownAt < DUPLICATE_MESSAGE_WINDOW) return;
+        recentMessages.set(key, now);
+
+        for (const [recentKey, shownAt] of recentMessages) {
+            if (now - shownAt >= DUPLICATE_MESSAGE_WINDOW) recentMessages.delete(recentKey);
+        }
+
         ElMessage({
             ...DEFAULT_OPTIONS,
             ...options,
             type,
-            message: resolveMessage(message),
+            message: resolvedMessage,
             onClose
         });
     };

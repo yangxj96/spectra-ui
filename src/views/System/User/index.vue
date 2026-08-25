@@ -54,6 +54,11 @@ const authorizationStatusMeta: Record<
         type: "info",
         description: "该用户还没有 RoleAssignment，需要配置角色授权。"
     },
+    BASIC_ONLY: {
+        label: "仅基础权限",
+        type: "info",
+        description: "该用户拥有系统自动提供的基础角色，尚未配置业务角色。"
+    },
     INCOMPLETE: {
         label: "授权不完整",
         type: "warning",

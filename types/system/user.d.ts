@@ -45,7 +45,7 @@ declare global {
         factor_type?: "TOTP";
     };
 
-    type UserAuthorizationStatus = "UNCONFIGURED" | "INCOMPLETE" | "ACTIVE" | "PARTIAL";
+    type UserAuthorizationStatus = "UNCONFIGURED" | "BASIC_ONLY" | "INCOMPLETE" | "ACTIVE" | "PARTIAL";
 
     type UserStatus = "ACTIVE" | "LOCKED" | "DISABLED" | "DEPARTED";
 

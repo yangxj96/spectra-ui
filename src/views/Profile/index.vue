@@ -5,8 +5,8 @@ import { useRoute } from "vue-router";
 import { UserApi } from "@/api/user/user-api";
 import avatar from "@/assets/images/avatar.png";
 
-import ProfileBinding from "./components/ProfileBinding/index.vue";
 import ProfileInfo from "./components/ProfileInfo/index.vue";
+import ProfileNotificationSettings from "./components/ProfileNotificationSettings/index.vue";
 import ProfilePassword from "./components/ProfilePassword/index.vue";
 import ProfileSettings from "./components/ProfileSettings/index.vue";
 
@@ -89,11 +89,11 @@ onMounted(() => {
                     <el-tab-pane label="修改密码" name="password">
                         <ProfilePassword />
                     </el-tab-pane>
-                    <el-tab-pane label="其他设置" name="settings">
+                    <el-tab-pane label="安全设置" name="settings">
                         <ProfileSettings />
                     </el-tab-pane>
-                    <el-tab-pane label="账号绑定" name="binding">
-                        <ProfileBinding />
+                    <el-tab-pane label="通知设置" name="notification-settings">
+                        <ProfileNotificationSettings />
                     </el-tab-pane>
                 </el-tabs>
             </el-card>
@@ -106,18 +106,23 @@ onMounted(() => {
     display: flex;
     gap: 16px;
     height: 100%;
+    min-height: 0;
     padding: 16px;
     background-color: var(--el-bg-color-page);
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 /* 左侧面板 */
 .left-panel {
     width: 280px;
     flex-shrink: 0;
+    min-height: 0;
 }
 
 .avatar-card {
     height: 100%;
+    min-height: 0;
     border-radius: 8px;
 }
 
@@ -182,14 +187,18 @@ onMounted(() => {
 .right-panel {
     flex: 1;
     min-width: 0;
+    min-height: 0;
 }
 
 .tabs-card {
     height: 100%;
+    min-height: 0;
     border-radius: 8px;
 
     :deep(.el-card__body) {
+        box-sizing: border-box;
         height: 100%;
+        min-height: 0;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -197,6 +206,7 @@ onMounted(() => {
 
     :deep(.el-tabs) {
         height: 100%;
+        min-height: 0;
         display: flex;
         flex-direction: column;
     }
@@ -207,11 +217,12 @@ onMounted(() => {
 
     :deep(.el-tabs__content) {
         flex: 1;
+        min-height: 0;
         overflow-y: auto;
     }
 
     :deep(.el-tab-pane) {
-        height: 100%;
+        min-height: 0;
     }
 }
 

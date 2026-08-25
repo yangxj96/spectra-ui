@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
-import { computed, ref } from "vue";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { NotificationAdminApi } from "@/api/notification/notification-admin-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import useTable from "@/hooks/use-table.ts";
-import { formatDateTime } from "@/utils/date-utils.ts";
 
 import type { DateModelType } from "element-plus";
 
@@ -39,17 +38,7 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     NotificationAdminApi.pageRequests,
     condition.value
 );
-
-const detailVisible = ref(false);
-const detailLoading = ref(false);
-const detail = ref<NotificationRequestAdminVO>();
-const detailTasks = ref<NotificationTaskAdminVO[]>([]);
-const detailTaskTotal = ref(0);
-
-const detailTaskSummary = computed(() => {
-    if (!detail.value) return "";
-    return `任务 ${detail.value.task_count} 条 · 已加载关联任务 ${detailTasks.value.length} 条`;
-});
+const router = useRouter();
 
 function purposeLabel(purpose: string): string {
     return purposeOptions.find(item => item.value === purpose)?.label ?? purpose;
@@ -64,14 +53,6 @@ function statusTagType(status: string): "success" | "warning" | "danger" | "info
     if (status === "FAILED" || status === "EXPIRED") return "danger";
     if (status === "PARTIAL" || status === "DISPATCHING") return "warning";
     return "info";
-}
-
-function channelLabel(channel: NotificationAdminChannel): string {
-    return { IN_APP: "站内信", SMS: "短信", EMAIL: "邮件" }[channel] ?? channel;
-}
-
-function formatOptionalDate(value: string | null | undefined): string {
-    return value ? formatDateTime(value) : "—";
 }
 
 function toIso(value: DateModelType): string | undefined {
@@ -105,25 +86,8 @@ function reset(): void {
     void handlerConditionQuery();
 }
 
-async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
-    detailVisible.value = true;
-    detailLoading.value = true;
-    detail.value = undefined;
-    detailTasks.value = [];
-    detailTaskTotal.value = 0;
-    try {
-        const [request, tasks] = await Promise.all([
-            NotificationAdminApi.requestDetail(row.id),
-            NotificationAdminApi.pageTasks({ request_id: row.id, page_num: 1, page_size: 100 })
-        ]);
-        detail.value = request;
-        detailTasks.value = tasks.records ?? [];
-        detailTaskTotal.value = tasks.total ?? detailTasks.value.length;
-    } catch {
-        ElMessage.error("通知请求详情加载失败，请稍后重试");
-    } finally {
-        detailLoading.value = false;
-    }
+function openDetail(row: NotificationRequestAdminVO): void {
+    void router.push({ name: "DevopsNotificationRequestDetail", query: { id: row.id } });
 }
 </script>
 
@@ -226,8 +190,8 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                 <el-table-column label="创建时间" prop="created_at" width="170" show-overflow-tooltip />
                 <el-table-column label="操作" width="70" fixed="right">
                     <template #default="scope">
-                        <el-tooltip content="查看详情" placement="top">
-                            <el-button link type="primary" @click="void openDetail(scope.row)">
+                        <el-tooltip content="查看执行详情" placement="top">
+                            <el-button link type="primary" @click="openDetail(scope.row)">
                                 <ComponentsIcons name="icon-eye" style="width: 1.4em; height: 1.4em" />
                             </el-button>
                         </el-tooltip>
@@ -243,66 +207,6 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange" />
         </el-row>
-
-        <el-dialog v-model="detailVisible" title="通知请求详情" width="1100px" destroy-on-close>
-            <div v-loading="detailLoading" class="detail-container">
-                <template v-if="detail">
-                    <el-descriptions :column="3" border>
-                        <el-descriptions-item label="请求编号">{{ detail.id }}</el-descriptions-item>
-                        <el-descriptions-item label="状态">
-                            <el-tag :type="statusTagType(detail.status)" size="small">
-                                {{ statusLabel(detail.status) }}
-                            </el-tag>
-                        </el-descriptions-item>
-                        <el-descriptions-item label="用途">{{ purposeLabel(detail.purpose) }}</el-descriptions-item>
-                        <el-descriptions-item label="模板组">{{ detail.template_code }}</el-descriptions-item>
-                        <el-descriptions-item label="来源模块">{{ detail.source_module || "—" }}</el-descriptions-item>
-                        <el-descriptions-item label="优先级">{{ detail.priority ?? "—" }}</el-descriptions-item>
-                        <el-descriptions-item label="业务类型">{{ detail.business_type || "—" }}</el-descriptions-item>
-                        <el-descriptions-item label="业务编号">{{ detail.business_id || "—" }}</el-descriptions-item>
-                        <el-descriptions-item label="接收人数">{{ detail.recipient_count }}</el-descriptions-item>
-                        <el-descriptions-item label="任务数">{{ detail.task_count }}</el-descriptions-item>
-                        <el-descriptions-item label="计划时间">
-                            {{ formatOptionalDate(detail.scheduled_at) }}
-                        </el-descriptions-item>
-                        <el-descriptions-item label="过期时间">
-                            {{ formatOptionalDate(detail.expires_at) }}
-                        </el-descriptions-item>
-                    </el-descriptions>
-
-                    <div class="detail-section__header">
-                        <h3>关联投递任务</h3>
-                        <span>
-                            {{ detailTaskSummary }}
-                            <template v-if="detailTaskTotal > detailTasks.length">，请转到任务页查看全部</template>
-                        </span>
-                    </div>
-                    <el-table :data="detailTasks" stripe>
-                        <el-table-column label="任务编号" prop="id" min-width="230" show-overflow-tooltip />
-                        <el-table-column label="渠道" width="90">
-                            <template #default="scope">{{ channelLabel(scope.row.channel) }}</template>
-                        </el-table-column>
-                        <el-table-column
-                            label="收件地址"
-                            prop="recipient_address"
-                            min-width="135"
-                            show-overflow-tooltip />
-                        <el-table-column label="状态" width="100">
-                            <template #default="scope">
-                                <el-tag :type="statusTagType(scope.row.status)" size="small">
-                                    {{ statusLabel(scope.row.status) }}
-                                </el-tag>
-                            </template>
-                        </el-table-column>
-                        <el-table-column label="重试次数" width="90" prop="retry_count" />
-                        <el-table-column label="最近错误" min-width="140" prop="last_error" show-overflow-tooltip />
-                        <el-table-column label="创建时间" width="170" prop="created_at" />
-                    </el-table>
-                    <el-empty v-if="detailTasks.length === 0" description="该请求暂无关联任务" :image-size="70" />
-                </template>
-                <el-empty v-else-if="!detailLoading" description="暂无详情" />
-            </div>
-        </el-dialog>
     </div>
 </template>
 
@@ -387,25 +291,5 @@ async function openDetail(row: NotificationRequestAdminVO): Promise<void> {
     padding: 0 10px;
     margin-top: 4px;
     margin-left: auto;
-}
-
-.detail-container {
-    min-height: 220px;
-}
-
-.detail-section__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 20px 0 10px;
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
-}
-
-.detail-section__header h3 {
-    margin: 0;
-    color: var(--el-text-color-primary);
-    font-size: 15px;
 }
 </style>

@@ -3,8 +3,10 @@ import { MenuApi } from "@/api/system/menu-api.ts";
 import { hideLoading } from "@/plugin/element/loading.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
-import { collectAuthorizedRouteNames } from "@/utils/menu-utils.ts";
+import { collectAuthorizedRouteNames, filterMenusByRouteNames } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
+
+const hiddenMenuRouteNames = new Set(["DevopsNotificationDeliveryRecord", "DevopsNotificationDeliveryTask"]);
 
 /** 判断命名路由是否具备菜单权限 */
 export function resolveRouteAccess(requiredMenu: string | undefined, authorizedRouteNames: Set<string>) {
@@ -20,7 +22,8 @@ export async function loadMenu(): Promise<boolean> {
     sessionStorage.removeItem("reloaded");
     appStore.isFetchingMenus = true;
     try {
-        const [menus, context] = await Promise.all([MenuApi.current(), SecurityContextApi.current()]);
+        const [loadedMenus, context] = await Promise.all([MenuApi.current(), SecurityContextApi.current()]);
+        const menus = filterMenusByRouteNames(loadedMenus, hiddenMenuRouteNames);
         useUserStore().token.permissions = context.permissions;
         appStore.menus = menus;
         appStore.authorizedRouteNames = collectAuthorizedRouteNames(menus);

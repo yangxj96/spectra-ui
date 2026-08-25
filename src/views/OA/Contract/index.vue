@@ -3,7 +3,6 @@ import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { ContractApi } from "@/api/oa/contract-api.ts";
-import FileUpload from "@/components/FileUpload/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
@@ -20,13 +19,6 @@ const query = reactive<ContractPageParams>({
     signing_status: ""
 });
 const detail = reactive({ visible: false, data: undefined as ContractVO | undefined });
-const versionDialog = reactive({
-    visible: false,
-    contract: undefined as ContractVO | undefined,
-    file_id: "",
-    file_url: "",
-    version_note: ""
-});
 
 const statusLabels: Record<string, string> = {
     DRAFT: "草稿",
@@ -59,22 +51,6 @@ function openEdit(row: ContractVO) {
 async function openDetail(row: ContractVO) {
     detail.data = await ContractApi.get(row.id);
     detail.visible = true;
-}
-
-function openVersion(contract: ContractVO) {
-    Object.assign(versionDialog, { visible: true, contract, file_id: "", file_url: "", version_note: "" });
-}
-
-async function saveVersion() {
-    if (!versionDialog.contract || !versionDialog.file_id) return MessageUtils.warning("请先上传合同文件");
-    await ContractApi.addVersion(versionDialog.contract.id, {
-        file_id: versionDialog.file_id,
-        version_note: versionDialog.version_note || undefined
-    });
-    versionDialog.visible = false;
-    MessageUtils.success("合同版本已保存");
-    await load();
-    if (detail.visible && detail.data) await openDetail(detail.data);
 }
 
 function openMilestone(contract: ContractVO) {
@@ -215,9 +191,6 @@ onMounted(load);
                         @click="openEdit(scope.row)">
                         编辑
                     </el-button>
-                    <el-button v-permission="'oa:contract:update'" link type="primary" @click="openVersion(scope.row)">
-                        上传版本
-                    </el-button>
                     <el-button
                         v-if="scope.row.status === 'DRAFT'"
                         v-permission="'oa:contract:update'"
@@ -269,23 +242,6 @@ onMounted(load);
             :total="pagination.total"
             @current-change="pageChange" />
 
-        <el-dialog v-model="versionDialog.visible" title="上传合同版本" width="520px">
-            <el-form label-width="90px">
-                <el-form-item label="合同文件">
-                    <FileUpload
-                        v-model="versionDialog.file_url"
-                        :show-file-list="false"
-                        @uploaded="versionDialog.file_id = $event.file_id" />
-                    <span v-if="versionDialog.file_id" class="uploaded">已上传</span>
-                </el-form-item>
-                <el-form-item label="版本说明"><el-input v-model="versionDialog.version_note" /></el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="versionDialog.visible = false">取消</el-button>
-                <el-button type="primary" @click="saveVersion">保存版本</el-button>
-            </template>
-        </el-dialog>
-
         <el-drawer v-model="detail.visible" title="合同详情" size="720px">
             <template v-if="detail.data">
                 <el-descriptions :column="2" border>
@@ -309,9 +265,6 @@ onMounted(load);
                 <el-divider />
                 <div class="section-title">
                     <span>文件版本</span>
-                    <el-button v-permission="'oa:contract:update'" size="small" @click="openVersion(detail.data)">
-                        上传版本
-                    </el-button>
                 </div>
                 <el-table :data="detail.data.versions || []" border size="small">
                     <el-table-column label="版本" width="80">
@@ -357,10 +310,6 @@ onMounted(load);
 .currency-select {
     width: 100px;
     margin-left: 8px;
-}
-.uploaded {
-    margin-left: 8px;
-    color: var(--el-color-success);
 }
 .section-title {
     display: flex;

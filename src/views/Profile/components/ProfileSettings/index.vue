@@ -2,19 +2,15 @@
 import { Check } from "@element-plus/icons-vue";
 import { ref } from "vue";
 
+import ProfileBinding from "../ProfileBinding/index.vue";
+
 defineOptions({
-    name: "ProfileSettings"
+    name: "ProfileSecuritySettings"
 });
 
 const securitySettings = ref({
     two_factor_auth: false,
     login_notification: true
-});
-
-const notificationSettings = ref({
-    email_notification: true,
-    sms_notification: false,
-    system_notification: true
 });
 
 function handleSaveSecurity() {
@@ -36,41 +32,24 @@ function handleSaveSecurity() {
             <div class="setting-item">
                 <div class="setting-info">
                     <h5>登录通知</h5>
-                    <p>新设备登录时发送通知</p>
+                    <p>新设备登录时发送通知，当前功能暂未实现</p>
                 </div>
                 <el-switch v-model="securitySettings.login_notification" />
-            </div>
-        </div>
-        <el-divider />
-        <div class="settings-section">
-            <h4 class="section-title">通知设置</h4>
-            <div class="setting-item">
-                <div class="setting-info">
-                    <h5>邮件通知</h5>
-                    <p>接收重要邮件通知</p>
-                </div>
-                <el-switch v-model="notificationSettings.email_notification" />
-            </div>
-            <div class="setting-item">
-                <div class="setting-info">
-                    <h5>短信通知</h5>
-                    <p>接收短信验证码</p>
-                </div>
-                <el-switch v-model="notificationSettings.sms_notification" />
-            </div>
-            <div class="setting-item">
-                <div class="setting-info">
-                    <h5>系统通知</h5>
-                    <p>接收系统消息推送</p>
-                </div>
-                <el-switch v-model="notificationSettings.system_notification" />
             </div>
         </div>
         <div class="settings-actions">
             <el-button type="primary" @click="handleSaveSecurity">
                 <el-icon><Check /></el-icon>
-                保存设置
+                保存安全设置
             </el-button>
+        </div>
+
+        <el-divider />
+
+        <div class="binding-section">
+            <h4 class="section-title">账号绑定与登录方式</h4>
+            <p class="section-description">管理可用于登录和身份验证的手机号、邮箱等账号。</p>
+            <ProfileBinding />
         </div>
     </div>
 </template>
@@ -120,5 +99,15 @@ function handleSaveSecurity() {
 
 .settings-actions {
     padding-top: 16px;
+}
+
+.binding-section {
+    padding: 8px 0;
+}
+
+.section-description {
+    margin: -4px 0 8px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
 }
 </style>

@@ -323,7 +323,16 @@ async function loadData(): Promise<void> {
         ]);
         providers.value = providerData;
         overview.value = overviewData;
-        providerData.forEach(syncEditor);
+        providerData.forEach(provider => {
+            syncEditor(provider);
+            if (provider.channel === "SMS" || provider.channel === "EMAIL") {
+                if (provider.checked_at) {
+                    lastHealthAt[provider.channel] = provider.checked_at;
+                } else {
+                    delete lastHealthAt[provider.channel];
+                }
+            }
+        });
         errorMessage.value = "";
     } catch {
         errorMessage.value = "通知渠道配置加载失败，当前保留上一次成功数据。";
@@ -405,6 +414,11 @@ async function saveProvider(channel: ExternalChannel): Promise<void> {
         const index = providers.value.findIndex(item => item.channel === channel);
         if (index >= 0) providers.value[index] = result;
         syncEditor(result);
+        if (result.checked_at) {
+            lastHealthAt[channel] = result.checked_at;
+        } else {
+            delete lastHealthAt[channel];
+        }
         MessageUtils.success(`${channelLabel(channel)}渠道服务配置已保存，请执行健康检查后再发送。`);
     } catch (error) {
         MessageUtils.error(error instanceof Error ? error.message : "渠道服务配置保存失败");
@@ -426,6 +440,7 @@ async function checkHealth(channel: ExternalChannel): Promise<void> {
         if (provider) {
             provider.state = result.state;
             provider.reason = result.reason;
+            provider.checked_at = result.checked_at;
         }
         lastHealthAt[channel] = result.checked_at;
         if (result.state === "HEALTHY") {

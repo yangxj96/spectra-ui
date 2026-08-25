@@ -36,16 +36,15 @@ export default [
                 meta: { title: "通知请求", requiresAuth: true, requiredMenu: "DevopsNotificationRequest" }
             },
             {
-                path: "notification/delivery-task",
-                name: "DevopsNotificationDeliveryTask",
-                component: () => import("@/views/Devops/Notification/DeliveryTask/index.vue"),
-                meta: { title: "投递任务", requiresAuth: true, requiredMenu: "DevopsNotificationDeliveryTask" }
-            },
-            {
-                path: "notification/delivery-record",
-                name: "DevopsNotificationDeliveryRecord",
-                component: () => import("@/views/Devops/Notification/DeliveryRecord/index.vue"),
-                meta: { title: "投递记录", requiresAuth: true, requiredMenu: "DevopsNotificationDeliveryRecord" }
+                path: "notification/request/detail",
+                name: "DevopsNotificationRequestDetail",
+                component: () => import("@/views/Devops/Notification/Request/Detail/index.vue"),
+                meta: {
+                    title: "通知请求详情",
+                    requiresAuth: true,
+                    requiredMenu: "DevopsNotificationRequest",
+                    activeMenu: "DevopsNotificationRequest"
+                }
             },
             {
                 path: "notification/template",

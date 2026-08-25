@@ -9,6 +9,7 @@ import DictSelect from "@/components/DictSelect/index.vue";
 import { formatDateTime } from "@/utils/date-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import {
+    buildUserImportErrorRows,
     calculateUserImportProgress,
     classifyUserImportError,
     createUserImportIdempotencyKey,
@@ -16,7 +17,6 @@ import {
     localizeUserImportError,
     parseUserImportFile,
     serializeUserImportRows,
-    serializeUserImportErrors,
     sha256Text,
     USER_IMPORT_ERROR_CATEGORY_LABELS,
     USER_IMPORT_HEADERS,
@@ -148,10 +148,10 @@ async function handleFileChange(file: UploadFile): Promise<void> {
         MessageUtils.warning("导入文件不能超过 5 MB");
         return;
     }
-    if (!/\.(csv|txt|xlsx|xls)$/i.test(file.name)) {
+    if (!/\.(xlsx|xls)$/i.test(file.name)) {
         selectedFile.value = null;
         fileName.value = "";
-        MessageUtils.warning("当前仅支持 CSV、TXT 或 Excel 文件");
+        MessageUtils.warning("当前仅支持 Excel 文件");
         return;
     }
 
@@ -217,28 +217,12 @@ async function loadImportOptions(): Promise<void> {
 async function downloadTemplate(): Promise<void> {
     templateLoading.value = true;
     try {
-        const { default: ExcelJS } = await import("exceljs");
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet("用户导入");
-        const templateHeaders = [...USER_IMPORT_TEMPLATE_HEADERS];
-
-        sheet.addRow(templateHeaders);
-        sheet.views = [{ state: "frozen", ySplit: 1 }];
-        sheet.columns = [
-            { key: "real_name", width: 18 },
-            { key: "phone", width: 18 },
-            { key: "email", width: 28 }
-        ];
-
-        const headerRow = sheet.getRow(1);
-        headerRow.height = 24;
-        headerRow.eachCell(cell => {
-            cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-            cell.alignment = { horizontal: "center", vertical: "middle" };
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF409EFF" } };
-        });
-
-        const buffer = await workbook.xlsx.writeBuffer();
+        const { utils, write } = await import("xlsx");
+        const sheet = utils.aoa_to_sheet([[...USER_IMPORT_TEMPLATE_HEADERS]]);
+        sheet["!cols"] = [{ wch: 18 }, { wch: 18 }, { wch: 28 }];
+        const workbook = utils.book_new();
+        utils.book_append_sheet(workbook, sheet, "用户导入");
+        const buffer = write(workbook, { bookType: "xlsx", type: "array" });
         const blob = new Blob([buffer], {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         });
@@ -255,20 +239,29 @@ async function downloadTemplate(): Promise<void> {
     }
 }
 
-function downloadErrors(): void {
+async function downloadErrors(): Promise<void> {
     if (!filteredErrorRows.value.length) {
         MessageUtils.warning("当前筛选条件下没有错误明细");
         return;
     }
-    const blob = new Blob(["\uFEFF", serializeUserImportErrors(filteredErrorRows.value)], {
-        type: "text/csv;charset=utf-8"
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "用户批量导入错误明细.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+        const { utils, write } = await import("xlsx");
+        const sheet = utils.aoa_to_sheet(buildUserImportErrorRows(filteredErrorRows.value));
+        const workbook = utils.book_new();
+        utils.book_append_sheet(workbook, sheet, "错误明细");
+        const buffer = write(workbook, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([buffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "用户批量导入错误明细.xlsx";
+        link.click();
+        URL.revokeObjectURL(url);
+    } catch (error: unknown) {
+        MessageUtils.error(error);
+    }
 }
 
 async function handlePreview(): Promise<void> {
@@ -294,7 +287,7 @@ async function handlePreview(): Promise<void> {
         ].join("\n");
         const nextTask = await UserImportApi.preview({
             idempotency_key: idempotencyKey.value || (idempotencyKey.value = createUserImportIdempotencyKey()),
-            file_name: fileName.value || "用户批量导入.csv",
+            file_name: fileName.value || "用户批量导入.xlsx",
             file_hash: await sha256Text(normalizedText),
             skip_existing: skipExisting.value,
             rows: previewRows
@@ -467,7 +460,7 @@ onMounted(() => void loadImportOptions());
                                 <div class="import-file-actions">
                                     <el-upload
                                         class="upload-control"
-                                        accept=".csv,.txt,.xlsx,.xls"
+                                        accept=".xlsx,.xls"
                                         :auto-upload="false"
                                         :show-file-list="false"
                                         :on-change="handleFileChange">
@@ -718,7 +711,7 @@ onMounted(() => void loadImportOptions());
                         <template #default>
                             <div class="user-tip-content">
                                 <p><strong>准备导入数据</strong></p>
-                                <p>支持固定 CSV、TXT 和 Excel 模板；Excel 文件默认读取第一个工作表。</p>
+                                <p>支持固定 Excel 模板；默认读取第一个工作表。</p>
                                 <p>
                                     Excel
                                     只填写真实姓名、手机号码和邮箱，工号由系统自动生成，部门、语言、时区和授权方案在数据预览上方统一选择。

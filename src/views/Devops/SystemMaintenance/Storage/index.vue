@@ -5,8 +5,6 @@ import { FileApi } from "@/api/system/file-api.ts";
 import useTable from "@/hooks/use-table.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-import StorageUpload from "./components/StorageUpload/index.vue";
-
 // 查询条件
 const condition = ref<FilePageParams>({
     page_num: 1,
@@ -20,9 +18,6 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
     FileApi.page,
     condition.value
 );
-
-// 上传对话框状态
-const uploadVisible = ref(false);
 
 // 格式化文件大小
 const formatFileSize = (bytes: number): string => {
@@ -104,12 +99,6 @@ const handleDelete = (row: FileInfo) => {
     });
 };
 
-// 上传成功回调
-const handleUploadSuccess = () => {
-    uploadVisible.value = false;
-    handlerConditionQuery();
-};
-
 // 重置查询条件
 const handleReset = () => {
     condition.value = {
@@ -138,7 +127,6 @@ const handleReset = () => {
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
                 <el-button @click="handleReset">重置</el-button>
-                <el-button type="success" @click="uploadVisible = true">上传文件</el-button>
             </el-form-item>
         </el-form>
     </el-row>
@@ -191,8 +179,6 @@ const handleReset = () => {
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
     </el-row>
-    <!-- 上传组件 -->
-    <StorageUpload v-if="uploadVisible" @close="uploadVisible = false" @success="handleUploadSuccess" />
 </template>
 
 <style scoped lang="scss">

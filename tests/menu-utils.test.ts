@@ -4,6 +4,7 @@ import {
     collectMenuIds,
     collectAuthorizedRouteNames,
     filterDirectoryTree,
+    filterMenusByRouteNames,
     findFirstRoutableMenu,
     findMenuByRouteName,
     findMenuPath
@@ -85,5 +86,15 @@ describe("菜单树工具", () => {
     it("应该从父级候选中排除菜单节点、当前节点和后代", () => {
         expect(filterDirectoryTree(menus, "group").map(menu => menu.id)).toEqual(["root"]);
         expect(filterDirectoryTree(menus, "group")[0]?.children).toEqual([]);
+    });
+
+    it("应该递归移除已合并展示的旧菜单", () => {
+        const filtered = filterMenusByRouteNames(
+            [menus[0]!, leaf("delivery-record", "DevopsNotificationDeliveryRecord")],
+            new Set(["DevopsNotificationDeliveryRecord"])
+        );
+
+        expect(filtered.map(menu => menu.id)).toEqual(["root"]);
+        expect(filtered[0]?.children?.[0]?.children).toEqual([target]);
     });
 });

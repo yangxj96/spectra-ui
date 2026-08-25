@@ -29,6 +29,7 @@ interface TemplateEditorForm {
 const route = useRoute();
 const router = useRouter();
 const editingId = computed(() => String(route.query.id ?? ""));
+const sourceId = computed(() => String(route.query.source_id ?? ""));
 
 const channelOptions: Array<{ label: string; value: NotificationTemplateChannel }> = [
     { label: "站内信", value: "IN_APP" },
@@ -61,6 +62,7 @@ const submitting = ref(false);
 const previewLoading = ref(false);
 const previewVisible = ref(false);
 const previewResult = ref<NotificationTemplatePreviewVO>();
+const saveMessage = ref("");
 const activeStep = ref(0);
 
 const editorRules: FormRules = {
@@ -304,33 +306,58 @@ function errorMessage(error: unknown, fallback: string): string {
     return error instanceof Error && error.message ? error.message : fallback;
 }
 
+function queryText(name: string): string {
+    const value = route.query[name];
+    return typeof value === "string" ? value : "";
+}
+
+function isTemplateChannel(value: string): value is NotificationTemplateChannel {
+    return channelOptions.some(item => item.value === value);
+}
+
+function applyDetail(
+    detail: NotificationTemplateVO,
+    targetChannel: NotificationTemplateChannel,
+    keepDraft: boolean
+): void {
+    const isDraft = keepDraft && detail.state === "DRAFT";
+    editor.value = {
+        id: isDraft ? detail.id : undefined,
+        template_group_code: detail.template_group_code,
+        template_name: detail.template_name,
+        channel: targetChannel,
+        purpose: detail.purpose,
+        title_template: detail.title_template ?? "",
+        content_template: detail.content_template,
+        html_template: detail.html_template ?? "",
+        parameter_schema_text: formatJson(detail.parameter_schema),
+        provider_template_code: detail.provider_template_code ?? "",
+        sample_parameters_text: "{}",
+        sample_sensitive_parameters_text: "{}",
+        version: isDraft ? detail.version : undefined,
+        state: isDraft ? detail.state : undefined
+    };
+    normalizeChannelFields();
+}
+
 async function load(): Promise<void> {
-    if (!editingId.value) return;
     loading.value = true;
     try {
-        const detail = await NotificationTemplateApi.detail(editingId.value);
-        if (detail.state !== "DRAFT") {
-            ElMessage.warning("只有草稿模板可以编辑，请从列表复制为新草稿");
-            await router.push({ name: "DevopsNotificationTemplate" });
-            return;
+        if (editingId.value) {
+            const detail = await NotificationTemplateApi.detail(editingId.value);
+            applyDetail(detail, detail.channel, true);
+        } else if (sourceId.value) {
+            const source = await NotificationTemplateApi.detail(sourceId.value);
+            const targetChannel = queryText("channel");
+            applyDetail(source, isTemplateChannel(targetChannel) ? targetChannel : source.channel, false);
+        } else {
+            const targetChannel = queryText("channel");
+            editor.value.template_group_code = queryText("template_group_code");
+            editor.value.template_name = queryText("template_name");
+            editor.value.purpose = queryText("purpose") || editor.value.purpose;
+            if (isTemplateChannel(targetChannel)) editor.value.channel = targetChannel;
+            normalizeChannelFields();
         }
-        editor.value = {
-            id: detail.id,
-            template_group_code: detail.template_group_code,
-            template_name: detail.template_name,
-            channel: detail.channel,
-            purpose: detail.purpose,
-            title_template: detail.title_template ?? "",
-            content_template: detail.content_template,
-            html_template: detail.html_template ?? "",
-            parameter_schema_text: formatJson(detail.parameter_schema),
-            provider_template_code: detail.provider_template_code ?? "",
-            sample_parameters_text: "{}",
-            sample_sensitive_parameters_text: "{}",
-            version: detail.version,
-            state: detail.state
-        };
-        normalizeChannelFields();
     } catch (error: unknown) {
         ElMessage.error(errorMessage(error, "加载模板详情失败"));
         await router.push({ name: "DevopsNotificationTemplate" });
@@ -339,7 +366,7 @@ async function load(): Promise<void> {
     }
 }
 
-async function save(): Promise<void> {
+async function save(publishAfterSave = false): Promise<void> {
     const valid = await formRef.value?.validate().catch(() => false);
     if (!valid) return;
 
@@ -368,22 +395,38 @@ async function save(): Promise<void> {
         parameter_schema: parameterSchema,
         provider_template_code: showProviderTemplateCode.value ? editor.value.provider_template_code.trim() : ""
     };
-    if (editor.value.id) {
-        payload.id = editor.value.id;
+    const editingTemplateId = editor.value.id;
+    if (editingTemplateId) {
+        payload.id = editingTemplateId;
         payload.version = editor.value.version;
     }
 
+    const isCreating = !editingTemplateId;
     submitting.value = true;
     try {
-        if (editor.value.id) {
-            await NotificationTemplateApi.update(editor.value.id, payload);
-            ElMessage.success("模板草稿已保存");
+        let saved: NotificationTemplateVO;
+        if (editingTemplateId) {
+            saved = await NotificationTemplateApi.update(editingTemplateId, payload);
         } else {
-            await NotificationTemplateApi.create(payload);
-            ElMessage.success("模板草稿已创建");
+            saved = await NotificationTemplateApi.create(payload);
         }
-        await router.push({ name: "DevopsNotificationTemplate" });
+        editor.value.id = saved.id;
+        editor.value.version = saved.version;
+        editor.value.state = saved.state;
+        if (isCreating) {
+            await router.replace({ name: "DevopsNotificationTemplateEdit", query: { id: saved.id } });
+        }
+        if (publishAfterSave) {
+            await NotificationTemplateApi.publish(saved.id, saved.version);
+            editor.value.state = "PUBLISHED";
+            ElMessage.success("模板已保存并发布");
+            await router.push({ name: "DevopsNotificationTemplate" });
+        } else {
+            saveMessage.value = "草稿已保存，可继续编辑";
+            ElMessage.success("模板草稿已保存");
+        }
     } catch (error: unknown) {
+        saveMessage.value = "";
         ElMessage.error(errorMessage(error, "保存模板失败，可能是版本已变化"));
     } finally {
         submitting.value = false;
@@ -391,6 +434,9 @@ async function save(): Promise<void> {
 }
 
 async function preview(): Promise<void> {
+    const valid = await formRef.value?.validate().catch(() => false);
+    if (!valid) return;
+
     const parameterSchema = parseJsonObject(editor.value.parameter_schema_text, "参数 Schema");
     if (!parameterSchema || !validateTemplatePurposeChannel(editor.value.purpose, editor.value.channel)) return;
     const templateFields = activeTemplateFields();
@@ -424,6 +470,8 @@ async function preview(): Promise<void> {
     }
 
     previewLoading.value = true;
+    previewResult.value = undefined;
+    previewVisible.value = true;
     try {
         previewResult.value = await NotificationTemplateApi.preview({
             channel: editor.value.channel,
@@ -435,7 +483,7 @@ async function preview(): Promise<void> {
             parameters,
             sensitive_parameters: sensitiveParameters
         });
-        previewVisible.value = true;
+        ElMessage.success("模板预览已生成");
     } catch (error: unknown) {
         ElMessage.error(errorMessage(error, "模板预览失败，请检查变量和 HTML 安全规则"));
     } finally {
@@ -616,7 +664,7 @@ onMounted(() => {
                     <div class="section-title template-heading">
                         <div>
                             <span>{{ editingId ? "编辑通知模板" : "新增通知模板" }}</span>
-                            <small>完成基础信息和扩展信息后保存草稿</small>
+                            <small>可保存为草稿，或完成校验后直接发布</small>
                         </div>
                         <el-text type="info">带 * 的字段为必填项</el-text>
                     </div>
@@ -704,8 +752,8 @@ onMounted(() => {
                                         ，不能放入普通示例参数。
                                     </p>
                                     <p>
-                                        <strong>预览成功后仍需保存草稿</strong>
-                                        ，发布前系统会再次执行完整校验。
+                                        <strong>预览只用于确认渲染结果</strong>
+                                        ，需要保存草稿或保存且发布才能提交模板变更。
                                     </p>
                                 </template>
                             </div>
@@ -715,44 +763,53 @@ onMounted(() => {
             </div>
 
             <div class="editor-actions">
-                <el-button @click="backToList">取消</el-button>
                 <template v-if="activeStep === 0">
+                    <el-button @click="backToList">取消</el-button>
                     <el-button type="primary" @click="void handleStepChange(1)">下一步</el-button>
                 </template>
                 <template v-else>
+                    <span v-if="saveMessage" class="editor-status">{{ saveMessage }}</span>
+                    <el-button @click="backToList">取消</el-button>
                     <el-button @click="void handleStepChange(0)">上一步</el-button>
-                    <el-button :loading="previewLoading" @click="void preview">预览</el-button>
-                    <el-button type="primary" :loading="submitting" @click="void save">保存草稿</el-button>
+                    <el-button :loading="previewLoading" :disabled="submitting" @click="void preview">预览</el-button>
+                    <el-button :loading="submitting" :disabled="previewLoading" @click="void save(false)">
+                        保存为草稿
+                    </el-button>
+                    <el-button type="primary" :loading="submitting" :disabled="previewLoading" @click="void save(true)">
+                        保存且发布
+                    </el-button>
                 </template>
             </div>
         </div>
 
         <el-dialog v-model="previewVisible" title="模板预览" width="760px" destroy-on-close>
-            <template v-if="previewResult">
-                <el-descriptions :column="2" border>
-                    <el-descriptions-item label="模板组">
-                        {{ previewResult.template_group_code || "未保存草稿" }}
-                    </el-descriptions-item>
-                    <el-descriptions-item label="渠道">
-                        {{
-                            previewResult.channel
-                                ? channelLabel(previewResult.channel as NotificationTemplateChannel)
-                                : "-"
-                        }}
-                    </el-descriptions-item>
-                    <el-descriptions-item label="用途">{{ previewResult.purpose || "-" }}</el-descriptions-item>
-                    <el-descriptions-item label="预览时间">{{ previewResult.previewed_at }}</el-descriptions-item>
-                </el-descriptions>
-                <h4>标题</h4>
-                <div class="preview-text">{{ previewResult.title || "（无标题）" }}</div>
-                <h4>纯文本正文</h4>
-                <pre class="preview-source">{{ previewResult.content }}</pre>
-                <template v-if="previewResult.html">
-                    <h4>HTML 渲染源</h4>
-                    <pre class="preview-source">{{ previewResult.html }}</pre>
+            <div v-loading="previewLoading" class="preview-container">
+                <template v-if="previewResult">
+                    <el-descriptions :column="2" border>
+                        <el-descriptions-item label="模板组">
+                            {{ previewResult.template_group_code || "未保存草稿" }}
+                        </el-descriptions-item>
+                        <el-descriptions-item label="渠道">
+                            {{
+                                previewResult.channel
+                                    ? channelLabel(previewResult.channel as NotificationTemplateChannel)
+                                    : "-"
+                            }}
+                        </el-descriptions-item>
+                        <el-descriptions-item label="用途">{{ previewResult.purpose || "-" }}</el-descriptions-item>
+                        <el-descriptions-item label="预览时间">{{ previewResult.previewed_at }}</el-descriptions-item>
+                    </el-descriptions>
+                    <h4>标题</h4>
+                    <div class="preview-text">{{ previewResult.title || "（无标题）" }}</div>
+                    <h4>纯文本正文</h4>
+                    <pre class="preview-source">{{ previewResult.content }}</pre>
+                    <template v-if="previewResult.html">
+                        <h4>HTML 渲染源</h4>
+                        <pre class="preview-source">{{ previewResult.html }}</pre>
+                    </template>
                 </template>
-            </template>
-            <el-empty v-else description="暂无预览结果" />
+                <el-empty v-else :description="previewLoading ? '正在生成预览…' : '暂无预览结果'" />
+            </div>
         </el-dialog>
     </div>
 </template>
@@ -954,6 +1011,12 @@ onMounted(() => {
     min-width: 88px;
 }
 
+.editor-status {
+    margin-right: auto;
+    color: var(--el-color-success);
+    font-size: 12px;
+}
+
 :deep(.el-form-item) {
     margin-bottom: 22px;
 }
@@ -970,6 +1033,10 @@ onMounted(() => {
     border-radius: 4px;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.preview-container {
+    min-height: 180px;
 }
 
 .preview-source {

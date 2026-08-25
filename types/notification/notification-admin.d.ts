@@ -163,6 +163,7 @@ declare global {
         secret_configured: boolean;
         secret_key_id?: string | null;
         updated_at?: string | null;
+        checked_at?: string | null;
     }
 
     interface NotificationProviderSaveParams {

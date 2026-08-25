@@ -31,8 +31,8 @@ const purposeOptions = [
 
 const stateOptions: Array<{ label: string; value: NotificationTemplateState }> = [
     { label: "草稿", value: "DRAFT" },
-    { label: "已发布", value: "PUBLISHED" },
-    { label: "已停用", value: "DISABLED" },
+    { label: "已发布 · 启用", value: "PUBLISHED" },
+    { label: "已发布 · 禁用", value: "DISABLED" },
     { label: "已归档", value: "ARCHIVED" }
 ];
 
@@ -42,7 +42,7 @@ const condition = ref<NotificationTemplatePageParams>({
 });
 
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable(
-    NotificationTemplateApi.page,
+    NotificationTemplateApi.groupPage,
     condition.value
 );
 
@@ -63,8 +63,8 @@ function stateLabel(state: NotificationTemplateState): string {
 
 function stateTagType(state: NotificationTemplateState): "success" | "warning" | "danger" | "info" {
     if (state === "PUBLISHED") return "success";
-    if (state === "DRAFT") return "warning";
     if (state === "DISABLED") return "danger";
+    if (state === "DRAFT") return "warning";
     return "info";
 }
 
@@ -78,21 +78,6 @@ function purposeLabel(purpose: string): string {
 
 function digestLabel(digest: string | null | undefined): string {
     return digest ? `${digest.slice(0, 12)}…` : "-";
-}
-
-function sensitiveParameterNames(parameterSchema: Record<string, unknown> | null | undefined): string[] {
-    const properties = parameterSchema?.properties;
-    if (!properties || typeof properties !== "object" || Array.isArray(properties)) return [];
-    return Object.entries(properties as Record<string, unknown>)
-        .filter(([, definition]) => {
-            return (
-                typeof definition === "object" &&
-                definition !== null &&
-                !Array.isArray(definition) &&
-                (definition as Record<string, unknown>).sensitive === true
-            );
-        })
-        .map(([name]) => name);
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -114,8 +99,48 @@ function openCreate(): void {
     void router.push({ name: "DevopsNotificationTemplateEdit" });
 }
 
-function openEdit(row: NotificationTemplateVO): void {
-    void router.push({ name: "DevopsNotificationTemplateEdit", query: { id: row.id } });
+function allowedChannels(purpose: string): NotificationTemplateChannel[] {
+    if (purpose === "BIND_PHONE_CODE") return ["SMS"];
+    if (purpose === "BIND_EMAIL_CODE") return ["EMAIL"];
+    if (["LOGIN_CODE", "RESET_PASSWORD_CODE"].includes(purpose)) return ["SMS", "EMAIL"];
+    return ["IN_APP", "SMS", "EMAIL"];
+}
+
+function channelRows(group: NotificationTemplateGroupVO): NotificationTemplateChannelGroupVO[] {
+    return [...group.channels].sort(
+        (left, right) =>
+            channelOptions.findIndex(item => item.value === left.channel) -
+            channelOptions.findIndex(item => item.value === right.channel)
+    );
+}
+
+function editTarget(row: NotificationTemplateChannelGroupVO): NotificationTemplateVO | undefined {
+    return row.draft ?? row.current ?? undefined;
+}
+
+function openEdit(row: NotificationTemplateChannelGroupVO): void {
+    const target = editTarget(row);
+    if (target) void router.push({ name: "DevopsNotificationTemplateEdit", query: { id: target.id } });
+}
+
+function openAddChannel(group: NotificationTemplateGroupVO): void {
+    const existingChannels = new Set(group.channels.map(item => item.channel));
+    const targetChannel = allowedChannels(group.purpose).find(channel => !existingChannels.has(channel));
+    if (!targetChannel) {
+        ElMessage.info("当前模板已配置所有适用渠道");
+        return;
+    }
+    const source = group.channels.map(editTarget).find((item): item is NotificationTemplateVO => Boolean(item));
+    void router.push({
+        name: "DevopsNotificationTemplateEdit",
+        query: {
+            source_id: source?.id,
+            template_group_code: group.template_group_code,
+            template_name: group.template_name,
+            purpose: group.purpose,
+            channel: targetChannel
+        }
+    });
 }
 
 async function confirmAction(
@@ -138,54 +163,44 @@ async function confirmAction(
     }
 }
 
-function publish(row: NotificationTemplateVO): Promise<void> {
-    return confirmAction(
-        row,
-        `确定发布模板「${row.template_name}」吗？发布后将成为${channelLabel(row.channel)}当前生效版本。`,
-        NotificationTemplateApi.publish,
-        "模板已发布"
-    );
-}
-
 function disable(row: NotificationTemplateVO): Promise<void> {
     return confirmAction(
         row,
-        `确定停用模板「${row.template_name}」吗？停用后将不再用于发送。`,
+        `确定禁用${channelLabel(row.channel)}渠道的模板「${row.template_name}」吗？禁用后可以重新启用。`,
         NotificationTemplateApi.disable,
-        "模板已停用"
+        "模板渠道已禁用"
+    );
+}
+
+function enable(row: NotificationTemplateVO): Promise<void> {
+    return confirmAction(
+        row,
+        `确定重新启用${channelLabel(row.channel)}渠道的模板「${row.template_name}」吗？`,
+        NotificationTemplateApi.enable,
+        "模板渠道已启用"
     );
 }
 
 function archive(row: NotificationTemplateVO): Promise<void> {
     return confirmAction(
         row,
-        `确定归档模板「${row.template_name}」吗？归档后只能查看历史。`,
+        `确定归档${channelLabel(row.channel)}渠道的版本 v${row.version_no} 吗？归档后只能在版本历史中查看。`,
         NotificationTemplateApi.archive,
-        "模板已归档"
+        "模板版本已归档"
     );
 }
 
-async function copyTemplate(row: NotificationTemplateVO): Promise<void> {
-    try {
-        await ElMessageBox.confirm(
-            `复制「${row.template_name}」会新建一个可编辑的草稿，原模板和历史版本不会被修改。复制完成后进入草稿编辑页，确定继续吗？`,
-            "复制为新草稿",
-            { confirmButtonText: "复制并编辑", cancelButtonText: "取消", type: "info" }
-        );
-        const draft = await NotificationTemplateApi.copy(row.id);
-        ElMessage.success("新草稿已创建");
-        await router.push({ name: "DevopsNotificationTemplateEdit", query: { id: draft.id } });
-    } catch (error: unknown) {
-        if (error !== "cancel") ElMessage.error(errorMessage(error, "复制模板失败"));
-    }
-}
-
-async function openVersions(row: NotificationTemplateVO): Promise<void> {
+async function openVersions(
+    row: NotificationTemplateChannelGroupVO,
+    group: NotificationTemplateGroupVO
+): Promise<void> {
+    const target = editTarget(row);
+    if (!target) return;
     versionVisible.value = true;
     versionLoading.value = true;
-    versionTemplateName.value = `${row.template_name}（${row.template_group_code}） / ${channelLabel(row.channel)}`;
+    versionTemplateName.value = `${group.template_name}（${group.template_group_code}） / ${channelLabel(row.channel)}`;
     try {
-        versionData.value = await NotificationTemplateApi.versions(row.id);
+        versionData.value = await NotificationTemplateApi.versions(target.id);
         compareFromId.value = versionData.value[1]?.id ?? "";
         compareToId.value = versionData.value[0]?.id ?? "";
     } catch (error: unknown) {
@@ -198,22 +213,6 @@ async function openVersions(row: NotificationTemplateVO): Promise<void> {
 
 function openCompare(): void {
     if (compareFrom.value && compareTo.value) compareVisible.value = true;
-}
-
-async function rollback(row: NotificationTemplateVO): Promise<void> {
-    try {
-        await ElMessageBox.confirm(
-            `确定从版本 ${row.version_no} 创建新的回滚草稿吗？历史版本不会被修改。`,
-            "创建回滚草稿",
-            { confirmButtonText: "创建并编辑", cancelButtonText: "取消", type: "warning" }
-        );
-        const draft = await NotificationTemplateApi.rollback(row.id);
-        ElMessage.success("回滚草稿已创建");
-        versionVisible.value = false;
-        await router.push({ name: "DevopsNotificationTemplateEdit", query: { id: draft.id } });
-    } catch (error: unknown) {
-        if (error !== "cancel") ElMessage.error(errorMessage(error, "创建回滚草稿失败"));
-    }
 }
 </script>
 
@@ -248,7 +247,7 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                     </el-select>
                 </el-form-item>
                 <el-form-item label="状态">
-                    <el-select v-model="condition.state" clearable placeholder="请选择状态" style="width: 130px">
+                    <el-select v-model="condition.state" clearable placeholder="请选择状态" style="width: 150px">
                         <el-option
                             v-for="item in stateOptions"
                             :key="item.value"
@@ -274,99 +273,114 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                     align="center"
                     prop="template_group_code"
                     label="模板组编码"
-                    min-width="150"
+                    min-width="170"
                     show-overflow-tooltip />
                 <el-table-column prop="template_name" label="模板名称" min-width="160" show-overflow-tooltip />
-                <el-table-column align="center" label="渠道" width="100">
-                    <template #default="scope">{{ channelLabel(scope.row.channel) }}</template>
-                </el-table-column>
                 <el-table-column align="center" label="用途" min-width="130" show-overflow-tooltip>
                     <template #default="scope">{{ purposeLabel(scope.row.purpose) }}</template>
                 </el-table-column>
-                <el-table-column prop="content_template" label="模板正文" min-width="260" show-overflow-tooltip />
-                <el-table-column label="敏感参数" min-width="150">
+                <el-table-column label="渠道版本" min-width="500">
                     <template #default="scope">
-                        <template v-if="sensitiveParameterNames(scope.row.parameter_schema).length">
-                            <el-tag
-                                v-for="name in sensitiveParameterNames(scope.row.parameter_schema)"
-                                :key="name"
-                                type="warning"
-                                size="small">
-                                {{ name }}
-                            </el-tag>
-                        </template>
-                        <span v-else>无</span>
-                    </template>
-                </el-table-column>
-                <el-table-column align="center" label="版本" prop="version_no" width="75" />
-                <el-table-column align="center" label="版本摘要" width="135" show-overflow-tooltip>
-                    <template #default="scope">{{ digestLabel(scope.row.version_digest) }}</template>
-                </el-table-column>
-                <el-table-column align="center" label="状态" width="90">
-                    <template #default="scope">
-                        <el-tag :type="stateTagType(scope.row.state)" size="small">
-                            {{ stateLabel(scope.row.state) }}
-                        </el-tag>
+                        <div class="channel-list">
+                            <div v-for="channel in channelRows(scope.row)" :key="channel.channel" class="channel-row">
+                                <div class="channel-row__summary">
+                                    <el-tag size="small" effect="plain">{{ channelLabel(channel.channel) }}</el-tag>
+                                    <template v-if="channel.current">
+                                        <el-tag :type="stateTagType(channel.current.state)" size="small">
+                                            {{ stateLabel(channel.current.state) }}
+                                        </el-tag>
+                                        <span class="channel-version">v{{ channel.current.version_no }}</span>
+                                    </template>
+                                    <el-tag v-if="channel.draft" type="warning" size="small">
+                                        草稿 v{{ channel.draft.version_no }}
+                                    </el-tag>
+                                    <span v-if="!channel.current && !channel.draft" class="channel-empty">
+                                        暂无版本
+                                    </span>
+                                </div>
+                                <div class="channel-row__actions">
+                                    <el-tooltip v-if="editTarget(channel)" content="编辑渠道模板" placement="top">
+                                        <el-button
+                                            v-permission="'notification:template:write'"
+                                            link
+                                            type="primary"
+                                            @click="openEdit(channel)">
+                                            <ComponentsIcons name="icon-edit" style="width: 1.3em; height: 1.3em" />
+                                        </el-button>
+                                    </el-tooltip>
+                                    <el-tooltip v-if="editTarget(channel)" content="版本历史" placement="top">
+                                        <el-button
+                                            v-permission="'notification:template:read'"
+                                            link
+                                            type="primary"
+                                            @click="void openVersions(channel, scope.row)">
+                                            <ComponentsIcons name="icon-code" style="width: 1.3em; height: 1.3em" />
+                                        </el-button>
+                                    </el-tooltip>
+                                    <el-tooltip
+                                        v-if="channel.current?.state === 'PUBLISHED'"
+                                        content="禁用渠道"
+                                        placement="top">
+                                        <el-button
+                                            v-permission="'notification:template:write'"
+                                            link
+                                            type="warning"
+                                            @click="void disable(channel.current)">
+                                            <ComponentsIcons name="icon-disable" style="width: 1.3em; height: 1.3em" />
+                                        </el-button>
+                                    </el-tooltip>
+                                    <el-tooltip
+                                        v-if="channel.current?.state === 'DISABLED'"
+                                        content="启用渠道"
+                                        placement="top">
+                                        <el-button
+                                            v-permission="'notification:template:write'"
+                                            link
+                                            type="success"
+                                            @click="void enable(channel.current)">
+                                            <ComponentsIcons name="icon-enable" style="width: 1.3em; height: 1.3em" />
+                                        </el-button>
+                                    </el-tooltip>
+                                    <el-tooltip v-if="channel.draft" content="归档草稿" placement="top">
+                                        <el-button
+                                            v-permission="'notification:template:write'"
+                                            link
+                                            type="danger"
+                                            @click="void archive(channel.draft)">
+                                            <ComponentsIcons
+                                                name="icon-file-config"
+                                                style="width: 1.3em; height: 1.3em" />
+                                        </el-button>
+                                    </el-tooltip>
+                                    <el-tooltip
+                                        v-if="channel.current?.state === 'DISABLED'"
+                                        content="归档已禁用版本"
+                                        placement="top">
+                                        <el-button
+                                            v-permission="'notification:template:write'"
+                                            link
+                                            type="danger"
+                                            @click="void archive(channel.current)">
+                                            <ComponentsIcons
+                                                name="icon-file-config"
+                                                style="width: 1.3em; height: 1.3em" />
+                                        </el-button>
+                                    </el-tooltip>
+                                </div>
+                            </div>
+                        </div>
                     </template>
                 </el-table-column>
                 <el-table-column align="center" label="更新时间" prop="updated_at" width="170" show-overflow-tooltip />
-                <el-table-column align="center" label="操作" width="280" fixed="right">
+                <el-table-column align="center" label="操作" width="120" fixed="right">
                     <template #default="scope">
-                        <el-tooltip v-if="scope.row.state === 'DRAFT'" content="编辑模板" placement="top">
+                        <el-tooltip content="新增渠道" placement="top">
                             <el-button
                                 v-permission="'notification:template:write'"
                                 link
                                 type="primary"
-                                @click="openEdit(scope.row)">
-                                <ComponentsIcons name="icon-edit" style="width: 1.4em; height: 1.4em" />
-                            </el-button>
-                        </el-tooltip>
-                        <el-tooltip content="复制为新草稿" placement="top">
-                            <el-button
-                                v-permission="'notification:template:write'"
-                                link
-                                type="primary"
-                                @click="void copyTemplate(scope.row)">
-                                <ComponentsIcons name="icon-file-config" style="width: 1.4em; height: 1.4em" />
-                            </el-button>
-                        </el-tooltip>
-                        <el-tooltip content="版本历史" placement="top">
-                            <el-button
-                                v-permission="'notification:template:read'"
-                                link
-                                type="primary"
-                                @click="void openVersions(scope.row)">
-                                <ComponentsIcons name="icon-code" style="width: 1.4em; height: 1.4em" />
-                            </el-button>
-                        </el-tooltip>
-                        <el-tooltip v-if="scope.row.state === 'DRAFT'" content="发布模板" placement="top">
-                            <el-button
-                                v-permission="'notification:template:publish'"
-                                link
-                                type="success"
-                                @click="void publish(scope.row)">
-                                <ComponentsIcons name="icon-enable" style="width: 1.4em; height: 1.4em" />
-                            </el-button>
-                        </el-tooltip>
-                        <el-tooltip v-if="scope.row.state === 'PUBLISHED'" content="停用模板" placement="top">
-                            <el-button
-                                v-permission="'notification:template:write'"
-                                link
-                                type="warning"
-                                @click="void disable(scope.row)">
-                                <ComponentsIcons name="icon-disable" style="width: 1.4em; height: 1.4em" />
-                            </el-button>
-                        </el-tooltip>
-                        <el-tooltip
-                            v-if="scope.row.state === 'DRAFT' || scope.row.state === 'DISABLED'"
-                            content="归档模板"
-                            placement="top">
-                            <el-button
-                                v-permission="'notification:template:write'"
-                                link
-                                type="danger"
-                                @click="void archive(scope.row)">
-                                <ComponentsIcons name="icon-file-config" style="width: 1.4em; height: 1.4em" />
+                                @click="openAddChannel(scope.row)">
+                                <ComponentsIcons name="icon-add" style="width: 1.4em; height: 1.4em" />
                             </el-button>
                         </el-tooltip>
                     </template>
@@ -385,7 +399,7 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
         <el-dialog v-model="versionVisible" :title="`版本历史 - ${versionTemplateName}`" width="900px" destroy-on-close>
             <div v-loading="versionLoading" class="version-container">
                 <el-alert
-                    title="版本摘要用于确认当前版本内容；对比只在浏览器展示模板快照，不会修改任何版本。"
+                    title="版本摘要用于确认当前版本内容；历史版本仅供查看，不提供操作。"
                     type="info"
                     :closable="false"
                     show-icon />
@@ -411,7 +425,7 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                 </div>
                 <el-table :data="versionData" stripe>
                     <el-table-column align="center" label="版本号" prop="version_no" width="80" />
-                    <el-table-column align="center" label="状态" width="90">
+                    <el-table-column align="center" label="状态" width="130">
                         <template #default="scope">
                             <el-tag :type="stateTagType(scope.row.state)" size="small">
                                 {{ stateLabel(scope.row.state) }}
@@ -425,19 +439,6 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                         <template #default="scope">{{ digestLabel(scope.row.version_digest) }}</template>
                     </el-table-column>
                     <el-table-column align="center" label="更新时间" prop="updated_at" width="170" />
-                    <el-table-column align="center" label="操作" width="150">
-                        <template #default="scope">
-                            <el-button
-                                v-if="scope.row.state !== 'DRAFT'"
-                                v-permission="'notification:template:publish'"
-                                link
-                                type="primary"
-                                size="small"
-                                @click="void rollback(scope.row)">
-                                回滚为新草稿
-                            </el-button>
-                        </template>
-                    </el-table-column>
                 </el-table>
                 <el-empty v-if="!versionLoading && versionData.length === 0" description="暂无版本记录" />
             </div>
@@ -450,7 +451,9 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
                     <el-card shadow="never">
                         <template #header>版本 {{ item.version_no }} · {{ stateLabel(item.state) }}</template>
                         <el-descriptions :column="1" border>
-                            <el-descriptions-item label="版本摘要">{{ item.version_digest }}</el-descriptions-item>
+                            <el-descriptions-item label="版本摘要">
+                                <span class="version-digest">{{ item.version_digest }}</span>
+                            </el-descriptions-item>
                             <el-descriptions-item label="用途">{{ purposeLabel(item.purpose) }}</el-descriptions-item>
                             <el-descriptions-item label="更新时间">{{ item.updated_at }}</el-descriptions-item>
                         </el-descriptions>
@@ -503,8 +506,48 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
 .box__body :deep(.el-pagination) {
     justify-content: flex-end;
     padding: 0 10px;
-    margin-left: auto;
     margin-top: 4px;
+    margin-left: auto;
+}
+
+.channel-list {
+    display: grid;
+    gap: 6px;
+    padding: 4px 0;
+}
+
+.channel-row {
+    display: flex;
+    min-height: 32px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 4px 8px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 4px;
+    background: var(--el-fill-color-lighter);
+}
+
+.channel-row__summary,
+.channel-row__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.channel-row__summary {
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.channel-version,
+.channel-empty {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+}
+
+.channel-row__actions {
+    flex: 0 0 auto;
 }
 
 .version-container {
@@ -529,7 +572,20 @@ async function rollback(row: NotificationTemplateVO): Promise<void> {
     word-break: break-word;
 }
 
-h4 {
-    margin: 18px 0 8px;
+.version-digest {
+    display: block;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
+
+@media (max-width: 900px) {
+    .box__search {
+        height: auto;
+        padding: 12px 20px;
+    }
+
+    .box__body {
+        height: calc(100% - 96px);
+    }
 }
 </style>

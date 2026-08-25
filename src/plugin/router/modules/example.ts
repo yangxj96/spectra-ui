@@ -22,12 +22,6 @@ export default [
                 name: "ExampleEcharts",
                 component: () => import("@/views/Example/Echarts/index.vue"),
                 meta: { title: "图表示例", requiresAuth: true, requiredMenu: "ExampleEcharts" }
-            },
-            {
-                path: "markdown",
-                name: "ExampleMarkdown",
-                component: () => import("@/views/Example/Markdown/index.vue"),
-                meta: { title: "Markdown", requiresAuth: true, requiredMenu: "ExampleMarkdown" }
             }
         ]
     }

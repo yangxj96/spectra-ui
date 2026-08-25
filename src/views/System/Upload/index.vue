@@ -1,11 +1,7 @@
 <script setup lang="ts">
-console.log("文件上传");
+import Placeholder from "@/views/Devops/Placeholder/index.vue";
 </script>
 
 <template>
-    <div>
-        <span>123</span>
-    </div>
+    <Placeholder />
 </template>
-
-<style scoped></style>

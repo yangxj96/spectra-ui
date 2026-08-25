@@ -43,7 +43,7 @@ declare global {
 
     type UserStatus = "ACTIVE" | "LOCKED" | "DISABLED" | "DEPARTED";
 
-    /** 批量导入 Excel/CSV 中的一行用户数据。 */
+    /** 批量导入 Excel 中的一行用户数据。 */
     type UserImportRow = {
         real_name: string;
         phone: string;

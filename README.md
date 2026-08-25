@@ -36,8 +36,8 @@
 ```
 src/
 ├── api/            # API 模块
-├── components/     # 公共组件（DictSelect, FileUpload, IconPicker 等）
-├── hooks/          # 组合式函数（useTable, useFileUpload）
+├── components/     # 公共组件（DictSelect, IconPicker 等）
+├── hooks/          # 组合式函数（useTable 等）
 ├── plugin/
 │   ├── element/    # Element Plus 主题覆盖
 │   ├── request/    # HTTP 客户端（优先级队列/去重/Token 刷新/缓存/重试）

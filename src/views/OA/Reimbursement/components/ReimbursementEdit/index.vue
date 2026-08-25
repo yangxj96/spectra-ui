@@ -4,14 +4,12 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { ReimbursementApi } from "@/api/oa/reimbursement-api.ts";
-import FileUpload from "@/components/FileUpload/index.vue";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const route = useRoute();
 const router = useRouter();
 const editingId = computed(() => String(route.query.id ?? ""));
 const loading = ref(false);
-const uploadUrl = ref("");
 const form = reactive<ReimbursementSaveParams>(emptyForm());
 
 function emptyForm(): ReimbursementSaveParams {
@@ -23,14 +21,12 @@ function emptyForm(): ReimbursementSaveParams {
         currency: "CNY",
         payee_name: "",
         payee_account: "",
-        items: [{ expense_date: "", category: "", description: "", amount: 0, tax_amount: 0, invoice_no: "" }],
-        attachments: []
+        items: [{ expense_date: "", category: "", description: "", amount: 0, tax_amount: 0, invoice_no: "" }]
     };
 }
 
 async function load(): Promise<void> {
     Object.assign(form, emptyForm());
-    uploadUrl.value = "";
     if (!editingId.value) return;
     loading.value = true;
     try {
@@ -50,8 +46,7 @@ async function load(): Promise<void> {
                 amount: item.amount,
                 tax_amount: item.tax_amount,
                 invoice_no: item.invoice_no
-            })),
-            attachments: row.attachments.map(item => ({ file_id: item.file_id, file_name: item.file_name }))
+            }))
         });
     } finally {
         loading.value = false;
@@ -64,13 +59,6 @@ function addItem(): void {
 
 function removeItem(index: number): void {
     if (form.items.length > 1) form.items.splice(index, 1);
-}
-
-function handleUploaded(result: FileUploadResult): void {
-    form.attachments ??= [];
-    if (!form.attachments.some(item => item.file_id === result.file_id)) {
-        form.attachments.push({ file_id: result.file_id, file_name: result.url.split("/").pop() });
-    }
 }
 
 async function saveDraft(): Promise<void> {
@@ -130,14 +118,6 @@ onMounted(load);
             <el-form-item label="报销总额" required>
                 <el-input-number v-model="form.total_amount" :min="0" :precision="2" />
             </el-form-item>
-            <el-form-item label="报销凭证">
-                <FileUpload v-model="uploadUrl" :limit="5" @uploaded="handleUploaded">
-                    <template #default><el-button>上传发票/凭证</el-button></template>
-                </FileUpload>
-                <div v-if="form.attachments?.length" class="attachment-tip">
-                    已关联 {{ form.attachments.length }} 个凭证
-                </div>
-            </el-form-item>
         </el-form>
 
         <template #actions>
@@ -163,10 +143,5 @@ onMounted(load);
 .item-row .el-date-editor {
     flex: 1;
     min-width: 0;
-}
-
-.attachment-tip {
-    margin-top: 6px;
-    color: var(--el-color-success);
 }
 </style>

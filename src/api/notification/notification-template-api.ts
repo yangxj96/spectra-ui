@@ -10,6 +10,10 @@ export const NotificationTemplateApi = {
         return get<Page<NotificationTemplateVO>>(TEMPLATE_API, params);
     },
 
+    groupPage(params?: NotificationTemplatePageParams): Promise<Page<NotificationTemplateGroupVO>> {
+        return get<Page<NotificationTemplateGroupVO>>(`${TEMPLATE_API}/groups`, params);
+    },
+
     detail(id: string): Promise<NotificationTemplateVO> {
         return get<NotificationTemplateVO>(`${TEMPLATE_API}/${id}`);
     },
@@ -22,10 +26,6 @@ export const NotificationTemplateApi = {
         return put<NotificationTemplateVO>(`${TEMPLATE_API}/${id}`, params);
     },
 
-    copy(id: string): Promise<NotificationTemplateVO> {
-        return post<NotificationTemplateVO>(`${TEMPLATE_API}/${id}/copy`);
-    },
-
     publish(id: string, version: number): Promise<void> {
         return post<void>(`${TEMPLATE_API}/${id}/publish`, { version });
     },
@@ -34,16 +34,16 @@ export const NotificationTemplateApi = {
         return post<void>(`${TEMPLATE_API}/${id}/disable`, { version });
     },
 
+    enable(id: string, version: number): Promise<void> {
+        return post<void>(`${TEMPLATE_API}/${id}/enable`, { version });
+    },
+
     archive(id: string, version: number): Promise<void> {
         return post<void>(`${TEMPLATE_API}/${id}/archive`, { version });
     },
 
     versions(id: string): Promise<NotificationTemplateVO[]> {
         return get<NotificationTemplateVO[]>(`${TEMPLATE_API}/${id}/versions`);
-    },
-
-    rollback(id: string): Promise<NotificationTemplateVO> {
-        return post<NotificationTemplateVO>(`${TEMPLATE_API}/${id}/rollback`);
     },
 
     preview(params: NotificationTemplatePreviewParams): Promise<NotificationTemplatePreviewVO> {

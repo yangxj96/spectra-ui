@@ -44,9 +44,12 @@ export const NotificationApi = {
     /**
      * 删除消息
      * @param id 消息ID
+     * @param options 请求选项
      */
-    delete(id: string): Promise<void> {
-        return del<void>(`/api/notification/${id}`);
+    delete(id: string, options?: Pick<RequestOptions<string>, "loading">): Promise<void> {
+        return options
+            ? del<void>(`/api/notification/${id}`, undefined, options)
+            : del<void>(`/api/notification/${id}`);
     },
     /**
      * 批量删除

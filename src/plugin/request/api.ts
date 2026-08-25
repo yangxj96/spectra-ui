@@ -65,22 +65,6 @@ export function del<T, U extends string = string>(
 }
 
 /**
- * 上传文件
- * FormData 键名自动从 snake_case 转为 camelCase（后端接收 camelCase）
- * @param url 上传路径
- * @param form 表单数据
- * @param options 额外请求选项
- */
-export function upload<T, U extends string = string>(url: U, form: FormData, options?: RequestOptions<U>) {
-    const newForm = transformFormData(form);
-    return request<T, U>(url, {
-        method: "POST",
-        body: newForm,
-        ...options
-    });
-}
-
-/**
  * 下载文件
  * @param url 下载路径
  * @param options 额外请求选项
@@ -92,26 +76,4 @@ export async function download<U extends string = string>(url: U, options?: Requ
         ...options,
         download: true
     });
-}
-
-/**
- * snake_case 转 camelCase
- */
-function snakeToCamel(str: string) {
-    return str.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-}
-
-/**
- * 转换 FormData 键名为 camelCase
- * 后端接口统一接收 camelCase 参数名
- */
-function transformFormData(form: FormData) {
-    const newForm = new FormData();
-
-    form.forEach((value, key) => {
-        const newKey = snakeToCamel(key);
-        newForm.append(newKey, value);
-    });
-
-    return newForm;
 }

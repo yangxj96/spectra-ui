@@ -34,6 +34,15 @@ export function findMenuPath(menus: Menu[], routeName: string): Menu[] {
     return [];
 }
 
+/** 过滤已合并展示的旧菜单，避免后端菜单数据更新前出现重复入口。 */
+export function filterMenusByRouteNames(menus: Menu[], routeNames: ReadonlySet<string>): Menu[] {
+    return menus.flatMap(menu => {
+        if (menu.routeName && routeNames.has(menu.routeName)) return [];
+        const children = menu.children ? filterMenusByRouteNames(menu.children, routeNames) : undefined;
+        return [{ ...menu, ...(children ? { children } : {}) }];
+    });
+}
+
 /** 查找节点下第一个可点击菜单 */
 export function findFirstRoutableMenu(menu: Menu): Menu | undefined {
     if (menu.menuType === "MENU" && menu.routeName) return menu;

@@ -3,8 +3,31 @@ import { resolve } from "path";
 
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, minify as minifyWithOxc } from "vite";
 import viteCompression from "vite-plugin-compression2";
+
+function stripProductionConsole() {
+    return {
+        name: "strip-production-console",
+        apply: "build" as const,
+        async renderChunk(code: string, chunk: { fileName: string }) {
+            const normalizedCode = code
+                .replaceAll("window.console", "console")
+                .replace(/\bconsole\.(log|debug|info|warn|error|trace)\.apply\([^;{}]*\)/g, "void 0");
+            const result = await minifyWithOxc(chunk.fileName, normalizedCode, {
+                compress: {
+                    dropConsole: true
+                },
+                mangle: false,
+                codegen: false
+            });
+            return {
+                code: result.code.replace(/\bconsole\.(log|debug|info|warn|error|trace)\b/g, "(() => {})"),
+                map: null
+            };
+        }
+    };
+}
 
 export default defineConfig(({ mode }) => {
     const root = process.cwd();
@@ -29,7 +52,8 @@ export default defineConfig(({ mode }) => {
                 viteCompression({
                     threshold: 10240,
                     algorithms: ["gzip", "brotliCompress"]
-                })
+                }),
+            mode === "production" && stripProductionConsole()
         ].filter(Boolean),
         resolve: {
             alias: {
@@ -61,6 +85,15 @@ export default defineConfig(({ mode }) => {
             chunkSizeWarningLimit: 1500,
             rolldownOptions: {
                 output: {
+                    minify:
+                        mode === "production"
+                            ? {
+                                  compress: {
+                                      dropConsole: true
+                                  },
+                                  mangle: true
+                              }
+                            : false,
                     entryFileNames: "js/[name]-[hash].js",
                     chunkFileNames: "js/[name]-[hash].js",
                     assetFileNames: "[ext]/[name]-[hash][extname]",
@@ -77,10 +110,6 @@ export default defineConfig(({ mode }) => {
                         }
                         if (normalizedId.includes("/@form-create/") || normalizedId.includes("/codemirror/")) {
                             return "form-designer";
-                        }
-                        const embedPdfPackage = normalizedId.match(/\/@embedpdf\/([^/]+)\//)?.[1];
-                        if (embedPdfPackage) {
-                            return `pdf-${embedPdfPackage}`;
                         }
                         if (normalizedId.includes("/echarts/") || normalizedId.includes("/zrender/")) {
                             return "charts";

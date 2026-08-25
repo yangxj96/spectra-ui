@@ -147,9 +147,9 @@ export const useNotificationStore = defineStore("notification", {
         },
 
         /** 删除消息 */
-        async deleteNotification(id: string): Promise<void> {
+        async deleteNotification(id: string, options?: Pick<RequestOptions<string>, "loading">): Promise<void> {
             try {
-                await NotificationApi.delete(id);
+                await NotificationApi.delete(id, options);
                 const index = this.notifications.findIndex(n => n.id === id);
                 if (index > -1) {
                     const notification = this.notifications[index];

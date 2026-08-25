@@ -1,4 +1,4 @@
-/** 用户批量导入 Excel/CSV 模板字段；工号由后端生成，组织和授权配置在页面上统一选择。 */
+/** 用户批量导入 Excel 模板字段；工号由后端生成，组织和授权配置在页面上统一选择。 */
 export const USER_IMPORT_HEADERS = ["real_name", "phone", "email"] as const;
 
 export type UserImportHeader = (typeof USER_IMPORT_HEADERS)[number];
@@ -61,9 +61,8 @@ export function localizeUserImportError(message: string): string {
         .replaceAll("Apply", "应用");
 }
 
-/** 将错误行序列化为可下载的 CSV 明细。 */
-export function serializeUserImportErrors(rows: UserImportRowResult[]): string {
-    const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
+/** 构造可下载的 Excel 错误明细行。 */
+export function buildUserImportErrorRows(rows: UserImportRowResult[]): string[][] {
     const headers = ["行号", "行标识", "状态", "错误类型", "错误信息"];
     const records = rows.flatMap(row =>
         (row.errors?.length ? row.errors : ["处理失败，请重新校验"]).map(error => [
@@ -74,10 +73,10 @@ export function serializeUserImportErrors(rows: UserImportRowResult[]): string {
             localizeUserImportError(error)
         ])
     );
-    return [headers.join(","), ...records.map(record => record.map(escape).join(","))].join("\n");
+    return [headers, ...records];
 }
 
-/** 当前固定文本导入的浏览器端文件大小上限。 */
+/** 当前 Excel 导入的浏览器端文件大小上限。 */
 export const MAX_USER_IMPORT_FILE_SIZE = 5 * 1024 * 1024;
 
 /** 将后台导入任务的完成行数转换为进度百分比。 */
@@ -86,17 +85,9 @@ export function calculateUserImportProgress(completedRows: number, totalRows: nu
     return Math.min(100, Math.round((completedRows / totalRows) * 100));
 }
 
-/**
- * 解析固定表头的 CSV 文本。
- * 支持双引号包裹字段、字段内逗号和换行；首行为固定模板表头。
- */
-export function parseUserImportCsv(text: string): UserImportRow[] {
-    return parseUserImportRecords(parseCsvRecords(text));
-}
-
-/** 解析 CSV 或 Excel 文件，Excel 只读取第一个工作表。 */
+/** 解析 Excel 文件，仅读取第一个工作表。 */
 export async function parseUserImportFile(file: File): Promise<UserImportRow[]> {
-    if (/\.(csv|txt)$/i.test(file.name)) return parseUserImportCsv(await file.text());
+    if (!/\.(xlsx|xls)$/i.test(file.name)) throw new Error("当前仅支持 Excel 文件");
 
     const { read, utils } = await import("xlsx");
     const workbook = read(await file.arrayBuffer(), { type: "array", cellText: true, cellDates: false });
@@ -113,7 +104,7 @@ export async function parseUserImportFile(file: File): Promise<UserImportRow[]> 
 }
 
 function parseUserImportRecords(records: string[][]): UserImportRow[] {
-    if (!records.length) throw new Error("CSV 文件不能为空");
+    if (!records.length) throw new Error("Excel 文件不能为空");
 
     const headers = records[0].map(value => {
         const header = value.trim();
@@ -141,17 +132,13 @@ function parseUserImportRecords(records: string[][]): UserImportRow[] {
         ];
     });
 
-    if (!rows.length) throw new Error("CSV 文件至少需要一行用户数据");
+    if (!rows.length) throw new Error("Excel 文件至少需要一行用户数据");
     return rows;
 }
 
-/** 将当前编辑后的行重新序列化，作为 Preview 的摘要输入。 */
+/** 将当前编辑后的行序列化为稳定摘要输入。 */
 export function serializeUserImportRows(rows: UserImportRow[]): string {
-    const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
-    return [
-        USER_IMPORT_HEADERS.join(","),
-        ...rows.map(row => USER_IMPORT_HEADERS.map(header => escape(row[header])).join(","))
-    ].join("\n");
+    return JSON.stringify(rows.map(row => USER_IMPORT_HEADERS.map(header => row[header])));
 }
 
 /** 计算文本 UTF-8 字节的 SHA-256 十六进制摘要。 */
@@ -163,42 +150,4 @@ export async function sha256Text(text: string): Promise<string> {
 /** 创建一次新的导入幂等键。 */
 export function createUserImportIdempotencyKey(): string {
     return crypto.randomUUID();
-}
-
-function parseCsvRecords(text: string): string[][] {
-    const records: string[][] = [];
-    let record: string[] = [];
-    let value = "";
-    let quoted = false;
-
-    for (let index = 0; index < text.length; index++) {
-        const character = text[index];
-        const next = text[index + 1];
-        if (character === '"') {
-            if (quoted && next === '"') {
-                value += '"';
-                index++;
-            } else {
-                quoted = !quoted;
-            }
-        } else if (character === "," && !quoted) {
-            record.push(value);
-            value = "";
-        } else if ((character === "\n" || character === "\r") && !quoted) {
-            if (character === "\r" && next === "\n") index++;
-            record.push(value);
-            records.push(record);
-            record = [];
-            value = "";
-        } else {
-            value += character;
-        }
-    }
-
-    if (quoted) throw new Error("CSV 文件存在未闭合的引号");
-    if (value || record.length) {
-        record.push(value);
-        records.push(record);
-    }
-    return records;
 }

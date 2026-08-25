@@ -4,7 +4,6 @@ import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { DocumentApi } from "@/api/oa/document-api.ts";
-import FileUpload from "@/components/FileUpload/index.vue";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
@@ -13,13 +12,6 @@ const rows = ref<DocumentVO[]>([]);
 const folders = ref<DocumentFolderVO[]>([]);
 const pagination = reactive({ page_num: 1, page_size: 15, total: 0 });
 const query = reactive<DocumentPageParams>({ page_num: 1, page_size: 15, keyword: "", status: "", folder_id: "" });
-const versionDialog = reactive({
-    visible: false,
-    document: undefined as DocumentVO | undefined,
-    file_id: "",
-    file_url: "",
-    version_note: ""
-});
 const historyDialog = reactive({ visible: false, document: undefined as DocumentVO | undefined, loading: false });
 const versionHistory = ref<DocumentVersionVO[]>([]);
 const router = useRouter();
@@ -43,9 +35,6 @@ function openCreate() {
 function openEdit(row: DocumentVO) {
     router.push({ name: "OADocumentEdit", query: { id: row.id } });
 }
-function openVersion(row: DocumentVO) {
-    Object.assign(versionDialog, { visible: true, document: row, file_id: "", file_url: "", version_note: "" });
-}
 async function openHistory(row: DocumentVO) {
     historyDialog.visible = true;
     historyDialog.document = row;
@@ -62,16 +51,6 @@ async function restoreVersion(version: DocumentVersionVO) {
     await DocumentApi.restoreVersion(historyDialog.document.id, version.id);
     ElMessage.success("已恢复为当前版本");
     await openHistory(historyDialog.document);
-    await load();
-}
-async function saveVersion() {
-    if (!versionDialog.document || !versionDialog.file_id) return MessageUtils.warning("请先上传文件");
-    await DocumentApi.addVersion(versionDialog.document.id, {
-        file_id: versionDialog.file_id,
-        version_note: versionDialog.version_note || undefined
-    });
-    versionDialog.visible = false;
-    MessageUtils.success("版本已保存");
     await load();
 }
 async function publish(row: DocumentVO) {
@@ -166,9 +145,6 @@ onMounted(async () => {
                     <el-button v-permission="'oa:document:update'" link type="primary" @click="openEdit(scope.row)">
                         编辑
                     </el-button>
-                    <el-button v-permission="'oa:document:update'" link type="primary" @click="openVersion(scope.row)">
-                        上传版本
-                    </el-button>
                     <el-button v-permission="'oa:document:read'" link type="primary" @click="openHistory(scope.row)">
                         版本历史
                     </el-button>
@@ -198,22 +174,6 @@ onMounted(async () => {
             :page-size="pagination.page_size"
             :total="pagination.total"
             @current-change="pageChange" />
-        <el-dialog v-model="versionDialog.visible" title="上传文档版本" width="520px">
-            <el-form label-width="90px">
-                <el-form-item label="文件">
-                    <FileUpload
-                        v-model="versionDialog.file_url"
-                        :show-file-list="false"
-                        @uploaded="versionDialog.file_id = $event.file_id" />
-                    <span v-if="versionDialog.file_id" class="uploaded">已上传</span>
-                </el-form-item>
-                <el-form-item label="版本说明"><el-input v-model="versionDialog.version_note" /></el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="versionDialog.visible = false">取消</el-button>
-                <el-button type="primary" @click="saveVersion">保存版本</el-button>
-            </template>
-        </el-dialog>
         <el-dialog v-model="historyDialog.visible" title="版本历史" width="720px">
             <el-table v-loading="historyDialog.loading" :data="versionHistory" border stripe>
                 <el-table-column prop="version_no" label="版本" width="90">
@@ -243,9 +203,5 @@ onMounted(async () => {
 <style scoped lang="scss">
 .pager {
     justify-content: flex-end;
-}
-.uploaded {
-    margin-left: 8px;
-    color: var(--el-color-success);
 }
 </style>

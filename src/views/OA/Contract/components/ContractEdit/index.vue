@@ -79,7 +79,7 @@ onMounted(load);
 <template>
     <OaFormPage
         :title="editingId ? '编辑合同' : '新建合同'"
-        description="维护合同基本信息，保存后可在台账中上传版本和管理履约节点。"
+        description="维护合同基本信息，保存后可在台账中管理履约节点。"
         back-path="/oa/contract">
         <el-form v-loading="loading" label-width="110px">
             <el-form-item label="合同标题" required><el-input v-model="form.title" /></el-form-item>

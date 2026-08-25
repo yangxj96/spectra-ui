@@ -14,11 +14,13 @@ interface Props {
     notification: Notification | null;
     hasPrevious?: boolean;
     hasNext?: boolean;
+    deleteLoading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     hasPrevious: false,
-    hasNext: false
+    hasNext: false,
+    deleteLoading: false
 });
 
 const emit = defineEmits<{
@@ -154,7 +156,7 @@ function handleClose(): void {
                     <el-icon><Link /></el-icon>
                     查看相关页面
                 </el-button>
-                <el-button type="danger" plain @click="handleDelete">
+                <el-button type="danger" plain :loading="deleteLoading" :disabled="deleteLoading" @click="handleDelete">
                     <el-icon><Delete /></el-icon>
                     删除
                 </el-button>

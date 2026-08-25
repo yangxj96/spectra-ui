@@ -24,6 +24,20 @@ declare global {
         updated_at?: string;
     }
 
+    interface NotificationTemplateChannelGroupVO {
+        channel: NotificationTemplateChannel;
+        current?: NotificationTemplateVO | null;
+        draft?: NotificationTemplateVO | null;
+    }
+
+    interface NotificationTemplateGroupVO {
+        template_group_code: string;
+        template_name: string;
+        purpose: string;
+        channels: NotificationTemplateChannelGroupVO[];
+        updated_at?: string;
+    }
+
     interface NotificationTemplatePageParams extends BasePageParams {
         template_group_code?: string;
         channel?: NotificationTemplateChannel;

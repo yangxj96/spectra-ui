@@ -5,6 +5,7 @@ import { useRouter } from "vue-router";
 
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import { useNotificationStore } from "@/plugin/store/modules/use-notification-store.ts";
+import NotificationDetail from "@/views/Notification/components/NotificationDetail/index.vue";
 
 defineOptions({
     name: "NotificationDrawer"
@@ -24,12 +25,27 @@ const emit = defineEmits<{
 const router = useRouter();
 const notificationStore = useNotificationStore();
 const activeTab = ref<string>("all");
+const detailVisible = ref(false);
+const currentNotification = ref<Notification | null>(null);
+const deleteLoading = ref(false);
 
 /** 按通知用途生成筛选 Tab */
 const tabs = computed(() => [
     { label: "全部", value: "all" },
     ...notificationStore.purposeConfigs.map(({ purpose, label }) => ({ label, value: purpose }))
 ]);
+
+/** 当前详情消息在筛选列表中的位置 */
+const currentDetailIndex = computed(() => {
+    if (!currentNotification.value) return -1;
+    return notificationStore.filteredNotifications.findIndex(item => item.id === currentNotification.value?.id);
+});
+
+/** 是否存在上一条消息 */
+const hasPrevious = computed(() => currentDetailIndex.value > 0);
+
+/** 是否存在下一条消息 */
+const hasNext = computed(() => currentDetailIndex.value < notificationStore.filteredNotifications.length - 1);
 
 /** 抽屉显示状态 */
 const visible = computed({
@@ -62,10 +78,16 @@ function handleTabChange(tab: string): void {
 
 /** 点击消息项 */
 function handleNotificationClick(notification: Notification): void {
-    notificationStore.markAsRead(notification.id);
-    if (notification.link) {
-        router.push(notification.link);
-        handleClose();
+    currentNotification.value = notification;
+    detailVisible.value = true;
+    markAsRead(notification);
+    handleClose();
+}
+
+/** 标记消息已读 */
+function markAsRead(notification: Notification): void {
+    if (!notification.is_read) {
+        void notificationStore.markAsRead(notification.id);
     }
 }
 
@@ -84,6 +106,60 @@ function handleClose(): void {
 function goToNotificationPage(): void {
     router.push("/notification");
     handleClose();
+}
+
+/** 关闭消息详情 */
+function handleDetailClose(): void {
+    detailVisible.value = false;
+    currentNotification.value = null;
+}
+
+/** 删除消息 */
+async function handleDelete(id: string): Promise<void> {
+    const deletedIndex = currentDetailIndex.value;
+    deleteLoading.value = true;
+    try {
+        await notificationStore.deleteNotification(id, { loading: false });
+
+        // Store 在请求失败时会保留原消息，失败时继续停留在当前详情，避免误切换。
+        if (notificationStore.notifications.some(notification => notification.id === id)) {
+            return;
+        }
+
+        const remainingNotifications = notificationStore.filteredNotifications;
+        const nextNotification = remainingNotifications[deletedIndex] ?? remainingNotifications[deletedIndex - 1];
+        if (nextNotification) {
+            currentNotification.value = nextNotification;
+            markAsRead(nextNotification);
+            return;
+        }
+
+        // 当前筛选下已没有消息，回到通知列表抽屉，便于继续浏览其他类型的通知。
+        handleDetailClose();
+        emit("update:modelValue", true);
+    } finally {
+        deleteLoading.value = false;
+    }
+}
+
+/** 查看上一条消息 */
+function handlePrev(): void {
+    if (!hasPrevious.value) return;
+    const notification = notificationStore.filteredNotifications[currentDetailIndex.value - 1];
+    if (notification) {
+        currentNotification.value = notification;
+        markAsRead(notification);
+    }
+}
+
+/** 查看下一条消息 */
+function handleNext(): void {
+    if (!hasNext.value) return;
+    const notification = notificationStore.filteredNotifications[currentDetailIndex.value + 1];
+    if (notification) {
+        currentNotification.value = notification;
+        markAsRead(notification);
+    }
 }
 
 /** 格式化时间 */
@@ -139,15 +215,16 @@ onMounted(() => {
         </template>
 
         <div class="drawer-content">
-            <div class="tab-bar">
-                <div
-                    v-for="tab in tabs"
-                    :key="tab.value"
-                    class="tab-item"
-                    :class="{ active: activeTab === tab.value }"
-                    @click="handleTabChange(tab.value)">
-                    {{ tab.label }}
-                </div>
+            <div class="filter-bar">
+                <span class="filter-label">通知类型</span>
+                <el-select
+                    v-model="activeTab"
+                    class="type-select"
+                    size="small"
+                    aria-label="通知类型"
+                    @change="handleTabChange">
+                    <el-option v-for="tab in tabs" :key="tab.value" :label="tab.label" :value="tab.value" />
+                </el-select>
             </div>
 
             <div class="notification-list" v-loading="notificationStore.loading">
@@ -193,6 +270,17 @@ onMounted(() => {
             </div>
         </template>
     </el-drawer>
+
+    <NotificationDetail
+        v-model="detailVisible"
+        :notification="currentNotification"
+        :has-previous="hasPrevious"
+        :has-next="hasNext"
+        :delete-loading="deleteLoading"
+        @close="handleDetailClose"
+        @delete="handleDelete"
+        @prev="handlePrev"
+        @next="handleNext" />
 </template>
 
 <style scoped lang="scss">
@@ -226,36 +314,28 @@ onMounted(() => {
     overflow: hidden;
 }
 
-.tab-bar {
+.filter-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px 0;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0 12px;
     border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
-.tab-item {
-    padding: 6px 12px;
+.filter-label {
+    flex-shrink: 0;
     font-size: 13px;
-    color: var(--el-text-color-regular);
-    background-color: var(--el-fill-color-light);
-    border-radius: 16px;
-    cursor: pointer;
-    transition: all 0.3s;
+    color: var(--el-text-color-secondary);
+}
 
-    &:hover {
-        color: var(--el-color-primary);
-        background-color: var(--el-color-primary-light-9);
-    }
-
-    &.active {
-        color: #fff;
-        background-color: var(--el-color-primary);
-    }
+.type-select {
+    flex: 1;
+    min-width: 0;
 }
 
 .notification-list {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     max-height: calc(100vh - 200px);
 

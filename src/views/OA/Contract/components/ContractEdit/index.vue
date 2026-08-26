@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { ContractApi } from "@/api/oa/contract-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const route = useRoute();
@@ -52,7 +52,7 @@ async function load(): Promise<void> {
 
 async function save(): Promise<void> {
     if (!form.title.trim() || !form.contract_type || !form.counterparty_name.trim()) {
-        ElMessage.warning("请填写合同标题、类型和相对方");
+        MessageUtils.warning("请填写合同标题、类型和相对方");
         return;
     }
     const payload: ContractSaveParams = {
@@ -69,7 +69,7 @@ async function save(): Promise<void> {
     };
     if (editingId.value) await ContractApi.update(editingId.value, payload);
     else await ContractApi.create(payload);
-    ElMessage.success("合同台账已保存");
+    MessageUtils.success("合同台账已保存");
     await router.push({ name: "OAContract" });
 }
 

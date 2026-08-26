@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { onMounted, ref } from "vue";
 
 import { SecurityAuditApi } from "@/api/auth/security-audit-api.ts";
@@ -44,7 +43,7 @@ onMounted(async () => {
     try {
         retention.value = await SecurityAuditApi.retention();
     } catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : "审计保留策略加载失败");
+        MessageUtils.error(error instanceof Error ? error.message : "审计保留策略加载失败");
     }
 });
 </script>

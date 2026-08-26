@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { DocumentApi } from "@/api/oa/document-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const route = useRoute();
@@ -37,7 +37,7 @@ async function load(): Promise<void> {
 
 async function save(): Promise<void> {
     if (!form.title.trim()) {
-        ElMessage.warning("请输入文档标题");
+        MessageUtils.warning("请输入文档标题");
         return;
     }
     const payload: DocumentSaveParams = {
@@ -48,7 +48,7 @@ async function save(): Promise<void> {
     };
     if (editingId.value) await DocumentApi.update(editingId.value, payload);
     else await DocumentApi.create(payload);
-    ElMessage.success("保存成功");
+    MessageUtils.success("保存成功");
     await router.push({ name: "OADocument" });
 }
 

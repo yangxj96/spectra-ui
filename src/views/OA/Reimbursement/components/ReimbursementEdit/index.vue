@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { ReimbursementApi } from "@/api/oa/reimbursement-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const route = useRoute();
@@ -63,7 +63,7 @@ function removeItem(index: number): void {
 
 async function saveDraft(): Promise<void> {
     if (!form.purpose.trim() || !form.payee_name.trim() || !form.payee_account.trim()) {
-        ElMessage.warning("请填写报销用途、收款人和收款账号");
+        MessageUtils.warning("请填写报销用途、收款人和收款账号");
         return;
     }
     const params = {
@@ -75,7 +75,7 @@ async function saveDraft(): Promise<void> {
     };
     if (editingId.value) await ReimbursementApi.update(editingId.value, params);
     else await ReimbursementApi.create(params);
-    ElMessage.success(editingId.value ? "报销草稿已更新" : "报销草稿已保存");
+    MessageUtils.success(editingId.value ? "报销草稿已更新" : "报销草稿已保存");
     await router.push({ name: "OAReimbursement" });
 }
 

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { AssetApi } from "@/api/oa/asset-api.ts";
 import { toLocalDateString } from "@/utils/date-utils.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const router = useRouter();
@@ -30,7 +30,7 @@ async function loadCategories(): Promise<void> {
 
 async function saveDraft(): Promise<void> {
     if (!form.name.trim()) {
-        ElMessage.warning("请输入资产名称");
+        MessageUtils.warning("请输入资产名称");
         return;
     }
     await AssetApi.create({
@@ -39,7 +39,7 @@ async function saveDraft(): Promise<void> {
         quantity: Number(form.quantity),
         acquisition_amount: Number(form.acquisition_amount || 0)
     });
-    ElMessage.success("资产已保存");
+    MessageUtils.success("资产已保存");
     await router.push({ name: "OAAsset" });
 }
 

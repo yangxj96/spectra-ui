@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 const router = useRouter();
 
@@ -99,7 +100,7 @@ const handleViewDiagram = async (row: ProcessDefinitionVO) => {
         diagramUrl.value = URL.createObjectURL(blob);
     } catch (error) {
         console.error("获取流程图失败:", error);
-        ElMessage.error("获取流程图失败");
+        MessageUtils.error("获取流程图失败");
         diagramVisible.value = false;
     } finally {
         diagramLoading.value = false;
@@ -134,7 +135,7 @@ const handleToggleStatus = async (row: ProcessDefinitionVO) => {
             await WorkflowApi.suspendProcessDefinition(row.id);
         }
 
-        ElMessage.success(`${action}成功`);
+        MessageUtils.success(`${action}成功`);
         loadData();
     } catch (error) {
         if (error !== "cancel") {

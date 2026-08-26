@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { FormApi } from "@/api/workflow/form-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 const router = useRouter();
 
@@ -93,7 +94,7 @@ const handleViewVersions = async (row: FormDefinitionVO) => {
         versionData.value = await FormApi.getVersions(row.id);
     } catch (error) {
         console.error("获取版本历史失败:", error);
-        ElMessage.error("获取版本历史失败");
+        MessageUtils.error("获取版本历史失败");
         versionVisible.value = false;
     } finally {
         versionLoading.value = false;
@@ -122,7 +123,7 @@ const handleDelete = async (row: FormDefinitionVO) => {
         });
 
         await FormApi.delete(row.id);
-        ElMessage.success("删除成功");
+        MessageUtils.success("删除成功");
         loadData();
     } catch (error) {
         if (error !== "cancel") {
@@ -149,7 +150,7 @@ const handleToggleActive = async (row: FormDefinitionVO) => {
             description: row.description
         });
 
-        ElMessage.success(`${action}成功`);
+        MessageUtils.success(`${action}成功`);
         loadData();
     } catch (error) {
         if (error !== "cancel") {

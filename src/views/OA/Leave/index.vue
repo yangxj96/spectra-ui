@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { LeaveApi } from "@/api/oa/leave-api.ts";
 import OAApproverSelect from "@/components/OAApproverSelect/index.vue";
 import useTable from "@/hooks/use-table.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
@@ -35,25 +36,25 @@ function openEdit(row: LeaveVO): void {
 
 async function submit(row: LeaveVO): Promise<void> {
     if (!approverEmail.value) {
-        ElMessage.warning("请先选择审批人");
+        MessageUtils.warning("请先选择审批人");
         return;
     }
     await LeaveApi.submit(row.id, { approver_email: approverEmail.value });
-    ElMessage.success("已提交审批");
+    MessageUtils.success("已提交审批");
     handlerConditionQuery();
 }
 
 async function withdraw(row: LeaveVO): Promise<void> {
     await ElMessageBox.confirm("确认撤回这条请假申请吗？", "提示", { type: "warning" });
     await LeaveApi.withdraw(row.id);
-    ElMessage.success("已撤回");
+    MessageUtils.success("已撤回");
     handlerConditionQuery();
 }
 
 async function cancel(row: LeaveVO): Promise<void> {
     await ElMessageBox.confirm("确认取消这条请假申请吗？取消后不可再提交。", "提示", { type: "warning" });
     await LeaveApi.cancel(row.id);
-    ElMessage.success("申请已取消");
+    MessageUtils.success("申请已取消");
     handlerConditionQuery();
 }
 

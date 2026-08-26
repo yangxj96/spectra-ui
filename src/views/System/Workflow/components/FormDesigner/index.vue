@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { type Config } from "@form-create/designer";
-import { ElMessage } from "element-plus";
 import { defineAsyncComponent, onMounted, ref, useTemplateRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { FormApi } from "@/api/workflow/form-api.ts";
 import { parseSafeFormRuleJson } from "@/utils/form-security.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 const FcDesigner = defineAsyncComponent({
     loader: () => import("@form-create/designer"),
@@ -48,7 +48,7 @@ const handleSave = (data: { rule: string; options: string }) => {
     }
 
     if (!formName.trim()) {
-        ElMessage.warning("请先在右侧设置中填写表单名称");
+        MessageUtils.warning("请先在右侧设置中填写表单名称");
         return;
     }
 
@@ -57,7 +57,7 @@ const handleSave = (data: { rule: string; options: string }) => {
         parseSafeFormRuleJson(data.rule);
         ruleJson = data.rule;
     } catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : "表单规则安全校验失败");
+        MessageUtils.error(error instanceof Error ? error.message : "表单规则安全校验失败");
         return;
     }
     const optionsJson = data.options;
@@ -82,11 +82,11 @@ const saveVersion = async (ruleJson: string, optionsJson: string, formJson: stri
             options_json: optionsJson,
             form_json: formJson
         });
-        ElMessage.success("保存成功");
+        MessageUtils.success("保存成功");
         router.push({ path: "/system/workflow", query: { tab: "form" } });
     } catch (error) {
         console.error("保存失败:", error);
-        ElMessage.error("保存失败");
+        MessageUtils.error("保存失败");
     }
 };
 
@@ -102,11 +102,11 @@ const createForm = async (name: string, ruleJson: string, optionsJson: string, f
             form_json: formJson
         });
 
-        ElMessage.success("创建成功");
+        MessageUtils.success("创建成功");
         router.push({ path: "/system/workflow", query: { tab: "form" } });
     } catch (error) {
         console.error("创建失败:", error);
-        ElMessage.error("创建失败");
+        MessageUtils.error("创建失败");
     }
 };
 
@@ -126,7 +126,7 @@ const loadFormData = async (id: string) => {
         }
     } catch (error) {
         console.error("加载表单数据失败:", error);
-        ElMessage.error("加载表单数据失败");
+        MessageUtils.error("加载表单数据失败");
     }
 };
 

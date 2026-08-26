@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
 
 import { ConfiguredApi } from "@/api/system/configured-api.ts";
@@ -7,6 +7,7 @@ import { CryptoApi, initCrypto } from "@/api/system/crypto-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
 import { configuredConverter } from "@/converter/configured-converter.ts";
 import useTable from "@/hooks/use-table.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import ConfiguredEdit from "@/views/Devops/SystemMaintenance/Configured/components/ConfiguredEdit/index.vue";
 
 const edit = reactive({
@@ -52,11 +53,11 @@ const handleGenerateKeyPair = async () => {
             { confirmButtonText: "确认生成", cancelButtonText: "取消", type: "warning" }
         );
         await CryptoApi.generateKeyPair();
-        ElMessage.success("RSA 密钥对已生成并生效");
+        MessageUtils.success("RSA 密钥对已生成并生效");
         await handlerConditionQuery();
     } catch (e: unknown) {
         if (e !== "cancel") {
-            ElMessage.error(e instanceof Error ? e.message : "生成失败");
+            MessageUtils.error(e instanceof Error ? e.message : "生成失败");
         }
     }
 };
@@ -65,10 +66,10 @@ const handleRefreshCrypto = async () => {
     try {
         await CryptoApi.refreshKeys();
         await initCrypto();
-        ElMessage.success("加密状态已刷新");
+        MessageUtils.success("加密状态已刷新");
     } catch (e: unknown) {
         if (e !== "cancel") {
-            ElMessage.error(e instanceof Error ? e.message : "刷新失败");
+            MessageUtils.error(e instanceof Error ? e.message : "刷新失败");
         }
     }
 };

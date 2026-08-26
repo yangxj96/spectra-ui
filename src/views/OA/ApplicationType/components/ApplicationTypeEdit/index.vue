@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { ApplicationApi } from "@/api/oa/application-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const route = useRoute();
@@ -51,12 +51,12 @@ async function save(): Promise<void> {
         description: form.description?.trim() || undefined
     };
     if (!payload.code || !payload.name) {
-        ElMessage.warning("请填写申请类型编码和名称");
+        MessageUtils.warning("请填写申请类型编码和名称");
         return;
     }
     if (editingId.value) await ApplicationApi.updateType(editingId.value, payload);
     else await ApplicationApi.createType(payload);
-    ElMessage.success("保存成功");
+    MessageUtils.success("保存成功");
     await router.push({ name: "OAApplicationTypes" });
 }
 

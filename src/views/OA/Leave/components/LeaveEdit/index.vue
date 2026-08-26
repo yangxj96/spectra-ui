@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { LeaveApi } from "@/api/oa/leave-api.ts";
 import { toIsoDateTime } from "@/utils/date-utils.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const route = useRoute();
@@ -52,7 +52,7 @@ async function load(): Promise<void> {
 
 async function saveDraft(): Promise<void> {
     if (!form.start_time || !form.end_time || !form.reason.trim()) {
-        ElMessage.warning("请填写时间和请假事由");
+        MessageUtils.warning("请填写时间和请假事由");
         return;
     }
     const params = {
@@ -63,7 +63,7 @@ async function saveDraft(): Promise<void> {
     };
     if (editingId.value) await LeaveApi.update(editingId.value, params);
     else await LeaveApi.create(params);
-    ElMessage.success(editingId.value ? "请假申请已更新" : "已保存为草稿");
+    MessageUtils.success(editingId.value ? "请假申请已更新" : "已保存为草稿");
     await router.push({ name: "OALeave" });
 }
 

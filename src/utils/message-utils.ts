@@ -1,5 +1,8 @@
 import { ElMessage, ElMessageBox, ElNotification, type MessageOptions, type MessageType } from "element-plus";
 
+/** ElMessage 轻提示默认停留时间（毫秒）。 */
+export const MESSAGE_DURATION = 1000;
+
 /* ===================== 公用部分 ===================== */
 
 // 动态获取容器：优先使用 .box__content，找不到时回退到 document.body
@@ -11,7 +14,7 @@ function getContainer(): HTMLElement {
 const DEFAULT_OPTIONS: Partial<MessageOptions> = {
     appendTo: getContainer(),
     showClose: true,
-    duration: 5000
+    duration: MESSAGE_DURATION
 };
 
 /**

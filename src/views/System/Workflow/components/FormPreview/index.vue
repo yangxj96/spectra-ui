@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import formCreate from "@form-create/element-ui";
-import { ElMessage } from "element-plus";
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { FormApi } from "@/api/workflow/form-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 const route = useRoute();
 const router = useRouter();
@@ -55,7 +55,7 @@ const loadVersionData = async (id: string, version: number) => {
         }
     } catch (error) {
         console.error("加载版本数据失败:", error);
-        ElMessage.error("加载版本数据失败");
+        MessageUtils.error("加载版本数据失败");
     } finally {
         loading.value = false;
     }

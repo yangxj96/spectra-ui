@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 
 import { AssetApi } from "@/api/oa/asset-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const router = useRouter();
@@ -11,7 +11,7 @@ const form = reactive<AssetPurchaseDraftParams>({ purchase_id: "", receipt_id: "
 
 async function createFromPurchase(): Promise<void> {
     if (!form.purchase_id.trim() || !form.receipt_id.trim()) {
-        ElMessage.warning("请输入采购申请 ID 和收货单 ID");
+        MessageUtils.warning("请输入采购申请 ID 和收货单 ID");
         return;
     }
     const result = await AssetApi.fromPurchase({
@@ -19,7 +19,7 @@ async function createFromPurchase(): Promise<void> {
         receipt_id: form.receipt_id.trim(),
         category_id: form.category_id
     });
-    ElMessage.success(`已生成 ${result.length} 条资产草稿`);
+    MessageUtils.success(`已生成 ${result.length} 条资产草稿`);
     await router.push({ name: "OAAsset" });
 }
 </script>

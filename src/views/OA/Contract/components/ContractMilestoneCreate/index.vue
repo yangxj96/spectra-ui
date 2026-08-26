@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { computed, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { ContractApi } from "@/api/oa/contract-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const route = useRoute();
@@ -18,11 +18,11 @@ const form = reactive<ContractMilestoneSaveParams>({
 
 async function save(): Promise<void> {
     if (!contractId.value) {
-        ElMessage.warning("缺少合同 ID");
+        MessageUtils.warning("缺少合同 ID");
         return;
     }
     if (!form.name.trim() || !form.due_date) {
-        ElMessage.warning("请填写节点名称和到期日期");
+        MessageUtils.warning("请填写节点名称和到期日期");
         return;
     }
     await ContractApi.createMilestone(contractId.value, {
@@ -31,7 +31,7 @@ async function save(): Promise<void> {
         due_date: form.due_date,
         remark: form.remark?.trim() || undefined
     });
-    ElMessage.success("履约节点已添加");
+    MessageUtils.success("履约节点已添加");
     await router.push({ name: "OAContract" });
 }
 </script>

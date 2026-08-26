@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { CalendarApi } from "@/api/oa/calendar-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const condition = ref<CalendarPageParams>({ page_num: 1, page_size: 15 });
@@ -21,7 +22,7 @@ const openCreate = () => {
 const remove = async (row: CalendarVO) => {
     await ElMessageBox.confirm(`确认删除日程“${row.title}”吗？`, "提示", { type: "warning" });
     await CalendarApi.delete(row.id);
-    ElMessage.success("日程已删除");
+    MessageUtils.success("日程已删除");
     handlerConditionQuery();
 };
 </script>

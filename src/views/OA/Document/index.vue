@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -49,7 +49,7 @@ async function restoreVersion(version: DocumentVersionVO) {
     if (!historyDialog.document || version.current) return;
     await ElMessageBox.confirm(`确认将文档恢复到 V${version.version_no} 吗？`, "版本恢复确认", { type: "warning" });
     await DocumentApi.restoreVersion(historyDialog.document.id, version.id);
-    ElMessage.success("已恢复为当前版本");
+    MessageUtils.success("已恢复为当前版本");
     await openHistory(historyDialog.document);
     await load();
 }

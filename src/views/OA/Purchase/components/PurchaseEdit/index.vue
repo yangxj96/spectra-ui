@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { PurchaseApi } from "@/api/oa/purchase-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const route = useRoute();
@@ -65,17 +65,17 @@ function removeItem(index: number): void {
 
 async function saveDraft(): Promise<void> {
     if (!form.purpose.trim() || !form.expected_date || !form.items.some(item => item.item_name.trim())) {
-        ElMessage.warning("请填写采购事由、期望到货日期和采购明细");
+        MessageUtils.warning("请填写采购事由、期望到货日期和采购明细");
         return;
     }
     if (estimateTotal.value > Number(form.budget_amount || 0)) {
-        ElMessage.warning("采购明细估价合计不能超过采购预算");
+        MessageUtils.warning("采购明细估价合计不能超过采购预算");
         return;
     }
     const params = { ...form, purpose: form.purpose.trim(), budget_amount: Number(form.budget_amount) };
     if (editingId.value) await PurchaseApi.update(editingId.value, params);
     else await PurchaseApi.create(params);
-    ElMessage.success(editingId.value ? "采购申请草稿已更新" : "采购申请草稿已保存");
+    MessageUtils.success(editingId.value ? "采购申请草稿已更新" : "采购申请草稿已保存");
     await router.push({ name: "OAPurchase" });
 }
 

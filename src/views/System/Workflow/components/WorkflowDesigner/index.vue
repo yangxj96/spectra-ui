@@ -4,11 +4,11 @@ import { Control, SelectionSelect } from "@logicflow/extension";
 import "@logicflow/extension/dist/index.css";
 import Flowable, { type PickerRequestPayload, type PickerType } from "@yangxj96/logicflow-plugin-flowable";
 import "@yangxj96/logicflow-plugin-flowable/style.css";
-import { ElMessage } from "element-plus";
 import { computed, onMounted, reactive, ref, shallowRef, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 import FormPickerDialog from "./components/pickers/FormPickerDialog.vue";
 import GroupPickerDialog from "./components/pickers/GroupPickerDialog.vue";
@@ -121,7 +121,7 @@ const loadBpmnXml = async (id: string) => {
         }
     } catch (error) {
         console.error("加载流程定义失败:", error);
-        ElMessage.error("加载流程定义失败");
+        MessageUtils.error("加载流程定义失败");
     } finally {
         loading.value = false;
     }
@@ -141,11 +141,11 @@ const handleDeploy = async () => {
             key: definitionKey.value
         });
 
-        ElMessage.success(`流程部署成功（版本 ${result.version}）`);
+        MessageUtils.success(`流程部署成功（版本 ${result.version}）`);
         router.push({ path: "/system/workflow", query: { tab: "workflow" } });
     } catch (error) {
         console.error("部署失败:", error);
-        ElMessage.error("部署失败");
+        MessageUtils.error("部署失败");
     } finally {
         deploying.value = false;
     }

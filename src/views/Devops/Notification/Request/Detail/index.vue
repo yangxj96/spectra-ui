@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { NotificationAdminApi } from "@/api/notification/notification-admin-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import { formatDateTime } from "@/utils/date-utils.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import { notificationResponseSummaryLabel } from "@/utils/notification-labels.ts";
 
 type StepKey = "request" | "tasks" | "delivery" | "complete";
@@ -231,7 +232,7 @@ async function loadTasks(requestKey: string, page = 1): Promise<void> {
         taskDeliveries.value = [];
         taskDeliveryTotal.value = 0;
     } catch {
-        ElMessage.error("投递任务加载失败，请稍后重试");
+        MessageUtils.error("投递任务加载失败，请稍后重试");
     } finally {
         detailTasksLoading.value = false;
     }
@@ -254,7 +255,7 @@ async function loadRequest(requestKey: string): Promise<void> {
         taskDeliveries.value = [];
         taskDeliveryTotal.value = 0;
     } catch {
-        ElMessage.error("通知请求详情加载失败，请稍后重试");
+        MessageUtils.error("通知请求详情加载失败，请稍后重试");
     } finally {
         detailLoading.value = false;
     }
@@ -273,7 +274,7 @@ async function loadTaskDeliveries(taskId: string, page = 1): Promise<void> {
         taskDeliveryTotal.value = deliveries.total ?? taskDeliveries.value.length;
         taskDeliveryPage.value = page;
     } catch {
-        if (activeTaskId.value === taskId) ElMessage.error("投递记录加载失败，请稍后重试");
+        if (activeTaskId.value === taskId) MessageUtils.error("投递记录加载失败，请稍后重试");
     } finally {
         if (activeTaskId.value === taskId) taskDeliveryLoading.value = false;
     }
@@ -325,10 +326,10 @@ async function retryTask(row: NotificationTaskAdminVO): Promise<void> {
     actionLoading.value = row.id;
     try {
         await NotificationAdminApi.retryTask(row.id);
-        ElMessage.success("通知任务已重新排队");
+        MessageUtils.success("通知任务已重新排队");
         if (requestId.value) await loadRequest(requestId.value);
     } catch {
-        ElMessage.error("通知任务重试失败，请稍后重试");
+        MessageUtils.error("通知任务重试失败，请稍后重试");
     } finally {
         actionLoading.value = undefined;
     }
@@ -344,10 +345,10 @@ async function cancelTask(row: NotificationTaskAdminVO): Promise<void> {
     actionLoading.value = row.id;
     try {
         await NotificationAdminApi.cancelTask(row.id);
-        ElMessage.success("通知任务已取消");
+        MessageUtils.success("通知任务已取消");
         if (requestId.value) await loadRequest(requestId.value);
     } catch {
-        ElMessage.error("通知任务取消失败，请稍后重试");
+        MessageUtils.error("通知任务取消失败，请稍后重试");
     } finally {
         actionLoading.value = undefined;
     }
@@ -360,7 +361,7 @@ async function openDeliveryDetail(row: NotificationDeliveryAdminVO): Promise<voi
     try {
         deliveryDetail.value = await NotificationAdminApi.deliveryDetail(row.id);
     } catch {
-        ElMessage.error("投递记录详情加载失败，请稍后重试");
+        MessageUtils.error("投递记录详情加载失败，请稍后重试");
     } finally {
         deliveryDetailLoading.value = false;
     }

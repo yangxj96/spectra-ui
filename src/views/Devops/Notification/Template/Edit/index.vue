@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { computed, onMounted, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { NotificationTemplateApi } from "@/api/notification/notification-template-api.ts";
 import StepNavigation from "@/components/StepNavigation/index.vue";
 import type { StepNavigationItem } from "@/components/StepNavigation/types.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 import type { FormInstance, FormRules } from "element-plus";
 
@@ -142,12 +142,12 @@ function parseJsonObject(value: string, label: string): Record<string, unknown> 
     try {
         const parsed: unknown = JSON.parse(value);
         if (!isObjectRecord(parsed)) {
-            ElMessage.error(`${label}必须是 JSON 对象`);
+            MessageUtils.error(`${label}必须是 JSON 对象`);
             return undefined;
         }
         return parsed;
     } catch {
-        ElMessage.error(`${label}不是合法的 JSON`);
+        MessageUtils.error(`${label}不是合法的 JSON`);
         return undefined;
     }
 }
@@ -171,15 +171,15 @@ function collectTemplateVariables(...templates: Array<string | null | undefined>
 
 function validateTemplatePurposeChannel(purpose: string, channel: NotificationTemplateChannel): boolean {
     if (purpose === "BIND_PHONE_CODE" && channel !== "SMS") {
-        ElMessage.error("绑定手机号验证码模板只能使用短信渠道");
+        MessageUtils.error("绑定手机号验证码模板只能使用短信渠道");
         return false;
     }
     if (purpose === "BIND_EMAIL_CODE" && channel !== "EMAIL") {
-        ElMessage.error("绑定邮箱验证码模板只能使用邮件渠道");
+        MessageUtils.error("绑定邮箱验证码模板只能使用邮件渠道");
         return false;
     }
     if (verificationPurposes.has(purpose) && channel === "IN_APP") {
-        ElMessage.error("验证码模板只能使用短信或邮件渠道");
+        MessageUtils.error("验证码模板只能使用短信或邮件渠道");
         return false;
     }
     return true;
@@ -198,7 +198,7 @@ function handleChannelChange(): void {
 function handlePurposeChange(): void {
     if (!editorChannelOptions.value.some(item => item.value === editor.value.channel)) {
         editor.value.channel = editor.value.purpose === "BIND_EMAIL_CODE" ? "EMAIL" : "SMS";
-        ElMessage.info(`模板渠道已切换为${channelLabel(editor.value.channel)}`);
+        MessageUtils.info(`模板渠道已切换为${channelLabel(editor.value.channel)}`);
     }
     normalizeChannelFields();
 }
@@ -244,19 +244,19 @@ function validateTemplateDefinition(
 ): string[] | undefined {
     const properties = schema.properties;
     if (!isObjectRecord(properties)) {
-        ElMessage.error("参数 Schema 必须包含 properties 对象");
+        MessageUtils.error("参数 Schema 必须包含 properties 对象");
         return undefined;
     }
     const invalidDefinitions = Object.entries(properties).filter(([, definition]) => !isObjectRecord(definition));
     if (invalidDefinitions.length) {
-        ElMessage.error(`参数定义必须是 JSON 对象：${invalidDefinitions.map(([name]) => name).join(", ")}`);
+        MessageUtils.error(`参数定义必须是 JSON 对象：${invalidDefinitions.map(([name]) => name).join(", ")}`);
         return undefined;
     }
     const invalidSensitiveDefinitions = Object.entries(properties).filter(
         ([, definition]) => definition.sensitive !== undefined && typeof definition.sensitive !== "boolean"
     );
     if (invalidSensitiveDefinitions.length) {
-        ElMessage.error(`参数敏感标识必须是布尔值：${invalidSensitiveDefinitions.map(([name]) => name).join(", ")}`);
+        MessageUtils.error(`参数敏感标识必须是布尔值：${invalidSensitiveDefinitions.map(([name]) => name).join(", ")}`);
         return undefined;
     }
     const declared = new Set(Object.keys(properties));
@@ -270,11 +270,11 @@ function validateTemplateDefinition(
         ]
             .filter(Boolean)
             .join("；");
-        ElMessage.error(`变量声明与模板占位符不一致：${details}`);
+        MessageUtils.error(`变量声明与模板占位符不一致：${details}`);
         return undefined;
     }
     if (content && directVariableTemplatePattern.test(content)) {
-        ElMessage.error("模板正文不能只有一个占位符，请补充通知语义");
+        MessageUtils.error("模板正文不能只有一个占位符，请补充通知语义");
         return undefined;
     }
     const hasIllegalPlaceholder = [title, content, html].some(template => {
@@ -283,7 +283,7 @@ function validateTemplateDefinition(
         return invalidVariablePattern.test(remainder);
     });
     if (hasIllegalPlaceholder) {
-        ElMessage.error("模板包含非法占位符，只允许 {{变量名}} 格式");
+        MessageUtils.error("模板包含非法占位符，只允许 {{变量名}} 格式");
         return undefined;
     }
     const unsafeHtml = (html ?? "").toLowerCase();
@@ -292,7 +292,7 @@ function validateTemplateDefinition(
         /\bon[a-z]+\s*=/.test(unsafeHtml) ||
         /\b(?:javascript|vbscript|data|file):/.test(unsafeHtml)
     ) {
-        ElMessage.error("HTML 模板包含 script、事件属性或危险 URL 链接");
+        MessageUtils.error("HTML 模板包含 script、事件属性或危险 URL 链接");
         return undefined;
     }
     return [...referenced];
@@ -359,7 +359,7 @@ async function load(): Promise<void> {
             normalizeChannelFields();
         }
     } catch (error: unknown) {
-        ElMessage.error(errorMessage(error, "加载模板详情失败"));
+        MessageUtils.error(errorMessage(error, "加载模板详情失败"));
         await router.push({ name: "DevopsNotificationTemplate" });
     } finally {
         loading.value = false;
@@ -419,15 +419,15 @@ async function save(publishAfterSave = false): Promise<void> {
         if (publishAfterSave) {
             await NotificationTemplateApi.publish(saved.id, saved.version);
             editor.value.state = "PUBLISHED";
-            ElMessage.success("模板已保存并发布");
+            MessageUtils.success("模板已保存并发布");
             await router.push({ name: "DevopsNotificationTemplate" });
         } else {
             saveMessage.value = "草稿已保存，可继续编辑";
-            ElMessage.success("模板草稿已保存");
+            MessageUtils.success("模板草稿已保存");
         }
     } catch (error: unknown) {
         saveMessage.value = "";
-        ElMessage.error(errorMessage(error, "保存模板失败，可能是版本已变化"));
+        MessageUtils.error(errorMessage(error, "保存模板失败，可能是版本已变化"));
     } finally {
         submitting.value = false;
     }
@@ -453,19 +453,19 @@ async function preview(): Promise<void> {
 
     const sensitiveVariables = sensitiveParameterNames(parameterSchema);
     if (sensitiveVariables.some(variable => variable in parameters)) {
-        ElMessage.error("敏感模板参数不能放在普通示例参数中");
+        MessageUtils.error("敏感模板参数不能放在普通示例参数中");
         return;
     }
     if (variables.some(variable => !(variable in parameters) && !(variable in sensitiveParameters))) {
-        ElMessage.error("示例参数未覆盖全部模板变量");
+        MessageUtils.error("示例参数未覆盖全部模板变量");
         return;
     }
     if (sensitiveVariables.some(variable => !(variable in sensitiveParameters))) {
-        ElMessage.error("敏感示例参数未覆盖全部敏感模板变量");
+        MessageUtils.error("敏感示例参数未覆盖全部敏感模板变量");
         return;
     }
     if (Object.keys(sensitiveParameters).some(variable => !sensitiveVariables.includes(variable))) {
-        ElMessage.error("敏感示例参数中包含未声明为敏感的字段");
+        MessageUtils.error("敏感示例参数中包含未声明为敏感的字段");
         return;
     }
 
@@ -483,9 +483,9 @@ async function preview(): Promise<void> {
             parameters,
             sensitive_parameters: sensitiveParameters
         });
-        ElMessage.success("模板预览已生成");
+        MessageUtils.success("模板预览已生成");
     } catch (error: unknown) {
-        ElMessage.error(errorMessage(error, "模板预览失败，请检查变量和 HTML 安全规则"));
+        MessageUtils.error(errorMessage(error, "模板预览失败，请检查变量和 HTML 安全规则"));
     } finally {
         previewLoading.value = false;
     }

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { SupplyApi } from "@/api/oa/supply-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
@@ -44,7 +45,7 @@ async function operate(row: SupplyItemVO, action: "inbound" | "issue" | "returnS
     const value = Number(result.value);
     const params = action === "adjust" ? { target_stock: value, reason: "盘点调整" } : { quantity: value };
     await SupplyApi[action](row.id, params);
-    ElMessage.success("库存操作已完成");
+    MessageUtils.success("库存操作已完成");
     handlerConditionQuery();
 }
 

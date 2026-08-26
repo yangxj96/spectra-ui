@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 
 import { SupplyApi } from "@/api/oa/supply-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const router = useRouter();
@@ -22,11 +22,11 @@ const form = reactive<SupplySaveParams>({
 
 async function save(): Promise<void> {
     if (!form.sku.trim() || !form.name.trim() || !form.unit.trim()) {
-        ElMessage.warning("请输入 SKU、名称和单位");
+        MessageUtils.warning("请输入 SKU、名称和单位");
         return;
     }
     await SupplyApi.create({ ...form, min_stock: Number(form.min_stock || 0) });
-    ElMessage.success("办公用品已保存");
+    MessageUtils.success("办公用品已保存");
     await router.push({ name: "OASupply" });
 }
 </script>

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { NoticeApi } from "@/api/oa/notice-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const condition = ref<NoticePageParams>({ page_num: 1, page_size: 15 });
@@ -21,13 +21,13 @@ const openCreate = () => {
 const markRead = async (row: NoticeVO) => {
     if (row.read) return;
     await NoticeApi.markRead(row.id);
-    ElMessage.success("已标记为已读");
+    MessageUtils.success("已标记为已读");
     handlerConditionQuery();
 };
 
 const revoke = async (row: NoticeVO) => {
     await NoticeApi.revoke(row.id);
-    ElMessage.success("公告已撤回");
+    MessageUtils.success("公告已撤回");
     handlerConditionQuery();
 };
 </script>

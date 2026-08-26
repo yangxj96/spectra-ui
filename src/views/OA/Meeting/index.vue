@@ -1,10 +1,10 @@
 ﻿<script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { MeetingApi } from "@/api/oa/meeting-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 // 会议状态下拉选项（查询用：业务状态）
@@ -48,12 +48,12 @@ const openCreate = () => router.push({ name: "OAMeetingCreate" });
 
 const respond = async (row: MeetingVO, status: string) => {
     await MeetingApi.respond(row.id, status);
-    ElMessage.success("会议响应已更新");
+    MessageUtils.success("会议响应已更新");
 };
 
 const checkIn = async (row: MeetingVO) => {
     await MeetingApi.checkIn(row.id);
-    ElMessage.success("签到成功");
+    MessageUtils.success("签到成功");
 };
 
 // 重置查询条件

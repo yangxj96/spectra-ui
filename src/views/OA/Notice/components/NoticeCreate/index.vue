@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 
 import { NoticeApi } from "@/api/oa/notice-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const router = useRouter();
@@ -17,12 +17,12 @@ const form = reactive<NoticeCreateParams>({
 
 async function createAndPublish(): Promise<void> {
     if (!form.title.trim() || !form.content.trim()) {
-        ElMessage.warning("请填写公告标题和内容");
+        MessageUtils.warning("请填写公告标题和内容");
         return;
     }
     const notice = await NoticeApi.create({ ...form, title: form.title.trim(), content: form.content.trim() });
     await NoticeApi.publish(notice.id);
-    ElMessage.success("公告已发布");
+    MessageUtils.success("公告已发布");
     await router.push({ name: "OANotice" });
 }
 </script>

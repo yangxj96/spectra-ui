@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { ApplicationApi } from "@/api/oa/application-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const loading = ref(false);
@@ -30,7 +31,7 @@ function openEdit(row: ApplicationTypeVO) {
 async function remove(row: ApplicationTypeVO) {
     await ElMessageBox.confirm(`确认删除申请类型“${row.name}”吗？`, "删除确认", { type: "warning" });
     await ApplicationApi.deleteType(row.id);
-    ElMessage.success("删除成功");
+    MessageUtils.success("删除成功");
     await load();
 }
 

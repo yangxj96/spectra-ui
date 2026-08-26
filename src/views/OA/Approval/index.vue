@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
@@ -8,6 +8,7 @@ import { LeaveApi } from "@/api/oa/leave-api.ts";
 import { PurchaseApi } from "@/api/oa/purchase-api.ts";
 import { ReimbursementApi } from "@/api/oa/reimbursement-api.ts";
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const activeTab = ref<"todo" | "done">("todo");
@@ -119,7 +120,7 @@ async function approve(task: TaskVO): Promise<void> {
         cancelButtonText: "取消"
     });
     await WorkflowApi.completeTask(task.id, result.value || "同意");
-    ElMessage.success("审批已通过");
+    MessageUtils.success("审批已通过");
     await load();
 }
 
@@ -132,7 +133,7 @@ async function reject(task: TaskVO): Promise<void> {
         type: "warning"
     });
     await WorkflowApi.rejectTask(task.id, result.value.trim());
-    ElMessage.success("申请已驳回");
+    MessageUtils.success("申请已驳回");
     await load();
 }
 

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { NotificationTemplateApi } from "@/api/notification/notification-template-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import useTable from "@/hooks/use-table.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 const router = useRouter();
 
@@ -127,7 +128,7 @@ function openAddChannel(group: NotificationTemplateGroupVO): void {
     const existingChannels = new Set(group.channels.map(item => item.channel));
     const targetChannel = allowedChannels(group.purpose).find(channel => !existingChannels.has(channel));
     if (!targetChannel) {
-        ElMessage.info("当前模板已配置所有适用渠道");
+        MessageUtils.info("当前模板已配置所有适用渠道");
         return;
     }
     const source = group.channels.map(editTarget).find((item): item is NotificationTemplateVO => Boolean(item));
@@ -156,10 +157,10 @@ async function confirmAction(
             type: "warning"
         });
         await action(row.id, row.version);
-        ElMessage.success(successMessage);
+        MessageUtils.success(successMessage);
         await handlerConditionQuery();
     } catch (error: unknown) {
-        if (error !== "cancel") ElMessage.error(errorMessage(error, "操作失败，可能是版本已变化"));
+        if (error !== "cancel") MessageUtils.error(errorMessage(error, "操作失败，可能是版本已变化"));
     }
 }
 
@@ -204,7 +205,7 @@ async function openVersions(
         compareFromId.value = versionData.value[1]?.id ?? "";
         compareToId.value = versionData.value[0]?.id ?? "";
     } catch (error: unknown) {
-        ElMessage.error(errorMessage(error, "加载版本历史失败"));
+        MessageUtils.error(errorMessage(error, "加载版本历史失败"));
         versionData.value = [];
     } finally {
         versionLoading.value = false;

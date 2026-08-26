@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { AssetApi } from "@/api/oa/asset-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info" | "primary"]> = {
@@ -51,14 +52,14 @@ async function operate(row: AssetVO, action: "assign" | "return" | "transfer" | 
         params = { to_location: value, reason: value };
     }
     await AssetApi[action === "return" ? "returnAsset" : action](row.id, params);
-    ElMessage.success("操作已完成");
+    MessageUtils.success("操作已完成");
     handlerConditionQuery();
 }
 
 async function scrap(row: AssetVO): Promise<void> {
     await ElMessageBox.confirm(`确认报废资产“${row.name}”吗？`, "请确认", { type: "warning" });
     await AssetApi.scrap(row.id, { reason: "手工报废" });
-    ElMessage.success("资产已报废");
+    MessageUtils.success("资产已报废");
     handlerConditionQuery();
 }
 

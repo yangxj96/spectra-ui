@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 
 import { MeetingApi } from "@/api/oa/meeting-api.ts";
 import { toIsoDateTime } from "@/utils/date-utils.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const router = useRouter();
@@ -18,7 +18,7 @@ const form = reactive<MeetingCreateParams>({
 
 async function create(): Promise<void> {
     if (!form.title.trim() || !form.start_time || !form.end_time) {
-        ElMessage.warning("请填写会议标题、开始时间和结束时间");
+        MessageUtils.warning("请填写会议标题、开始时间和结束时间");
         return;
     }
     await MeetingApi.create({
@@ -27,7 +27,7 @@ async function create(): Promise<void> {
         start_time: toIsoDateTime(form.start_time),
         end_time: toIsoDateTime(form.end_time)
     });
-    ElMessage.success("会议已创建");
+    MessageUtils.success("会议已创建");
     await router.push({ name: "OAMeeting" });
 }
 </script>

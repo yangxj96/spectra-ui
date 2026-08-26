@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Iphone, Lock, Message, Phone } from "@element-plus/icons-vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { computed, onMounted, ref, type Component } from "vue";
 
 import { AuthenticationIdentityApi } from "@/api/authentication/identity-api";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 defineOptions({
     name: "ProfileBinding"
@@ -76,20 +77,20 @@ function getIdentityDisplay(identity: AuthenticationIdentityVO): string {
 // 发送手机验证码
 async function handleSendPhoneCode() {
     if (!phoneForm.value.phone) {
-        ElMessage.warning("请输入手机号");
+        MessageUtils.warning("请输入手机号");
         return;
     }
     if (!/^1[3-9]\d{9}$/.test(phoneForm.value.phone)) {
-        ElMessage.warning("手机号格式不正确");
+        MessageUtils.warning("手机号格式不正确");
         return;
     }
 
     try {
         await AuthenticationIdentityApi.sendBindingPhoneCode(phoneForm.value.phone);
-        ElMessage.success("验证码已发送");
+        MessageUtils.success("验证码已发送");
         startPhoneCountdown();
     } catch {
-        ElMessage.error("发送验证码失败");
+        MessageUtils.error("发送验证码失败");
     }
 }
 
@@ -108,7 +109,7 @@ function startPhoneCountdown() {
 // 绑定手机
 async function handleBindPhone() {
     if (!phoneForm.value.phone || !phoneForm.value.code) {
-        ElMessage.warning("请填写完整信息");
+        MessageUtils.warning("请填写完整信息");
         return;
     }
 
@@ -118,13 +119,13 @@ async function handleBindPhone() {
             phone: phoneForm.value.phone,
             code: phoneForm.value.code
         });
-        ElMessage.success("绑定成功");
+        MessageUtils.success("绑定成功");
         phoneDialogVisible.value = false;
         phoneForm.value = { phone: "", code: "" };
         loadBindings();
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "绑定失败";
-        ElMessage.error(message);
+        MessageUtils.error(message);
     } finally {
         phoneLoading.value = false;
     }
@@ -133,20 +134,20 @@ async function handleBindPhone() {
 // 发送邮箱验证码
 async function handleSendEmailCode() {
     if (!emailForm.value.email) {
-        ElMessage.warning("请输入邮箱");
+        MessageUtils.warning("请输入邮箱");
         return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailForm.value.email)) {
-        ElMessage.warning("邮箱格式不正确");
+        MessageUtils.warning("邮箱格式不正确");
         return;
     }
 
     try {
         await AuthenticationIdentityApi.sendBindingEmailCode(emailForm.value.email);
-        ElMessage.success("验证码已发送");
+        MessageUtils.success("验证码已发送");
         startEmailCountdown();
     } catch {
-        ElMessage.error("发送验证码失败");
+        MessageUtils.error("发送验证码失败");
     }
 }
 
@@ -165,7 +166,7 @@ function startEmailCountdown() {
 // 绑定邮箱
 async function handleBindEmail() {
     if (!emailForm.value.email || !emailForm.value.code) {
-        ElMessage.warning("请填写完整信息");
+        MessageUtils.warning("请填写完整信息");
         return;
     }
 
@@ -175,13 +176,13 @@ async function handleBindEmail() {
             email: emailForm.value.email,
             code: emailForm.value.code
         });
-        ElMessage.success("绑定成功");
+        MessageUtils.success("绑定成功");
         emailDialogVisible.value = false;
         emailForm.value = { email: "", code: "" };
         loadBindings();
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "绑定失败";
-        ElMessage.error(message);
+        MessageUtils.error(message);
     } finally {
         emailLoading.value = false;
     }
@@ -209,12 +210,12 @@ async function handleUnbind(identityId: string) {
         });
 
         await AuthenticationIdentityApi.unbind(identityId);
-        ElMessage.success("解绑成功");
+        MessageUtils.success("解绑成功");
         loadBindings();
     } catch (err: unknown) {
         if (err !== "cancel") {
             const message = err instanceof Error ? err.message : "解绑失败";
-            ElMessage.error(message);
+            MessageUtils.error(message);
         }
     }
 }

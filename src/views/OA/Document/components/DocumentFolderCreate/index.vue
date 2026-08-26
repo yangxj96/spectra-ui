@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { DocumentApi } from "@/api/oa/document-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const route = useRoute();
@@ -17,11 +17,11 @@ const form = reactive<DocumentFolderSaveParams>({
 
 async function save(): Promise<void> {
     if (!form.name.trim()) {
-        ElMessage.warning("请输入目录名称");
+        MessageUtils.warning("请输入目录名称");
         return;
     }
     await DocumentApi.createFolder({ ...form, name: form.name.trim() });
-    ElMessage.success("目录已创建");
+    MessageUtils.success("目录已创建");
     await router.push({ name: "OADocument" });
 }
 </script>

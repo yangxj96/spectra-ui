@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 
 import { CalendarApi } from "@/api/oa/calendar-api.ts";
 import { toIsoDateTime } from "@/utils/date-utils.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
 const router = useRouter();
@@ -20,7 +20,7 @@ const form = reactive<CalendarSaveParams>({
 
 async function create(): Promise<void> {
     if (!form.title.trim() || !form.start_time || !form.end_time) {
-        ElMessage.warning("请填写日程标题、开始时间和结束时间");
+        MessageUtils.warning("请填写日程标题、开始时间和结束时间");
         return;
     }
     await CalendarApi.create({
@@ -29,7 +29,7 @@ async function create(): Promise<void> {
         start_time: toIsoDateTime(form.start_time),
         end_time: toIsoDateTime(form.end_time)
     });
-    ElMessage.success("日程已创建");
+    MessageUtils.success("日程已创建");
     await router.push({ name: "OACalendar" });
 }
 </script>

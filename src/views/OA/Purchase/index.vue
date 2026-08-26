@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessageBox } from "element-plus";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -7,6 +7,7 @@ import { PurchaseApi } from "@/api/oa/purchase-api.ts";
 import OAApproverSelect from "@/components/OAApproverSelect/index.vue";
 import useTable from "@/hooks/use-table.ts";
 import { toLocalDateString } from "@/utils/date-utils.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const statusMap: Record<string, [string, "success" | "warning" | "danger" | "info"]> = {
@@ -59,25 +60,25 @@ function openEdit(row: PurchaseVO): void {
 
 async function submit(row: PurchaseVO): Promise<void> {
     if (!approverEmail.value) {
-        ElMessage.warning("请先选择审批人");
+        MessageUtils.warning("请先选择审批人");
         return;
     }
     await PurchaseApi.submit(row.id, { approver_email: approverEmail.value });
-    ElMessage.success("已提交审批");
+    MessageUtils.success("已提交审批");
     handlerConditionQuery();
 }
 
 async function withdraw(row: PurchaseVO): Promise<void> {
     await ElMessageBox.confirm("确认撤回这条采购申请吗？", "提示", { type: "warning" });
     await PurchaseApi.withdraw(row.id);
-    ElMessage.success("已撤回");
+    MessageUtils.success("已撤回");
     handlerConditionQuery();
 }
 
 async function cancel(row: PurchaseVO): Promise<void> {
     await ElMessageBox.confirm("确认取消这条采购申请吗？取消后不可再提交。", "提示", { type: "warning" });
     await PurchaseApi.cancel(row.id);
-    ElMessage.success("申请已取消");
+    MessageUtils.success("申请已取消");
     handlerConditionQuery();
 }
 
@@ -88,7 +89,7 @@ async function execute(row: PurchaseVO): Promise<void> {
         cancelButtonText: "取消"
     });
     await PurchaseApi.execute(row.id, { order_no: result.value, execution_status: "ORDERED" });
-    ElMessage.success("已登记采购执行");
+    MessageUtils.success("已登记采购执行");
     handlerConditionQuery();
 }
 
@@ -116,12 +117,12 @@ async function saveReceipt(): Promise<void> {
             accepted: item.accepted
         }));
     if (!items.length) {
-        ElMessage.warning("至少填写一项收货数量");
+        MessageUtils.warning("至少填写一项收货数量");
         return;
     }
     await PurchaseApi.receive(receivePurchaseId.value, { received_date: receivedDate.value, items });
     receiveVisible.value = false;
-    ElMessage.success("收货记录已保存");
+    MessageUtils.success("收货记录已保存");
     handlerConditionQuery();
 }
 </script>

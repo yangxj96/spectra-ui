@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Check } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
 import { ref } from "vue";
 
 import { UserApi } from "@/api/user/user-api";
 import DictSelect from "@/components/DictSelect/index.vue";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 defineOptions({
     name: "ProfileInfo"
@@ -22,10 +22,10 @@ async function handleSaveInfo() {
             timezone: userInfo.value.timezone
         };
         await UserApi.updateProfile(params, { loading: false });
-        ElMessage.success("保存成功");
+        MessageUtils.success("保存成功");
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "保存失败";
-        ElMessage.error(message);
+        MessageUtils.error(message);
     } finally {
         loading.value = false;
     }

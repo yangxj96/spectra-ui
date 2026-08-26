@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { onMounted, ref } from "vue";
 
 import { ReportApi } from "@/api/oa/report-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 
 const loading = ref(false);
@@ -19,7 +19,7 @@ async function loadStats(): Promise<void> {
 
 async function exportStats(): Promise<void> {
     await ReportApi.exportDepartmentStats();
-    ElMessage.success("部门统计已导出");
+    MessageUtils.success("部门统计已导出");
 }
 
 onMounted(loadStats);

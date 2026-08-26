@@ -84,7 +84,7 @@ export default [
             {
                 path: "scheduler/execution",
                 name: "DevopsSchedulerExecution",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
+                component: () => import("@/views/Devops/Scheduler/Execution/index.vue"),
                 meta: { title: "调度执行记录", requiresAuth: true, requiredMenu: "DevopsSchedulerExecution" }
             },
             {

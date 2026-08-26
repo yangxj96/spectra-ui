@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ElForm, type FormRules } from "element-plus";
+import { ElForm, ElInput, type FormRules } from "element-plus";
 import QRCode from "qrcode";
 import { nextTick, onMounted, reactive, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -19,6 +19,7 @@ const router = useRouter();
 const appStore = useAppStore();
 const loginRef = useTemplateRef<InstanceType<typeof ElForm>>("loginForm");
 const mfaQrCode = useTemplateRef<HTMLCanvasElement>("mfaQrCode");
+const mfaInput = useTemplateRef<InstanceType<typeof ElInput>>("mfaInput");
 const kaptchaUrl = ref(import.meta.env.VITE_API_URL + "api/common/kaptcha?_t=" + Date.now());
 const redirect = ref<string>(route.query.redirect as string | "/");
 const mfaVisible = ref(false);
@@ -43,6 +44,11 @@ const mfa = reactive({
     enrollmentRequired: false,
     recoveryCodes: [] as string[]
 });
+
+const focusMfaInput = async () => {
+    await nextTick();
+    mfaInput.value?.focus();
+};
 
 // 刷新验证码
 const refreshKaptcha = () => {
@@ -91,6 +97,7 @@ const openMfaChallenge = async (token: Token) => {
     mfa.challengeId = token.mfa_challenge_id;
     mfa.enrollmentRequired = token.mfa_enrollment_required === true;
     mfaVisible.value = true;
+    await focusMfaInput();
     if (mfa.enrollmentRequired) {
         const enrollment = await AuthApi.beginMfaEnrollment(mfa.challengeId);
         mfa.enrollmentId = enrollment.enrollment_id;
@@ -146,6 +153,10 @@ const handleMfa = async () => {
     }
 };
 
+const handlePrimaryAction = () => {
+    return mfaVisible.value ? handleMfa() : handleLogin();
+};
+
 const resetMfa = () => {
     mfaVisible.value = false;
     mfaEnrollmentCompleted.value = false;
@@ -194,18 +205,18 @@ onMounted(async () => {
                     用户登录
                 </p>
             </template>
-            <div v-if="!mfaVisible">
+            <div v-if="!mfaVisible" @keydown.enter.prevent="handlePrimaryAction">
                 <ElForm ref="loginForm" label-width="70px" :model="login.form" :rules="login.rules">
                     <el-form-item label="账号" prop="username">
-                        <el-input v-model="login.form.username" placeholder="请输入账号" />
+                        <ElInput v-model="login.form.username" placeholder="请输入账号" />
                     </el-form-item>
                     <el-form-item label="密码" prop="password">
-                        <el-input v-model="login.form.password" placeholder="请输入密码" show-password />
+                        <ElInput v-model="login.form.password" placeholder="请输入密码" show-password />
                     </el-form-item>
                     <el-form-item label="验证码" prop="captcha">
                         <el-row style="width: 100%">
                             <el-col :span="12">
-                                <el-input v-model="login.form.captcha" placeholder="请输入验证码" />
+                                <ElInput v-model="login.form.captcha" placeholder="请输入验证码" />
                             </el-col>
                             <el-col :span="12">
                                 <el-image :src="kaptchaUrl" class="v-code" @click="refreshKaptcha">
@@ -221,7 +232,7 @@ onMounted(async () => {
                     </el-form-item>
                 </ElForm>
             </div>
-            <div v-else class="mfa-panel">
+            <div v-else class="mfa-panel" @keydown.enter.prevent="handlePrimaryAction">
                 <el-alert
                     v-if="mfa.enrollmentRequired && !mfaEnrollmentCompleted"
                     title="首次登录需要绑定 MFA"
@@ -252,7 +263,8 @@ onMounted(async () => {
                     </div>
                     <ElForm label-width="70px" class="mfa-form">
                         <el-form-item label="验证码">
-                            <el-input
+                            <ElInput
+                                ref="mfaInput"
                                 v-model="mfa.code"
                                 maxlength="6"
                                 inputmode="numeric"
@@ -261,11 +273,12 @@ onMounted(async () => {
                     </ElForm>
                 </template>
                 <template v-else-if="mfaEnrollmentCompleted">
-                    <el-input :model-value="mfa.recoveryCodes.join('\n')" type="textarea" :rows="6" readonly />
+                    <ElInput :model-value="mfa.recoveryCodes.join('\n')" type="textarea" :rows="6" readonly />
                 </template>
                 <ElForm v-else class="mfa-form">
                     <el-form-item label="验证码">
-                        <el-input
+                        <ElInput
+                            ref="mfaInput"
                             v-model="mfa.code"
                             maxlength="6"
                             inputmode="numeric"
@@ -274,8 +287,8 @@ onMounted(async () => {
                 </ElForm>
             </div>
             <template #footer>
-                <el-button v-if="mfaVisible" text @click="resetMfa">返回登录</el-button>
-                <el-button type="primary" @click="mfaVisible ? handleMfa() : handleLogin()">
+                <el-button v-if="mfaVisible" native-type="button" text @click="resetMfa">返回登录</el-button>
+                <el-button type="primary" native-type="button" @click="handlePrimaryAction">
                     <ComponentsIcons name="icon-login" />
                     <span>&nbsp;{{ mfaEnrollmentCompleted ? "完成登录" : mfaVisible ? "验证并继续" : "登录" }}</span>
                 </el-button>

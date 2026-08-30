@@ -20,6 +20,9 @@ export async function initCrypto(): Promise<void> {
             }
         );
         useCryptoStore().setConfig(data);
+        if (data.enabled) {
+            await fetchClientPrivateKey();
+        }
         console.log(`[Crypto] 初始化完成: enabled=${data.enabled}`);
     } catch (e) {
         console.warn("[Crypto] 初始化失败，加解密已禁用:", e);

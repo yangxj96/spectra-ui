@@ -3,19 +3,23 @@ import { ref } from "vue";
 
 import { FileApi } from "@/api/system/file-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { formatDateTime } from "@/utils/date-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 // 查询条件
-const condition = ref<FilePageParams>({
+const condition = ref<FileAssetPageParams>({
     page_num: 1,
     page_size: 15,
     original_name: "",
-    storage_type: undefined
+    content_sha256: "",
+    content_type: "",
+    storage_provider: undefined,
+    status: undefined
 });
 
 // table分页请求
-const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<FileInfo>(
-    FileApi.page,
+const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<FileAsset>(
+    FileApi.assetsPage,
     condition.value
 );
 
@@ -78,21 +82,43 @@ const formatStorageType = (type: string): string => {
     return map[type] || type;
 };
 
+const formatStatus = (status: string): string => {
+    const map: Record<string, string> = {
+        READY: "可用",
+        DELETING: "删除中",
+        DELETED: "已删除"
+    };
+    return map[status] || status;
+};
+
+const statusTagType = (status: string): "success" | "warning" | "info" => {
+    if (status === "READY") return "success";
+    if (status === "DELETING") return "warning";
+    return "info";
+};
+
 // 下载文件
-const handleDownload = async (row: FileInfo) => {
-    await FileApi.download(row.id);
+const handleDownload = async (row: FileAsset) => {
+    const blob = await FileApi.download(row.file_asset_id);
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = row.original_name;
+    anchor.click();
+    URL.revokeObjectURL(url);
     MessageUtils.success("下载成功");
 };
 
 // 预览文件
-const handlePreview = (row: FileInfo) => {
-    window.open(FileApi.previewUrl(row.id), "_blank");
+const handlePreview = async (row: FileAsset) => {
+    const blob = await FileApi.preview(row.file_asset_id);
+    window.open(URL.createObjectURL(blob), "_blank");
 };
 
 // 删除文件
-const handleDelete = (row: FileInfo) => {
+const handleDelete = (row: FileAsset) => {
     MessageUtils.box.confirm(`是否要删除文件[${row.original_name}]`, "提示").then(async () => {
-        await FileApi.deleteById(row.id);
+        await FileApi.deleteAsset(row.file_asset_id);
         MessageUtils.success("删除成功", () => {
             handlerConditionQuery();
         });
@@ -105,7 +131,10 @@ const handleReset = () => {
         page_num: 1,
         page_size: 15,
         original_name: "",
-        storage_type: undefined
+        content_sha256: "",
+        content_type: "",
+        storage_provider: undefined,
+        status: undefined
     };
     handlerConditionQuery();
 };
@@ -118,11 +147,28 @@ const handleReset = () => {
             <el-form-item label="文件名" prop="original_name">
                 <el-input v-model="condition.original_name" placeholder="请输入文件名" clearable />
             </el-form-item>
-            <el-form-item label="存储类型" prop="storage_type">
-                <el-select v-model="condition.storage_type" placeholder="请选择存储类型" clearable style="width: 180px">
+            <el-form-item label="存储类型" prop="storage_provider">
+                <el-select
+                    v-model="condition.storage_provider"
+                    placeholder="请选择存储类型"
+                    clearable
+                    style="width: 180px">
                     <el-option label="本地存储" value="LOCAL" />
                     <el-option label="S3存储" value="S3" />
                 </el-select>
+            </el-form-item>
+            <el-form-item label="状态" prop="status">
+                <el-select v-model="condition.status" placeholder="请选择状态" clearable style="width: 150px">
+                    <el-option label="可用" value="READY" />
+                    <el-option label="删除中" value="DELETING" />
+                    <el-option label="已删除" value="DELETED" />
+                </el-select>
+            </el-form-item>
+            <el-form-item label="摘要" prop="content_sha256">
+                <el-input v-model="condition.content_sha256" placeholder="SHA-256" clearable style="width: 260px" />
+            </el-form-item>
+            <el-form-item label="媒体类型" prop="content_type">
+                <el-input v-model="condition.content_type" placeholder="例如 application/pdf" clearable />
             </el-form-item>
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
@@ -133,9 +179,14 @@ const handleReset = () => {
     <!-- 数据区 -->
     <el-row class="box__body">
         <el-table :data="table_data" height="95%" border stripe>
-            <el-table-column align="center" prop="id" label="ID" width="300" show-overflow-tooltip />
+            <el-table-column align="center" prop="file_asset_id" label="ID" width="300" show-overflow-tooltip />
             <el-table-column align="center" prop="original_name" label="文件名" min-width="200" show-overflow-tooltip />
-            <el-table-column align="center" prop="filename" label="存储路径" min-width="250" show-overflow-tooltip />
+            <el-table-column
+                align="center"
+                prop="content_sha256"
+                label="SHA-256"
+                min-width="250"
+                show-overflow-tooltip />
             <el-table-column align="center" label="文件类型" width="120">
                 <template #default="scope">
                     {{ formatContentType(scope.row.content_type) }}
@@ -148,17 +199,42 @@ const handleReset = () => {
             </el-table-column>
             <el-table-column align="center" label="存储类型" width="120">
                 <template #default="scope">
-                    <el-tag :type="scope.row.storage_type === 'LOCAL' ? 'primary' : 'success'">
-                        {{ formatStorageType(scope.row.storage_type) }}
+                    <el-tag :type="scope.row.storage_provider === 'LOCAL' ? 'primary' : 'success'">
+                        {{ formatStorageType(scope.row.storage_provider) }}
                     </el-tag>
                 </template>
             </el-table-column>
-            <el-table-column align="center" prop="created_at" label="上传时间" width="180" />
+            <el-table-column align="center" label="状态" width="100">
+                <template #default="scope">
+                    <el-tag size="small" :type="statusTagType(scope.row.status)">
+                        {{ formatStatus(scope.row.status) }}
+                    </el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" prop="reference_count" label="业务引用" width="100" />
+            <el-table-column align="center" label="上传时间" width="180">
+                <template #default="scope">{{ formatDateTime(scope.row.created_at) }}</template>
+            </el-table-column>
             <el-table-column align="center" label="操作" width="200" fixed="right">
                 <template #default="scope">
-                    <el-button link type="primary" size="small" @click="handlePreview(scope.row)">预览</el-button>
-                    <el-button link type="primary" size="small" @click="handleDownload(scope.row)">下载</el-button>
                     <el-button
+                        v-if="scope.row.status === 'READY'"
+                        link
+                        type="primary"
+                        size="small"
+                        @click="handlePreview(scope.row)">
+                        预览
+                    </el-button>
+                    <el-button
+                        v-if="scope.row.status === 'READY'"
+                        link
+                        type="primary"
+                        size="small"
+                        @click="handleDownload(scope.row)">
+                        下载
+                    </el-button>
+                    <el-button
+                        v-if="scope.row.status === 'READY'"
                         v-permission="'file:admin:delete'"
                         link
                         type="danger"

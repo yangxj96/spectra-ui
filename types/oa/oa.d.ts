@@ -106,7 +106,7 @@ declare global {
 
     type ReimbursementAttachmentVO = {
         id: string;
-        file_id: string;
+        file_asset_id: string;
         file_name?: string;
         preview_url: string;
     };
@@ -145,7 +145,7 @@ declare global {
     };
 
     type ReimbursementAttachmentParams = {
-        file_id: string;
+        file_asset_id: string;
         file_name?: string;
     };
 
@@ -590,7 +590,7 @@ declare global {
     type DocumentVersionVO = {
         id: string;
         version_no: number;
-        file_id: string;
+        file_asset_id: string;
         file_name?: string;
         file_size?: number;
         content_type?: string;
@@ -626,7 +626,7 @@ declare global {
     type DocumentPageParams = BasePageParams & { keyword?: string; status?: string; folder_id?: string };
     type DocumentSaveParams = { folder_id?: string; title: string; summary?: string; visibility?: string };
     type DocumentVersionParams = {
-        file_id: string;
+        file_asset_id: string;
         file_name?: string;
         file_size?: number;
         content_type?: string;
@@ -637,7 +637,7 @@ declare global {
     type ContractVersionVO = {
         id: string;
         version_no: number;
-        file_id: string;
+        file_asset_id: string;
         file_name?: string;
         file_size?: number;
         content_type?: string;
@@ -706,7 +706,7 @@ declare global {
     };
 
     type ContractVersionParams = {
-        file_id: string;
+        file_asset_id: string;
         file_name?: string;
         file_size?: number;
         content_type?: string;

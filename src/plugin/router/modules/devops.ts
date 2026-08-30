@@ -94,10 +94,34 @@ export default [
                 meta: { title: "系统配置", requiresAuth: true, requiredMenu: "DevopsConfigured" }
             },
             {
-                path: "system-maintenance/storage",
+                path: "file/upload",
+                name: "DevopsFileUpload",
+                component: () => import("@/views/Devops/File/Upload/index.vue"),
+                meta: { title: "文件上传", requiresAuth: true, requiredMenu: "DevopsFileUpload" }
+            },
+            {
+                path: "file/assets",
                 name: "DevopsStorage",
-                component: () => import("@/views/Devops/SystemMaintenance/Storage/index.vue"),
-                meta: { title: "文件管理", requiresAuth: true, requiredMenu: "DevopsStorage" }
+                component: () => import("@/views/Devops/File/Assets/index.vue"),
+                meta: { title: "文件资产", requiresAuth: true, requiredMenu: "DevopsStorage" }
+            },
+            {
+                path: "file/upload-tasks",
+                name: "DevopsUploadTasks",
+                component: () => import("@/views/Devops/File/UploadTask/index.vue"),
+                meta: { title: "上传任务", requiresAuth: true, requiredMenu: "DevopsUploadTasks" }
+            },
+            {
+                path: "file/references",
+                name: "DevopsFileReferences",
+                component: () => import("@/views/Devops/File/Reference/index.vue"),
+                meta: { title: "文件引用", requiresAuth: true, requiredMenu: "DevopsFileReferences" }
+            },
+            {
+                path: "file/types",
+                name: "DevopsFileTypes",
+                component: () => import("@/views/Devops/File/Type/index.vue"),
+                meta: { title: "文件类型策略", requiresAuth: true, requiredMenu: "DevopsFileTypes" }
             },
             {
                 path: "system-maintenance/encryption-key",

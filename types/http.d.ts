@@ -83,6 +83,11 @@ declare global {
          * 接口成功时不解析响应体；适用于 HTTP 200/204 的空响应。
          */
         noBody?: boolean;
+
+        /**
+         * 将响应按原始二进制 Blob 返回，不尝试解密或业务包装。
+         */
+        responseType?: "json" | "blob" | "empty";
     }
 
     // 响应整体

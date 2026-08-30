@@ -42,6 +42,8 @@ const inflightRequests = new Map<string, Promise<unknown>>();
  */
 let loadingCount = 0;
 
+let binaryRequestSequence = 0;
+
 /**
  * 开启Loading
  */
@@ -84,6 +86,16 @@ const priorityRunning: Record<HttpPriority, number> = {
     low: 0
 };
 
+export class HttpRequestError extends Error {
+    readonly code?: string;
+
+    constructor(message: string, code?: string) {
+        super(message);
+        this.name = "HttpRequestError";
+        this.code = code;
+    }
+}
+
 /**
  * 等待优先级队列
  * 防止某些请求占满浏览器并发
@@ -119,7 +131,14 @@ export function cancelAllRequests() {
  * 用于 dedupe / cache / inflight
  */
 function createKey(url: string, method: string, body?: unknown, params?: unknown) {
-    return `${method}:${url}:${stableStringify(params ?? {})}:${stableStringify(body ?? {})}`;
+    const bodyKey = isBinaryBody(body) ? `binary:${++binaryRequestSequence}` : stableStringify(body ?? {});
+    return `${method}:${url}:${stableStringify(params ?? {})}:${bodyKey}`;
+}
+
+function isBinaryBody(body: unknown): body is Blob | ArrayBuffer | ArrayBufferView {
+    return (
+        (typeof Blob !== "undefined" && body instanceof Blob) || body instanceof ArrayBuffer || ArrayBuffer.isView(body)
+    );
 }
 
 /**
@@ -242,14 +261,16 @@ async function encryptBodyWithoutSign(body: unknown): Promise<{
 /**
  * 解密响应体
  */
-async function decryptResponse<T>(encryptedBody: {
+type EncryptedResponseBody = {
     data: string;
     key: string;
     iv: string;
     nonce: string;
     signature: string;
     timestamp: number;
-}): Promise<T> {
+};
+
+async function decryptResponse<T>(encryptedBody: EncryptedResponseBody): Promise<T> {
     const pubKey = useCryptoStore().server_public_key;
     const privKey = useCryptoStore().client_private_key;
     if (!pubKey || !privKey) {
@@ -337,24 +358,24 @@ async function handleBlobDownload(res: Response, shouldDownload: boolean): Promi
  * 解密响应体（条件判断 + 解密）
  */
 async function decryptResult<T>(data: T | undefined): Promise<T | undefined> {
-    if (
-        !useCryptoStore().enabled ||
-        !useCryptoStore().client_private_key ||
-        !data ||
-        typeof data !== "object" ||
-        !("signature" in (data as Record<string, unknown>))
-    ) {
-        return data;
+    const cryptoStore = useCryptoStore();
+    if (!cryptoStore.enabled || !data || typeof data !== "object") return data;
+
+    const candidate = data as Record<string, unknown>;
+    const isEncrypted =
+        typeof candidate.data === "string" &&
+        typeof candidate.key === "string" &&
+        typeof candidate.iv === "string" &&
+        typeof candidate.nonce === "string" &&
+        typeof candidate.signature === "string" &&
+        typeof candidate.timestamp === "number";
+    if (!isEncrypted) return data;
+
+    if (!cryptoStore.client_private_key) {
+        throw new Error("客户端解密密钥未就绪，请刷新页面或重新登录");
     }
-    const encrypted = data as unknown as {
-        data: string;
-        key: string;
-        iv: string;
-        nonce: string;
-        signature: string;
-        timestamp: number;
-    };
-    return decryptResponse<T>(encrypted);
+
+    return decryptResponse<T>(candidate as EncryptedResponseBody);
 }
 
 /**
@@ -377,6 +398,7 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
         skipAuth = false,
         _skipRefresh = false,
         noBody = false,
+        responseType = "json",
         ...rest
     } = options;
 
@@ -436,8 +458,9 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
 
         try {
             const isFormData = rest.body instanceof FormData;
+            const isBinary = isBinaryBody(rest.body);
 
-            rest.body = await encryptRequestBody(rest.body, isFormData, method);
+            rest.body = isBinary ? rest.body : await encryptRequestBody(rest.body, isFormData, method);
 
             // 等待优先级
             await waitPriority(priority);
@@ -446,7 +469,7 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
                 ...rest,
                 priority: fetchPriority,
                 headers: {
-                    ...(isFormData ? {} : { "Content-Type": "application/json" }),
+                    ...(!isFormData && !isBinary ? { "Content-Type": "application/json" } : {}),
                     "Api-Version": "1.0.0",
                     ...(!["GET", "HEAD", "OPTIONS"].includes(method)
                         ? { "X-XSRF-TOKEN": readCookie("XSRF-TOKEN") ?? "" }
@@ -482,20 +505,28 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
                 await handleHttpError(res);
             }
 
+            if (responseType === "blob") return (await res.blob()) as T;
+
             const blob = await handleBlobDownload(res, download);
             if (blob) return blob as T;
 
-            if (noBody) return undefined as T;
+            if (noBody || responseType === "empty") return undefined as T;
 
             // JSON 响应
             const result: IResult<T> = await res.json();
 
             result.data = await decryptResult<T>(result.data);
 
+            const nestedFailure = getNestedFailure(result.data);
+            if (nestedFailure) {
+                MessageUtils.error(nestedFailure.msg);
+                throw new HttpRequestError(nestedFailure.msg, extractErrorCode(nestedFailure.msg));
+            }
+
             // 业务错误处理
             if (result.code !== 200) {
                 MessageUtils.error(result.msg || "请求失败");
-                throw new Error(result.msg || "Business Error");
+                throw new HttpRequestError(result.msg || "Business Error", extractErrorCode(result.msg));
             }
 
             // 写入缓存
@@ -529,6 +560,114 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
     return requestPromise;
 }
 
+export type BinaryRequestOptions = {
+    headers?: Record<string, string>;
+    signal?: AbortSignal;
+    external?: boolean;
+    timeout?: number;
+    onUploadProgress?: (loaded: number, total: number) => void;
+};
+
+export type BinaryResponse = {
+    status: number;
+    headers: Headers;
+};
+
+export class BinaryRequestError extends Error {
+    readonly status: number;
+    readonly code?: string;
+
+    constructor(status: number, message: string, code?: string) {
+        super(message);
+        this.name = "BinaryRequestError";
+        this.status = status;
+        this.code = code;
+    }
+}
+
+/**
+ * 原始二进制请求适配器。业务代码不能直接操作 XHR；Local 和 presigned PUT 都从这里走。
+ */
+export function requestBinary(
+    url: string,
+    body: Blob | ArrayBuffer | ArrayBufferView,
+    options: BinaryRequestOptions = {}
+): Promise<BinaryResponse> {
+    const external = options.external === true;
+    const finalUrl = external || /^https?:\/\//i.test(url) ? url : joinUrl(BASE_URL, url);
+    const token = getToken();
+    const headers = new Headers(options.headers);
+    if (!external) {
+        headers.set("Api-Version", "1.0.0");
+        const csrf = readCookie("XSRF-TOKEN");
+        if (csrf) headers.set("X-XSRF-TOKEN", csrf);
+        if (token) headers.set("Authorization", `Bearer ${token}`);
+        if (!headers.has("Content-Type")) {
+            headers.set("Content-Type", body instanceof Blob && body.type ? body.type : "application/octet-stream");
+        }
+    }
+
+    return new Promise<BinaryResponse>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        let settled = false;
+        const finish = (callback: () => void) => {
+            if (settled) return;
+            settled = true;
+            callback();
+        };
+
+        xhr.open("PUT", finalUrl, true);
+        xhr.withCredentials = !external;
+        xhr.timeout = options.timeout ?? 10 * 60 * 1000;
+        for (const [name, value] of headers.entries()) {
+            try {
+                xhr.setRequestHeader(name, value);
+            } catch {
+                // 浏览器禁止 Content-Length 等受限请求头，传输层会自动设置实际长度。
+            }
+        }
+        xhr.upload.onprogress = event => {
+            if (event.lengthComputable) options.onUploadProgress?.(event.loaded, event.total);
+        };
+        xhr.onload = () => {
+            const responseHeaders = new Headers();
+            for (const line of xhr
+                .getAllResponseHeaders()
+                .trim()
+                .split(/[\r\n]+/)) {
+                const separator = line.indexOf(":");
+                if (separator > 0)
+                    responseHeaders.append(line.slice(0, separator).trim(), line.slice(separator + 1).trim());
+            }
+            if (xhr.status >= 200 && xhr.status < 300) {
+                finish(() => resolve({ status: xhr.status, headers: responseHeaders }));
+                return;
+            }
+            let code: string | undefined;
+            let message = xhr.statusText || "二进制请求失败";
+            try {
+                const data = JSON.parse(xhr.responseText) as { code?: string; msg?: string };
+                code = data.code;
+                message = data.msg || message;
+            } catch {
+                // 文件服务器错误不一定返回 JSON。
+            }
+            finish(() => reject(new BinaryRequestError(xhr.status, message, code)));
+        };
+        xhr.onerror = () => finish(() => reject(new BinaryRequestError(0, "网络请求失败")));
+        xhr.ontimeout = () => finish(() => reject(new BinaryRequestError(408, "二进制请求超时")));
+        xhr.onabort = () => finish(() => reject(new DOMException("The request was aborted", "AbortError")));
+        if (options.signal) {
+            if (options.signal.aborted) {
+                xhr.abort();
+                return;
+            }
+            options.signal.addEventListener("abort", () => xhr.abort(), { once: true });
+        }
+        xhr.send(body);
+    });
+}
+
 function readCookie(name: string): string | null {
     if (typeof document === "undefined") return null;
     const prefix = `${encodeURIComponent(name)}=`;
@@ -555,12 +694,26 @@ async function handleHttpError(res: Response) {
     const msg = typeof data === "object" && data !== null && "msg" in data ? (data as { msg: string }).msg : "未知错误";
     if (status >= 400 && status <= 499) {
         MessageUtils.error(msg);
-        throw new Error(msg);
+        throw new HttpRequestError(msg, extractErrorCode(msg));
     }
     if (status >= 500) {
         MessageUtils.notify.error(`${msg}`, "服务器错误");
-        throw new Error(msg);
+        throw new HttpRequestError(msg, extractErrorCode(msg));
     }
+}
+
+function getNestedFailure(data: unknown): { code: number; msg: string } | undefined {
+    if (typeof data !== "object" || data === null) return undefined;
+    const candidate = data as { code?: unknown; msg?: unknown };
+    if (typeof candidate.code !== "number" || candidate.code < 400 || typeof candidate.msg !== "string") {
+        return undefined;
+    }
+    return { code: candidate.code, msg: candidate.msg };
+}
+
+function extractErrorCode(message: string | undefined): string | undefined {
+    if (!message) return undefined;
+    return /^([A-Z][A-Z0-9_]*):/.exec(message)?.[1];
 }
 
 /**

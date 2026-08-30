@@ -74,6 +74,7 @@ export async function download<U extends string = string>(url: U, options?: Requ
     return await request<Blob, U>(url, {
         method: "GET",
         ...options,
-        download: true
+        download: true,
+        responseType: "blob"
     });
 }

@@ -10,7 +10,9 @@
         "jsx": "preserve",
         "jsxImportSource": "vue",
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "@yangxj96/logicflow-plugin-flowable": ["../logicflow-plugin-flowable/src/index.ts"],
+            "@yangxj96/logicflow-plugin-flowable/style.css": ["../logicflow-plugin-flowable/dist/index.css"]
         },
         "composite": true,
         "lib": ["ES2022", "DOM", "DOM.Iterable"],

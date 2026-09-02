@@ -7,17 +7,11 @@ const loginPage = readFileSync(resolve(process.cwd(), "src/views/Login/index.vue
 
 describe("登录页回车主操作", () => {
     it("登录阶段回车应执行与登录按钮相同的主操作", () => {
-        expect(loginPage).toContain('<div v-if="!mfaVisible" @keydown.enter.prevent="handlePrimaryAction">');
-        expect(loginPage).toContain('@click="handlePrimaryAction"');
+        expect(loginPage).toContain('<div @keydown.enter.prevent="handleLogin">');
+        expect(loginPage).toContain('@click="handleLogin"');
     });
 
-    it("MFA 阶段回车应执行验证并继续或完成登录", () => {
-        expect(loginPage).toContain('<div v-else class="mfa-panel" @keydown.enter.prevent="handlePrimaryAction">');
-        expect(loginPage).toContain("const handlePrimaryAction = () => {");
-        expect(loginPage).toContain("return mfaVisible.value ? handleMfa() : handleLogin();");
-    });
-
-    it("返回登录按钮不得参与回车提交", () => {
-        expect(loginPage).toContain('<el-button v-if="mfaVisible" native-type="button" text @click="resetMfa">');
+    it("登录按钮使用原生按钮类型避免隐式提交", () => {
+        expect(loginPage).toContain('<el-button type="primary" native-type="button" @click="handleLogin">');
     });
 });

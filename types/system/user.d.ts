@@ -2,7 +2,7 @@ export {};
 
 declare global {
     type LoginForm = {
-        type: "PASSWORD" | "SMS" | "OTP" | "SCAN" | "WECHAT" | "GITHUB";
+        type: "PASSWORD" | "SMS" | "EMAIL";
         username: string;
         password: string;
         client_id: string;
@@ -20,29 +20,8 @@ declare global {
         refresh_token?: string;
         // Permission Catalog 权限编码；不包含角色名称
         permissions: string[];
-        // 是否需要完成 MFA 二阶段验证
-        mfa_required?: boolean;
-        // 是否需要先登记 TOTP
-        mfa_enrollment_required?: boolean;
-        // MFA 预认证挑战 ID
-        mfa_challenge_id?: string;
-        // MFA 预认证挑战过期时间
-        mfa_challenge_expires_at?: number;
         // 是否需要先修改临时密码
         password_change_required?: boolean;
-    };
-
-    /** TOTP 首次登记响应。 */
-    type MfaEnrollment = {
-        enrollment_id: string;
-        provisioning_uri: string;
-        secret: string;
-    };
-
-    /** 当前用户的 MFA 状态。 */
-    type MfaStatus = {
-        enabled: boolean;
-        factor_type?: "TOTP";
     };
 
     type UserAuthorizationStatus = "UNCONFIGURED" | "BASIC_ONLY" | "INCOMPLETE" | "ACTIVE" | "PARTIAL";
@@ -276,8 +255,8 @@ declare global {
     type AuthenticationIdentityVO = {
         /** 认证身份ID */
         id: string;
-        /** 认证方式：PASSWORD/SMS/EMAIL/OTP */
-        method_code: "PASSWORD" | "SMS" | "EMAIL" | "OTP";
+        /** 认证方式：PASSWORD/SMS/EMAIL */
+        method_code: "PASSWORD" | "SMS" | "EMAIL";
         /** Provider 编码 */
         provider_code: string;
         /** 目标身份状态 */

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ElForm, type FormRules } from "element-plus";
-import QRCode from "qrcode";
-import { computed, nextTick, onMounted, reactive, ref, useTemplateRef } from "vue";
+import { onMounted, reactive, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 
 import { SystemInitializationApi } from "@/api/system/initialization-api.ts";
@@ -11,12 +10,10 @@ import { MessageUtils } from "@/utils/message-utils.ts";
 const router = useRouter();
 const appStore = useAppStore();
 const accountFormRef = useTemplateRef<InstanceType<typeof ElForm>>("accountForm");
-const qrCodeRef = useTemplateRef<HTMLCanvasElement>("qrCode");
 
 const checking = ref(!appStore.bootstrap_loaded);
 const statusError = ref("");
 const currentStep = ref(0);
-const recoveryCodesSaved = ref(false);
 const submitting = ref(false);
 const initialized = ref(appStore.initialization.initialized);
 const initializationState = ref<SystemInitializationStatus["state"]>(appStore.initialization.state);
@@ -36,13 +33,7 @@ const accountForm = reactive({
 });
 
 const initialization = reactive({
-    initialization_id: "",
-    enrollment_id: "",
-    provisioning_uri: "",
-    secret: "",
-    expires_at: 0,
-    code: "",
-    recovery_codes: [] as string[]
+    initialization_id: ""
 });
 
 const accountRules: FormRules = {
@@ -65,15 +56,6 @@ const accountRules: FormRules = {
     initialization_token: [{ required: true, message: "请输入系统初始化令牌", trigger: "blur" }]
 };
 
-const expirationText = computed(() => {
-    if (!initialization.expires_at) return "";
-    return new Date(initialization.expires_at).toLocaleString();
-});
-
-const stepTitle = computed(() => {
-    return ["创建 DEV_OPS 账号", "绑定 MFA", "保存 Recovery Code"][currentStep.value] ?? "系统初始化";
-});
-
 const loadStatus = async () => {
     checking.value = true;
     statusError.value = "";
@@ -94,27 +76,6 @@ const applyBootstrapStatus = () => {
     initializationState.value = appStore.initialization.state;
     initialized.value = appStore.initialization.initialized;
     checking.value = false;
-};
-
-const renderQrCode = async () => {
-    await nextTick();
-    const canvas = qrCodeRef.value;
-    if (!canvas || !initialization.provisioning_uri) return;
-
-    try {
-        await QRCode.toCanvas(canvas, initialization.provisioning_uri, {
-            errorCorrectionLevel: "M",
-            margin: 2,
-            width: 240,
-            color: {
-                dark: "#111827",
-                light: "#ffffff"
-            }
-        });
-    } catch (error) {
-        console.error("MFA 二维码生成失败:", error);
-        MessageUtils.error("MFA 二维码生成失败，请重试");
-    }
 };
 
 const validateAccount = async () => {
@@ -147,12 +108,7 @@ const startInitialization = async () => {
             accountForm.initialization_token.trim()
         );
         initialization.initialization_id = result.initialization_id;
-        initialization.enrollment_id = result.enrollment_id;
-        initialization.provisioning_uri = result.provisioning_uri;
-        initialization.secret = result.secret;
-        initialization.expires_at = result.expires_at;
         currentStep.value = 1;
-        await renderQrCode();
     } catch (error) {
         console.error("开始系统初始化失败:", error);
     } finally {
@@ -160,55 +116,7 @@ const startInitialization = async () => {
     }
 };
 
-const confirmMfa = async () => {
-    if (!/^\d{6}$/.test(initialization.code.trim())) {
-        MessageUtils.error("请输入 6 位 MFA 验证码");
-        return;
-    }
-
-    submitting.value = true;
-    try {
-        const result = await SystemInitializationApi.confirmMfa({
-            initialization_id: initialization.initialization_id,
-            enrollment_id: initialization.enrollment_id,
-            code: initialization.code.trim()
-        });
-        initialization.recovery_codes = result.recovery_codes;
-        initialization.code = "";
-        currentStep.value = 2;
-    } catch (error) {
-        console.error("确认 MFA 失败:", error);
-    } finally {
-        submitting.value = false;
-    }
-};
-
-const copyRecoveryCodes = async () => {
-    try {
-        await navigator.clipboard.writeText(initialization.recovery_codes.join("\n"));
-        MessageUtils.success("Recovery Code 已复制，请继续离线保存");
-    } catch (error) {
-        console.error("复制 Recovery Code 失败:", error);
-        MessageUtils.error("复制失败，请手工保存页面中的 Recovery Code");
-    }
-};
-
-const copySecret = async () => {
-    try {
-        await navigator.clipboard.writeText(initialization.secret);
-        MessageUtils.success("MFA 密钥已复制");
-    } catch (error) {
-        console.error("复制 MFA 密钥失败:", error);
-        MessageUtils.error("复制失败，请手工记录 MFA 密钥");
-    }
-};
-
 const completeInitialization = async () => {
-    if (!recoveryCodesSaved.value) {
-        MessageUtils.error("请先确认已经离线保存 Recovery Code");
-        return;
-    }
-
     submitting.value = true;
     try {
         await SystemInitializationApi.complete({
@@ -243,7 +151,7 @@ onMounted(() => {
                 <div class="card-header">
                     <div>
                         <h1>系统首次初始化</h1>
-                        <p>完成必要的 DEV_OPS 账号和 MFA 配置后，才能进入管理后台。</p>
+                        <p>完成必要的系统信息和 DEV_OPS 账号配置后，即可进入管理后台。</p>
                     </div>
                     <el-button link type="primary" @click="router.push('/login')">返回登录</el-button>
                 </div>
@@ -268,11 +176,10 @@ onMounted(() => {
             <template v-if="!checking && !initialized && initializationState !== 'INITIALIZING' && !statusError">
                 <el-steps :active="currentStep" finish-status="success" class="steps">
                     <el-step title="系统与账号" description="设置系统信息和 DEV_OPS" />
-                    <el-step title="绑定 MFA" description="登记身份验证器" />
-                    <el-step title="保存恢复码" description="完成首次登录" />
+                    <el-step title="完成初始化" description="激活 DEV_OPS 账号" />
                 </el-steps>
 
-                <h2>{{ stepTitle }}</h2>
+                <h2>{{ currentStep === 0 ? "创建 DEV_OPS 账号" : "完成初始化" }}</h2>
 
                 <div v-if="currentStep === 0" class="step-content">
                     <el-alert
@@ -355,51 +262,15 @@ onMounted(() => {
                     </ElForm>
                 </div>
 
-                <div v-else-if="currentStep === 1" class="step-content mfa-content">
+                <div v-else class="step-content completion-content">
                     <el-alert
-                        title="请使用身份验证器扫描二维码"
-                        description="推荐使用 Microsoft Authenticator、Google Authenticator 或其他兼容 TOTP 的身份验证器。"
-                        type="info"
+                        title="DEV_OPS 账号已创建"
+                        description="确认账号信息无误后完成初始化。初始化完成后，请使用刚设置的账号和密码登录。"
+                        type="success"
                         show-icon
                         :closable="false" />
-                    <div class="qr-panel">
-                        <canvas ref="qrCode" role="img" aria-label="DEV_OPS MFA 配置二维码" />
-                        <p v-if="expirationText">挑战有效期至：{{ expirationText }}</p>
-                    </div>
-                    <div class="secret-panel">
-                        <span>MFA 密钥</span>
-                        <el-input v-model="initialization.secret" readonly>
-                            <template #append><el-button @click="copySecret">复制</el-button></template>
-                        </el-input>
-                    </div>
-                    <ElForm class="code-form" label-position="top">
-                        <el-form-item label="身份验证器验证码">
-                            <el-input
-                                v-model="initialization.code"
-                                maxlength="6"
-                                inputmode="numeric"
-                                autocomplete="one-time-code"
-                                placeholder="请输入 6 位验证码"
-                                @keyup.enter="confirmMfa" />
-                        </el-form-item>
-                    </ElForm>
-                    <el-button type="primary" :loading="submitting" @click="confirmMfa">确认 MFA</el-button>
-                </div>
-
-                <div v-else class="step-content recovery-content">
-                    <el-alert
-                        title="Recovery Code 只显示这一次"
-                        description="请复制并离线保存。每个 Recovery Code 只能使用一次。"
-                        type="warning"
-                        show-icon
-                        :closable="false" />
-                    <div class="recovery-codes">
-                        <code v-for="code in initialization.recovery_codes" :key="code">{{ code }}</code>
-                    </div>
-                    <el-button plain type="primary" @click="copyRecoveryCodes">复制全部 Recovery Code</el-button>
-                    <el-checkbox v-model="recoveryCodesSaved">我已将 Recovery Code 保存到安全位置</el-checkbox>
                     <el-button type="primary" :loading="submitting" @click="completeInitialization">
-                        完成初始化，返回登录
+                        完成初始化
                     </el-button>
                 </div>
             </template>
@@ -469,67 +340,14 @@ h2 {
 }
 
 .initialization-form :deep(.el-button),
-.code-form + .el-button,
-.recovery-content > .el-button:last-child {
+.completion-content > .el-button {
     width: 100%;
 }
 
-.mfa-content,
-.recovery-content {
+.completion-content {
     display: flex;
     flex-direction: column;
     gap: 20px;
-}
-
-.qr-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-
-.qr-panel canvas {
-    padding: 12px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-}
-
-.qr-panel p {
-    margin: 0;
-    color: #64748b;
-    font-size: 13px;
-}
-
-.secret-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    color: #475569;
-    font-size: 13px;
-}
-
-.code-form {
-    margin-top: 4px;
-}
-
-.recovery-codes {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    padding: 16px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-}
-
-.recovery-codes code {
-    padding: 8px;
-    color: #0f172a;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    text-align: center;
-    background: #fff;
-    border-radius: 6px;
 }
 
 .retry-button {
@@ -548,10 +366,6 @@ h2 {
 
     .card-header {
         flex-direction: column;
-    }
-
-    .recovery-codes {
-        grid-template-columns: 1fr;
     }
 }
 </style>

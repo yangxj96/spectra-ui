@@ -21,20 +21,6 @@ declare global {
 
     type SystemInitializationStartVO = {
         initialization_id: string;
-        enrollment_id: string;
-        provisioning_uri: string;
-        secret: string;
-        expires_at: number;
-    };
-
-    type SystemInitializationMfaConfirmFrom = {
-        initialization_id: string;
-        enrollment_id: string;
-        code: string;
-    };
-
-    type SystemInitializationMfaConfirmVO = {
-        recovery_codes: string[];
     };
 
     type SystemInitializationCompleteFrom = {

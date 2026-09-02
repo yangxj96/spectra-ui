@@ -14,8 +14,7 @@ defineOptions({
 const loginTypeMap: Record<string, { label: string; component: Component }> = {
     PASSWORD: { label: "密码登录", component: Lock },
     SMS: { label: "手机登录", component: Phone },
-    EMAIL: { label: "邮箱登录", component: Message },
-    OTP: { label: "扫码登录", component: Iphone }
+    EMAIL: { label: "邮箱登录", component: Message }
 };
 
 // 已绑定账号列表

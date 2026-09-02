@@ -18,7 +18,7 @@ export const SystemInitializationApi = {
         });
     },
 
-    /** 创建首个 DEV_OPS 用户并开始 TOTP 登记。 */
+    /** 创建首个 DEV_OPS 用户并开始初始化。 */
     start(from: SystemInitializationStartFrom, initializationToken: string): Promise<SystemInitializationStartVO> {
         return post<SystemInitializationStartVO>("/api/system/initialization/start", from, {
             skipAuth: true,
@@ -30,16 +30,7 @@ export const SystemInitializationApi = {
         });
     },
 
-    /** 确认首个用户的 TOTP 验证码。 */
-    confirmMfa(from: SystemInitializationMfaConfirmFrom): Promise<SystemInitializationMfaConfirmVO> {
-        return post<SystemInitializationMfaConfirmVO>("/api/system/initialization/mfa/confirm", from, {
-            skipAuth: true,
-            priority: "high",
-            fetchPriority: "high"
-        });
-    },
-
-    /** 使用已确认的 MFA 完成初始化；完成后需要重新登录。 */
+    /** 完成初始化；完成后需要重新登录。 */
     complete(from: SystemInitializationCompleteFrom): Promise<void> {
         return post<void>("/api/system/initialization/complete", from, {
             skipAuth: true,

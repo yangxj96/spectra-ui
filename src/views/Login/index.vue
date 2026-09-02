@@ -1,7 +1,6 @@
 ﻿<script setup lang="ts">
 import { ElForm, ElInput, type FormRules } from "element-plus";
-import QRCode from "qrcode";
-import { nextTick, onMounted, reactive, ref, useTemplateRef } from "vue";
+import { onMounted, reactive, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { AuthApi } from "@/api/auth/auth-api.ts";
@@ -18,12 +17,8 @@ const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
 const loginRef = useTemplateRef<InstanceType<typeof ElForm>>("loginForm");
-const mfaQrCode = useTemplateRef<HTMLCanvasElement>("mfaQrCode");
-const mfaInput = useTemplateRef<InstanceType<typeof ElInput>>("mfaInput");
 const kaptchaUrl = ref(import.meta.env.VITE_API_URL + "api/common/kaptcha?_t=" + Date.now());
 const redirect = ref<string>(route.query.redirect as string | "/");
-const mfaVisible = ref(false);
-const mfaEnrollmentCompleted = ref(false);
 const login = reactive({
     form: {
         type: "PASSWORD",
@@ -37,44 +32,9 @@ const login = reactive({
         captcha: [{ required: true, message: "请输入验证码", trigger: "blur" }]
     } as FormRules
 });
-const mfa = reactive({
-    challengeId: "",
-    enrollmentId: "",
-    code: "",
-    enrollmentRequired: false,
-    recoveryCodes: [] as string[]
-});
-
-const focusMfaInput = async () => {
-    await nextTick();
-    mfaInput.value?.focus();
-};
-
 // 刷新验证码
 const refreshKaptcha = () => {
     kaptchaUrl.value = import.meta.env.VITE_API_URL + "api/common/kaptcha?_t=" + Date.now();
-};
-
-/** 将后端返回的 TOTP provisioning URI 渲染为本地二维码。 */
-const renderMfaQrCode = async (provisioningUri: string) => {
-    await nextTick();
-    const canvas = mfaQrCode.value;
-    if (!canvas || !provisioningUri) return;
-
-    try {
-        await QRCode.toCanvas(canvas, provisioningUri, {
-            errorCorrectionLevel: "M",
-            margin: 2,
-            width: 220,
-            color: {
-                dark: "#111827",
-                light: "#ffffff"
-            }
-        });
-    } catch (error) {
-        console.error("MFA 二维码生成失败:", error);
-        MessageUtils.error("MFA 二维码生成失败，请刷新后重试");
-    }
 };
 
 const finishLogin = async (token: Token) => {
@@ -87,22 +47,6 @@ const finishLogin = async (token: Token) => {
     );
     const path = requiresPasswordChange ? "/profile?tab=password" : "/redirect" + (redirect.value ?? "");
     await router.push({ path });
-};
-
-const openMfaChallenge = async (token: Token) => {
-    if (!token.mfa_required || !token.mfa_challenge_id) {
-        await finishLogin(token);
-        return;
-    }
-    mfa.challengeId = token.mfa_challenge_id;
-    mfa.enrollmentRequired = token.mfa_enrollment_required === true;
-    mfaVisible.value = true;
-    await focusMfaInput();
-    if (mfa.enrollmentRequired) {
-        const enrollment = await AuthApi.beginMfaEnrollment(mfa.challengeId);
-        mfa.enrollmentId = enrollment.enrollment_id;
-        await renderMfaQrCode(enrollment.provisioning_uri);
-    }
 };
 
 // 登录
@@ -121,50 +65,12 @@ const handleLogin = async () => {
     }
 
     try {
-        await openMfaChallenge(await AuthApi.login(login.form));
+        await finishLogin(await AuthApi.login(login.form));
     } catch (error) {
         // 登录失败，刷新验证码
         refreshKaptcha();
         console.error("登录请求失败:", error);
     }
-};
-
-const handleMfa = async () => {
-    try {
-        if (mfaEnrollmentCompleted.value) {
-            await finishLogin(await AuthApi.completeMfaEnrollment(mfa.challengeId));
-            return;
-        }
-        if (!mfa.code.trim()) {
-            MessageUtils.error("请输入 MFA 验证码");
-            return;
-        }
-
-        if (mfa.enrollmentRequired) {
-            mfa.recoveryCodes = await AuthApi.confirmMfaEnrollment(mfa.challengeId, mfa.enrollmentId, mfa.code.trim());
-            mfa.code = "";
-            mfaEnrollmentCompleted.value = true;
-            return;
-        }
-
-        await finishLogin(await AuthApi.verifyMfa(mfa.challengeId, mfa.code.trim()));
-    } catch (error) {
-        console.error("MFA 验证失败:", error);
-    }
-};
-
-const handlePrimaryAction = () => {
-    return mfaVisible.value ? handleMfa() : handleLogin();
-};
-
-const resetMfa = () => {
-    mfaVisible.value = false;
-    mfaEnrollmentCompleted.value = false;
-    mfa.challengeId = "";
-    mfa.enrollmentId = "";
-    mfa.code = "";
-    mfa.enrollmentRequired = false;
-    mfa.recoveryCodes = [];
 };
 
 onMounted(async () => {
@@ -205,7 +111,7 @@ onMounted(async () => {
                     用户登录
                 </p>
             </template>
-            <div v-if="!mfaVisible" @keydown.enter.prevent="handlePrimaryAction">
+            <div @keydown.enter.prevent="handleLogin">
                 <ElForm ref="loginForm" label-width="70px" :model="login.form" :rules="login.rules">
                     <el-form-item label="账号" prop="username">
                         <ElInput v-model="login.form.username" placeholder="请输入账号" />
@@ -232,65 +138,10 @@ onMounted(async () => {
                     </el-form-item>
                 </ElForm>
             </div>
-            <div v-else class="mfa-panel" @keydown.enter.prevent="handlePrimaryAction">
-                <el-alert
-                    v-if="mfa.enrollmentRequired && !mfaEnrollmentCompleted"
-                    title="首次登录需要绑定 MFA"
-                    description="请用身份验证器扫描下方二维码，然后输入生成的 6 位验证码。"
-                    type="warning"
-                    :closable="false" />
-                <el-alert
-                    v-else-if="mfaEnrollmentCompleted"
-                    title="MFA 已绑定"
-                    description="请妥善保存 Recovery Code，然后点击完成登录。"
-                    type="success"
-                    :closable="false" />
-                <el-alert
-                    v-else
-                    title="请输入 MFA 验证码"
-                    description="请输入身份验证器当前显示的 6 位验证码。"
-                    type="info"
-                    :closable="false" />
-
-                <template v-if="mfa.enrollmentRequired && !mfaEnrollmentCompleted">
-                    <div class="mfa-qr-panel">
-                        <div class="mfa-qr-code">
-                            <canvas ref="mfaQrCode" role="img" aria-label="MFA 配置二维码" />
-                        </div>
-                        <p class="mfa-qr-hint">
-                            使用 Microsoft Authenticator 或其他身份验证器扫描二维码，然后输入生成的 6 位验证码。
-                        </p>
-                    </div>
-                    <ElForm label-width="70px" class="mfa-form">
-                        <el-form-item label="验证码">
-                            <ElInput
-                                ref="mfaInput"
-                                v-model="mfa.code"
-                                maxlength="6"
-                                inputmode="numeric"
-                                placeholder="请输入 6 位验证码" />
-                        </el-form-item>
-                    </ElForm>
-                </template>
-                <template v-else-if="mfaEnrollmentCompleted">
-                    <ElInput :model-value="mfa.recoveryCodes.join('\n')" type="textarea" :rows="6" readonly />
-                </template>
-                <ElForm v-else class="mfa-form">
-                    <el-form-item label="验证码">
-                        <ElInput
-                            ref="mfaInput"
-                            v-model="mfa.code"
-                            maxlength="6"
-                            inputmode="numeric"
-                            placeholder="请输入 6 位验证码" />
-                    </el-form-item>
-                </ElForm>
-            </div>
             <template #footer>
-                <el-button v-if="mfaVisible" native-type="button" text @click="resetMfa">返回登录</el-button>
-                <el-button type="primary" native-type="button" @click="handlePrimaryAction">
+                <el-button type="primary" native-type="button" @click="handleLogin">
                     <ComponentsIcons name="icon-login" />
-                    <span>&nbsp;{{ mfaEnrollmentCompleted ? "完成登录" : mfaVisible ? "验证并继续" : "登录" }}</span>
+                    <span>&nbsp;登录</span>
                 </el-button>
             </template>
         </el-dialog>
@@ -317,45 +168,6 @@ onMounted(async () => {
 
 :deep(.el-dialog__footer) {
     padding-top: 0;
-}
-
-.mfa-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.mfa-form {
-    margin-top: 4px;
-}
-
-.mfa-qr-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-
-.mfa-qr-code {
-    display: flex;
-    padding: 12px;
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px rgb(0 0 0 / 12%);
-}
-
-.mfa-qr-code canvas {
-    display: block;
-    width: 220px;
-    height: 220px;
-}
-
-.mfa-qr-hint {
-    margin: 0;
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
-    line-height: 1.5;
-    text-align: center;
 }
 
 .v-code {

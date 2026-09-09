@@ -1,264 +1,104 @@
 export {};
 
 declare global {
-    type SchedulerJobType = "OPS" | "SYSTEM" | "LOOP";
-    type SchedulerRunScope = "PER_INSTANCE" | "SINGLETON";
-    type SchedulerScheduleKind = "CRON" | "FIXED_DELAY" | "MANUAL";
-    type SchedulerEffectType = "DB_ONLY" | "OUTBOX" | "EXTERNAL_IDEMPOTENT" | "EXTERNAL_UNKNOWN";
-    type SchedulerDefinitionStatus = "REGISTERED" | "UNAVAILABLE" | "ARCHIVED";
-    type SchedulerDesiredState = "ENABLED" | "DISABLED" | "RUNNING" | "DRAINING" | "STOPPED";
-    type SchedulerExecutionStatus =
-        | "QUEUED"
-        | "RUNNING"
-        | "RETRY_WAIT"
-        | "SUCCEEDED"
-        | "FAILED"
-        | "UNKNOWN"
-        | "SKIPPED"
-        | "CANCELLED";
-    type SchedulerTriggerType = "SCHEDULE" | "MANUAL" | "RETRY";
-    type SchedulerResolutionStatus = "UNRESOLVED" | "CONFIRMED_SUCCESS" | "CONFIRMED_FAILED" | "RETRIED";
-    type SchedulerRuntimeStatus = "STARTING" | "RUNNING" | "DEGRADED" | "DRAINING" | "STOPPED" | "CRASHED" | "UNKNOWN";
-    type SchedulerCommandType = "START" | "DRAIN_STOP" | "RESTART" | "FORCE_STOP" | "FORCE_RECLAIM";
-    type SchedulerCommandStatus = "REQUESTED" | "APPLYING" | "APPLIED" | "FAILED" | "TIMEOUT";
-    type SchedulerLoopErrorStatus = "OPEN" | "RESOLVED";
-    type SchedulerOperationType =
-        | "CREATE"
-        | "UPDATE"
-        | "ENABLE"
-        | "DISABLE"
-        | "ARCHIVE"
-        | "REREGISTER"
-        | "TRIGGER"
-        | "RETRY"
-        | "CANCEL"
-        | "RESOLVE"
-        | "START"
-        | "DRAIN_STOP"
-        | "RESTART"
-        | "FORCE_STOP"
-        | "FORCE_RECLAIM";
-    type SchedulerOperationStatus = "REQUESTED" | "APPLYING" | "APPLIED" | "SUCCEEDED" | "FAILED" | "TIMEOUT";
-    type SchedulerOperationSource = "TASK" | "LOOP_COMMAND";
+    type QuartzTriggerType = "CRON" | "SIMPLE";
+    type QuartzMisfireInstruction = "DO_NOTHING" | "FIRE_ONCE_NOW" | "NEXT_WITH_REMAINING_COUNT";
+    type QuartzExecutionHistoryStatus = "RUNNING" | "SUCCEEDED" | "FAILED" | "VETOED" | "ABANDONED";
 
-    interface SchedulerCatalogVO {
-        job_key: string;
-        handler_key: string;
-        name: string;
-        module: string;
-        job_type: SchedulerJobType;
-        run_scope: SchedulerRunScope;
-        schedule_kind: SchedulerScheduleKind;
-        effect_type: SchedulerEffectType;
-        parameter_schema: Record<string, unknown>;
-        supported_actions: string[];
-        execution_policy: Record<string, unknown>;
-    }
-
-    interface SchedulerJobVO {
-        id: string;
-        job_key: string;
-        name: string;
-        module: string;
+    interface QuartzParameterFieldVO {
+        type: string;
+        required: boolean;
+        sensitive: boolean;
         description: string | null;
-        handler_key: string;
-        job_type: SchedulerJobType;
-        run_scope: SchedulerRunScope;
-        definition_status: SchedulerDefinitionStatus;
-        desired_state: SchedulerDesiredState;
-        schedule_kind: SchedulerScheduleKind;
+    }
+
+    interface QuartzJobTypeVO {
+        type_key: string;
+        display_name: string;
+        protected_job: boolean;
+        job_class_name: string;
+        parameter_version: string;
+        parameter_fields: Record<string, QuartzParameterFieldVO>;
+        allow_unknown_parameters: boolean;
+        supported_trigger_types: QuartzTriggerType[];
+    }
+
+    interface QuartzTriggerVO {
+        trigger_key: string;
+        trigger_type: QuartzTriggerType;
+        state: string;
         cron_expression: string | null;
-        fixed_delay_ms: number | null;
-        initial_delay_ms: number | null;
+        interval_ms: number | null;
+        one_shot: boolean;
+        time_zone: string | null;
+        misfire_instruction: QuartzMisfireInstruction;
+        start_at: string | null;
+        previous_fire_at: string | null;
         next_fire_at: string | null;
-        misfire_policy: string;
-        concurrency_policy: string;
-        execution_policy: Record<string, unknown>;
-        parameters: Record<string, unknown>;
-        revision: number;
-        version: number;
     }
 
-    interface SchedulerExecutionVO {
-        id: string;
-        job_id: string;
-        fire_key: string;
-        trigger_type: SchedulerTriggerType;
-        status: SchedulerExecutionStatus;
-        job_revision: number;
-        handler_version: string;
-        schedule_kind_snapshot: SchedulerScheduleKind;
-        schedule_expression_snapshot: string | null;
-        parameters_snapshot: Record<string, unknown>;
-        effect_type: SchedulerEffectType;
-        scheduled_at: string;
-        queued_at: string;
-        started_at: string | null;
-        finished_at: string | null;
-        next_retry_at: string | null;
-        deadline_at: string | null;
-        attempt_no: number;
-        max_attempts: number;
-        locked_by: string | null;
-        locked_at: string | null;
-        lease_expires_at: string | null;
-        last_heartbeat_at: string | null;
-        last_error_code: string | null;
-        last_error_message: string | null;
-        result_summary: Record<string, unknown>;
-        original_execution_id: string | null;
-        resolution_status: SchedulerResolutionStatus;
-        resolution_reason: string | null;
-        resolved_by: string | null;
-        resolved_at: string | null;
-        version: number;
-    }
-
-    interface SchedulerLoopRuntimeVO {
-        id: string;
-        job_id: string;
-        session_key: string;
-        instance_id: string;
-        status: SchedulerRuntimeStatus;
-        started_at: string;
-        stopped_at: string | null;
-        last_heartbeat_at: string | null;
-        lease_expires_at: string | null;
-        last_cycle_at: string | null;
-        last_progress_at: string | null;
-        drain_deadline_at: string | null;
-        total_cycles: number;
-        total_processed: number;
-        total_failed: number;
-        consecutive_error_count: number;
-        last_error_code: string | null;
-        last_error_message: string | null;
-        state_reason: string | null;
-        version: number;
-    }
-
-    interface SchedulerLoopErrorVO {
-        id: string;
-        job_id: string;
-        instance_id: string;
-        runtime_id: string | null;
-        error_fingerprint: string;
-        error_code: string;
-        error_message: string;
-        status: SchedulerLoopErrorStatus;
-        first_seen_at: string;
-        last_seen_at: string;
-        last_logged_at: string | null;
-        occurrence_count: number;
-        suppressed_count: number;
-        last_context: Record<string, unknown>;
-        resolved_by: string | null;
-        resolved_at: string | null;
-        resolution_reason: string | null;
-        version: number;
-    }
-
-    interface SchedulerControlCommandVO {
-        id: string;
-        job_id: string;
-        target_runtime_id: string | null;
-        target_session_key: string | null;
-        expected_runtime_version: number | null;
-        command_type: SchedulerCommandType;
-        status: SchedulerCommandStatus;
-        idempotency_key: string;
-        reason: string;
-        requested_by: string | null;
-        requested_at: string;
-        deadline_at: string | null;
-        applied_at: string | null;
-        finished_at: string | null;
-        result_code: string | null;
-        result_message: string | null;
-        version: number;
-    }
-
-    interface SchedulerOperationVO {
-        id: string;
-        job_id: string;
-        execution_id: string | null;
-        operation_type: SchedulerOperationType;
-        source: SchedulerOperationSource;
-        status: SchedulerOperationStatus;
-        idempotency_key: string;
-        reason: string;
-        requested_by: string | null;
-        requested_at: string;
-        finished_at: string | null;
-        result_code: string | null;
-        result_message: string | null;
-    }
-
-    interface SchedulerJobSaveParams {
+    interface QuartzJobVO {
         job_key: string;
-        name: string;
-        description?: string | null;
-        schedule_kind: SchedulerScheduleKind;
+        group: string;
+        display_name: string;
+        type_key: string;
+        protected_job: boolean;
+        job_class_name: string;
+        parameter_version: string;
+        trigger: QuartzTriggerVO | null;
+    }
+
+    interface QuartzExecutionHistoryVO {
+        id: string;
+        fire_instance_id: string;
+        job_key: string;
+        trigger_key: string;
+        job_type: string;
+        job_class_name: string;
+        trigger_type: string;
+        status: QuartzExecutionHistoryStatus;
+        scheduled_fire_at: string | null;
+        actual_fire_at: string;
+        started_at: string;
+        finished_at: string | null;
+        duration_ms: number | null;
+        scheduler_instance: string | null;
+        correlation_id: string | null;
+        parameter_version: string | null;
+        parameter_sha256: string | null;
+        result_summary: string | null;
+        error_code: string | null;
+        error_message: string | null;
+    }
+
+    interface QuartzTriggerParams {
+        trigger_type: QuartzTriggerType;
         cron_expression?: string | null;
-        fixed_delay_ms?: number | null;
-        initial_delay_ms?: number | null;
-        misfire_policy: string;
-        concurrency_policy: string;
-        execution_policy: Record<string, unknown>;
-        parameters: Record<string, unknown>;
-        version?: number;
-        idempotency_key: string;
-        reason: string;
+        time_zone?: string | null;
+        start_at?: string | null;
+        interval_ms?: number | null;
+        one_shot?: boolean;
+        misfire_instruction?: QuartzMisfireInstruction | null;
     }
 
-    interface SchedulerOperationParams {
-        version: number;
-        idempotency_key: string;
-        reason: string;
+    interface QuartzJobCreateParams {
+        display_name: string;
+        type_key: string;
+        parameters_json: string;
+        trigger: QuartzTriggerParams;
     }
 
-    interface SchedulerTriggerParams {
-        parameters: Record<string, unknown>;
-        idempotency_key: string;
-        reason: string;
+    interface QuartzJobUpdateParams {
+        display_name: string;
+        parameters_json: string;
+        trigger: QuartzTriggerParams;
     }
 
-    interface SchedulerExecutionActionParams extends SchedulerOperationParams {
-        resolution_status?: SchedulerResolutionStatus;
-    }
-
-    interface SchedulerLoopCommandParams {
-        command_type: SchedulerCommandType;
-        target_runtime_id?: string;
-        target_session_key?: string;
-        expected_runtime_version?: number;
-        idempotency_key: string;
-        reason: string;
-        deadline_at?: string;
-    }
-
-    interface SchedulerJobQuery extends BasePageParams {
+    interface QuartzHistoryQuery extends BasePageParams {
         job_key?: string;
-        job_type?: SchedulerJobType;
-        definition_status?: SchedulerDefinitionStatus;
-        desired_state?: SchedulerDesiredState;
-    }
-
-    interface SchedulerExecutionQuery extends BasePageParams {
-        job_id?: string;
-        status?: SchedulerExecutionStatus;
-        fire_key?: string;
-    }
-
-    interface SchedulerLoopQuery extends BasePageParams {
-        job_id?: string;
-        instance_id?: string;
-        status?: SchedulerRuntimeStatus;
-    }
-
-    interface SchedulerLoopErrorQuery extends BasePageParams {
-        job_id: string;
-        instance_id?: string;
-        status?: SchedulerLoopErrorStatus;
+        trigger_key?: string;
+        status?: QuartzExecutionHistoryStatus;
+        from?: string;
+        to?: string;
     }
 }

@@ -1,169 +1,174 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ElMessageBox } from "element-plus";
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
-import { SchedulerAdminApi } from "@/api/system/scheduler-api.ts";
+import { QuartzSchedulerApi } from "@/api/system/scheduler-api.ts";
 import { formatDateTime } from "@/utils/date-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
+import TaskEdit from "@/views/Devops/Scheduler/Task/components/TaskEdit/index.vue";
 
-import LoopRuntimePanel from "../components/LoopRuntimePanel.vue";
-import SchedulerOperationHistory from "../components/SchedulerOperationHistory.vue";
-
-import TaskEdit from "./components/TaskEdit/index.vue";
-
+const router = useRouter();
 const loading = ref(false);
-const tableData = ref<SchedulerJobVO[]>([]);
-const catalog = ref<SchedulerCatalogVO[]>([]);
-const searchKey = ref("");
+const tableData = ref<QuartzJobVO[]>([]);
+const jobTypes = ref<QuartzJobTypeVO[]>([]);
 const page = ref(1);
 const pageSize = ref(15);
 const total = ref(0);
-const selectedType = ref<SchedulerJobType | undefined>();
+const typeFilter = ref<string>();
 const editVisible = ref(false);
-const editingJob = ref<SchedulerJobVO>();
-const loopVisible = ref(false);
-const selectedLoopJobId = ref("");
-const operationVisible = ref(false);
-const selectedOperationJobId = ref("");
+const editingJob = ref<QuartzJobVO>();
 
-const typeLabels: Record<SchedulerJobType, string> = { OPS: "运维", SYSTEM: "系统", LOOP: "循环" };
-const scopeLabels: Record<SchedulerRunScope, string> = { PER_INSTANCE: "每实例", SINGLETON: "单实例" };
-const stateLabels: Record<string, string> = {
-    ENABLED: "已启用",
-    DISABLED: "已停用",
-    RUNNING: "运行中",
-    DRAINING: "排空中",
-    STOPPED: "已停止",
-    REGISTERED: "已注册",
-    UNAVAILABLE: "不可用",
-    ARCHIVED: "已归档"
+const triggerTypeLabels: Record<QuartzTriggerType, string> = {
+    CRON: "Cron",
+    SIMPLE: "Simple"
 };
 
-async function loadData(): Promise<void> {
+const triggerStateLabels: Record<string, string> = {
+    WAITING: "等待中",
+    PAUSED: "已暂停",
+    BLOCKED: "阻塞",
+    ERROR: "错误",
+    NONE: "无状态",
+    NORMAL: "正常",
+    COMPLETE: "已完成"
+};
+
+const visibleJobs = computed(() =>
+    typeFilter.value ? tableData.value.filter(item => item.type_key === typeFilter.value) : tableData.value
+);
+
+async function loadJobs(): Promise<void> {
     loading.value = true;
     try {
-        const result = await SchedulerAdminApi.jobs({
+        const result = await QuartzSchedulerApi.jobs({
             page_num: page.value,
-            page_size: pageSize.value,
-            job_key: searchKey.value || undefined,
-            job_type: selectedType.value
+            page_size: pageSize.value
         });
         tableData.value = result.records ?? [];
         total.value = result.total ?? 0;
     } catch (error) {
-        MessageUtils.error(error instanceof Error ? error.message : "调度任务加载失败");
+        MessageUtils.error(error instanceof Error ? error.message : "定时任务加载失败");
     } finally {
         loading.value = false;
     }
 }
 
-async function loadCatalog(): Promise<void> {
+async function loadJobTypes(): Promise<void> {
     try {
-        catalog.value = await SchedulerAdminApi.catalog();
+        jobTypes.value = await QuartzSchedulerApi.jobTypes();
     } catch (error) {
-        MessageUtils.error(error instanceof Error ? error.message : "调度处理器目录加载失败");
+        MessageUtils.error(error instanceof Error ? error.message : "任务类型目录加载失败");
     }
 }
 
-function search(): void {
+function resetFilter(): void {
+    typeFilter.value = undefined;
+}
+
+function changePage(value: number): void {
+    page.value = value;
+    void loadJobs();
+}
+
+function changePageSize(value: number): void {
+    pageSize.value = value;
     page.value = 1;
-    void loadData();
+    void loadJobs();
 }
-function reset(): void {
-    searchKey.value = "";
-    selectedType.value = undefined;
-    search();
-}
+
 function openCreate(): void {
     editingJob.value = undefined;
     editVisible.value = true;
 }
-function openEdit(row: SchedulerJobVO): void {
-    editingJob.value = row;
+
+function openEdit(job: QuartzJobVO): void {
+    editingJob.value = job;
     editVisible.value = true;
 }
-function openLoops(row: SchedulerJobVO): void {
-    selectedLoopJobId.value = row.id;
-    loopVisible.value = true;
-}
-function openOperations(row: SchedulerJobVO): void {
-    selectedOperationJobId.value = row.id;
-    operationVisible.value = true;
+
+function triggerTypeLabel(trigger: QuartzTriggerVO | null): string {
+    return trigger ? triggerTypeLabels[trigger.trigger_type] : "未配置";
 }
 
-function operationKey(prefix: string): string {
-    return `${prefix}:${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
+function triggerStateLabel(trigger: QuartzTriggerVO | null): string {
+    return trigger ? (triggerStateLabels[trigger.state] ?? trigger.state) : "未配置";
 }
 
-async function askReason(title: string): Promise<string | undefined> {
-    try {
-        const result = await MessageUtils.box.prompt("请输入本次操作原因。", title, {
-            inputPlaceholder: "例如：例行维护窗口调整",
-            inputValidator: value => (value?.trim() ? true : "操作原因不能为空")
-        });
-        return result.value.trim();
-    } catch {
-        return undefined;
-    }
-}
-
-function stateActionTitle(row: SchedulerJobVO, action: "enable" | "disable" | "archive"): string {
-    if (action === "archive") return "归档任务";
-    if (action === "enable" && row.definition_status === "ARCHIVED") return "重新注册任务";
-    if (action === "enable") return "启用任务";
-    return "停用任务";
-}
-
-async function changeState(row: SchedulerJobVO, action: "enable" | "disable" | "archive"): Promise<void> {
-    const reason = await askReason(stateActionTitle(row, action));
-    if (!reason) return;
-    try {
-        const body: SchedulerOperationParams = { version: row.version, idempotency_key: operationKey(action), reason };
-        if (action === "enable") await SchedulerAdminApi.enableJob(row.id, body);
-        if (action === "disable") await SchedulerAdminApi.disableJob(row.id, body);
-        if (action === "archive") await SchedulerAdminApi.archiveJob(row.id, body);
-        MessageUtils.success("任务状态已更新");
-        await loadData();
-    } catch (error) {
-        MessageUtils.error(error instanceof Error ? error.message : "任务状态更新失败");
-    }
-}
-
-async function trigger(row: SchedulerJobVO): Promise<void> {
-    const reason = await askReason("手工触发任务");
-    if (!reason) return;
-    try {
-        await SchedulerAdminApi.triggerJob(row.id, {
-            parameters: row.parameters ?? {},
-            idempotency_key: operationKey("manual"),
-            reason
-        });
-        MessageUtils.success("手工执行已入队");
-    } catch (error) {
-        MessageUtils.error(error instanceof Error ? error.message : "手工触发失败");
-    }
-}
-
-function stateLabel(value: string): string {
-    return stateLabels[value] ?? value;
-}
-function typeLabel(value: SchedulerJobType): string {
-    return typeLabels[value] ?? value;
-}
-function scopeLabel(value: SchedulerRunScope): string {
-    return scopeLabels[value] ?? value;
-}
 function tagType(value: string): "success" | "warning" | "danger" | "info" {
-    if (["RUNNING", "ENABLED", "SUCCEEDED", "REGISTERED"].includes(value)) return "success";
-    if (["DRAINING", "UNAVAILABLE"].includes(value)) return "warning";
-    if (["FAILED", "UNKNOWN", "ARCHIVED"].includes(value)) return "danger";
+    if (["WAITING", "NORMAL"].includes(value)) return "success";
+    if (["PAUSED", "BLOCKED"].includes(value)) return "warning";
+    if (["ERROR"].includes(value)) return "danger";
     return "info";
 }
-function formatOptional(value: string | null): string {
+
+function date(value: string | null): string {
     return value ? formatDateTime(value) : "—";
 }
 
+function triggerSchedule(trigger: QuartzTriggerVO | null): string {
+    if (!trigger) return "—";
+    if (trigger.trigger_type === "CRON") return trigger.cron_expression ?? "—";
+    if (trigger.one_shot) return "一次性";
+    return trigger.interval_ms ? `每 ${Math.round(trigger.interval_ms / 1000)} 秒` : "—";
+}
+
+async function pause(job: QuartzJobVO): Promise<void> {
+    try {
+        await QuartzSchedulerApi.pauseJob(job.job_key);
+        MessageUtils.success("任务已暂停");
+        await loadJobs();
+    } catch (error) {
+        MessageUtils.error(error instanceof Error ? error.message : "暂停任务失败");
+    }
+}
+
+async function resume(job: QuartzJobVO): Promise<void> {
+    try {
+        await QuartzSchedulerApi.resumeJob(job.job_key);
+        MessageUtils.success("任务已恢复");
+        await loadJobs();
+    } catch (error) {
+        MessageUtils.error(error instanceof Error ? error.message : "恢复任务失败");
+    }
+}
+
+async function trigger(job: QuartzJobVO): Promise<void> {
+    try {
+        await QuartzSchedulerApi.triggerJob(job.job_key);
+        MessageUtils.success("任务已提交立即执行");
+    } catch (error) {
+        MessageUtils.error(error instanceof Error ? error.message : "立即触发任务失败");
+    }
+}
+
+async function remove(job: QuartzJobVO): Promise<void> {
+    try {
+        await ElMessageBox.confirm(`确认删除任务「${job.display_name}」？删除后不可恢复。`, "删除定时任务", {
+            confirmButtonText: "删除",
+            cancelButtonText: "取消",
+            type: "warning"
+        });
+        await QuartzSchedulerApi.deleteJob(job.job_key);
+        MessageUtils.success("任务已删除");
+        if (tableData.value.length === 1 && page.value > 1) page.value -= 1;
+        await loadJobs();
+    } catch (error) {
+        if (error !== "cancel" && error !== "close") {
+            MessageUtils.error(error instanceof Error ? error.message : "删除任务失败");
+        }
+    }
+}
+
+function viewHistory(job: QuartzJobVO): void {
+    void router.push({
+        name: "DevopsSchedulerExecution",
+        query: { job_key: job.job_key }
+    });
+}
+
 onMounted(() => {
-    void Promise.all([loadCatalog(), loadData()]);
+    void Promise.all([loadJobTypes(), loadJobs()]);
 });
 </script>
 
@@ -171,121 +176,72 @@ onMounted(() => {
     <div v-loading="loading" class="scheduler-task-page">
         <el-row class="box__search">
             <el-form :inline="true">
-                <el-form-item label="任务键">
-                    <el-input
-                        v-model="searchKey"
-                        class="search-field"
-                        clearable
-                        placeholder="按任务键搜索"
-                        @keyup.enter="search" />
-                </el-form-item>
-                <el-form-item label="类型">
-                    <el-select v-model="selectedType" class="search-field" clearable placeholder="全部类型">
+                <el-form-item label="任务类型">
+                    <el-select v-model="typeFilter" class="search-field" clearable placeholder="全部类型">
                         <el-option
-                            v-for="type in Object.keys(typeLabels) as SchedulerJobType[]"
-                            :key="type"
-                            :label="typeLabel(type)"
-                            :value="type" />
+                            v-for="item in jobTypes"
+                            :key="item.type_key"
+                            :label="`${item.display_name}（${item.type_key}）`"
+                            :value="item.type_key" />
                     </el-select>
                 </el-form-item>
                 <el-form-item>
-                    <el-button type="primary" @click="search">查询</el-button>
-                    <el-button @click="reset">重置</el-button>
-                    <el-button type="primary" @click="openCreate">新增运维任务</el-button>
+                    <el-button @click="resetFilter">重置</el-button>
+                    <el-button type="primary" @click="openCreate">新增任务</el-button>
+                    <el-button @click="void loadJobs()">刷新</el-button>
                 </el-form-item>
             </el-form>
         </el-row>
 
         <el-row class="box__body">
-            <el-table :data="tableData" height="92%" stripe empty-text="暂无调度任务">
+            <el-table :data="visibleJobs" height="92%" stripe empty-text="暂无定时任务">
                 <el-table-column align="center" type="index" label="序号" width="70" />
-                <el-table-column label="名称" prop="name" min-width="170" show-overflow-tooltip />
-                <el-table-column label="任务键" prop="job_key" min-width="220" show-overflow-tooltip />
-                <el-table-column label="类型" width="110" align="center">
+                <el-table-column label="任务名称" prop="display_name" min-width="170" show-overflow-tooltip />
+                <el-table-column label="任务键" prop="job_key" min-width="245" show-overflow-tooltip />
+                <el-table-column label="任务类型" prop="type_key" min-width="180" show-overflow-tooltip />
+                <el-table-column label="触发类型" width="110" align="center">
                     <template #default="scope">
-                        <el-tag size="small">{{ typeLabel(scope.row.job_type) }}</el-tag>
-                    </template>
-                </el-table-column>
-                <el-table-column label="范围" width="110" align="center">
-                    <template #default="scope">
-                        <el-tag size="small" effect="plain">{{ scopeLabel(scope.row.run_scope) }}</el-tag>
-                    </template>
-                </el-table-column>
-                <el-table-column label="定义状态" width="100" align="center">
-                    <template #default="scope">
-                        <el-tag size="small" :type="tagType(scope.row.definition_status)">
-                            {{ stateLabel(scope.row.definition_status) }}
+                        <el-tag size="small" type="info">
+                            {{ triggerTypeLabel(scope.row.trigger) }}
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column label="期望状态" width="100" align="center">
+                <el-table-column label="调度配置" min-width="130" show-overflow-tooltip>
                     <template #default="scope">
-                        <el-tag size="small" :type="tagType(scope.row.desired_state)">
-                            {{ stateLabel(scope.row.desired_state) }}
+                        {{ triggerSchedule(scope.row.trigger) }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="状态" width="110" align="center">
+                    <template #default="scope">
+                        <el-tag size="small" :type="tagType(scope.row.trigger?.state ?? 'NONE')">
+                            {{ triggerStateLabel(scope.row.trigger) }}
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column label="下一次计划" width="175" show-overflow-tooltip>
-                    <template #default="scope">{{ formatOptional(scope.row.next_fire_at) }}</template>
+                <el-table-column label="下次触发时间" width="175" show-overflow-tooltip>
+                    <template #default="scope">{{ date(scope.row.trigger?.next_fire_at ?? null) }}</template>
                 </el-table-column>
-                <el-table-column label="修订/版本" width="105" align="center">
-                    <template #default="scope">{{ scope.row.revision }} / {{ scope.row.version }}</template>
-                </el-table-column>
-                <el-table-column label="操作" min-width="370" fixed="right">
+                <el-table-column label="保护" width="80" align="center">
                     <template #default="scope">
-                        <el-button link type="info" @click="openOperations(scope.row)">操作记录</el-button>
+                        <el-tag v-if="scope.row.protected_job" type="warning" size="small">内置</el-tag>
+                        <span v-else>普通</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" min-width="330" fixed="right">
+                    <template #default="scope">
+                        <el-button link type="primary" @click="viewHistory(scope.row)">执行历史</el-button>
                         <el-button
-                            v-if="scope.row.job_type !== 'LOOP' && scope.row.definition_status === 'REGISTERED'"
-                            link
-                            type="primary"
-                            @click="trigger(scope.row)">
-                            触发
-                        </el-button>
-                        <el-button
-                            v-if="scope.row.job_type === 'LOOP'"
-                            link
-                            type="primary"
-                            @click="openLoops(scope.row)">
-                            运行会话
-                        </el-button>
-                        <el-button
-                            v-if="scope.row.job_type === 'OPS' && scope.row.definition_status === 'REGISTERED'"
-                            link
-                            type="primary"
-                            @click="openEdit(scope.row)">
-                            编辑
-                        </el-button>
-                        <el-button
-                            v-if="scope.row.job_type === 'OPS' && scope.row.desired_state === 'ENABLED'"
-                            link
-                            type="warning"
-                            @click="changeState(scope.row, 'disable')">
-                            停用
-                        </el-button>
-                        <el-button
-                            v-if="
-                                scope.row.job_type === 'OPS' &&
-                                scope.row.desired_state === 'DISABLED' &&
-                                scope.row.definition_status === 'REGISTERED'
-                            "
+                            v-if="scope.row.trigger?.state === 'PAUSED'"
                             link
                             type="success"
-                            @click="changeState(scope.row, 'enable')">
-                            启用
+                            @click="resume(scope.row)">
+                            恢复
                         </el-button>
-                        <el-button
-                            v-if="scope.row.job_type === 'OPS' && scope.row.definition_status === 'ARCHIVED'"
-                            link
-                            type="success"
-                            @click="changeState(scope.row, 'enable')">
-                            重新注册
-                        </el-button>
-                        <el-button
-                            v-if="scope.row.job_type === 'OPS' && scope.row.definition_status !== 'ARCHIVED'"
-                            link
-                            type="danger"
-                            @click="changeState(scope.row, 'archive')">
-                            归档
+                        <el-button v-else link type="warning" @click="pause(scope.row)">暂停</el-button>
+                        <el-button link type="primary" @click="trigger(scope.row)">立即触发</el-button>
+                        <el-button link type="primary" @click="openEdit(scope.row)">编辑</el-button>
+                        <el-button v-if="!scope.row.protected_job" link type="danger" @click="remove(scope.row)">
+                            删除
                         </el-button>
                     </template>
                 </el-table-column>
@@ -297,17 +253,11 @@ onMounted(() => {
                 layout="total, sizes, prev, pager, next"
                 :total="total"
                 style="padding: 0 10px; margin-left: auto"
-                @current-change="loadData"
-                @size-change="search" />
+                @current-change="changePage"
+                @size-change="changePageSize" />
         </el-row>
 
-        <TaskEdit v-model="editVisible" :catalog="catalog" :job="editingJob" @saved="loadData" />
-        <el-dialog v-model="operationVisible" title="调度操作记录" width="80%" destroy-on-close>
-            <SchedulerOperationHistory v-if="operationVisible" :job-id="selectedOperationJobId" />
-        </el-dialog>
-        <el-dialog v-model="loopVisible" title="LOOP 运行会话" width="80%" destroy-on-close>
-            <LoopRuntimePanel v-if="loopVisible" :job-id="selectedLoopJobId" />
-        </el-dialog>
+        <TaskEdit v-model="editVisible" :catalog="jobTypes" :job="editingJob" @saved="loadJobs" />
     </div>
 </template>
 
@@ -332,10 +282,7 @@ onMounted(() => {
 }
 
 .box__search :deep(.search-field) {
-    flex: 0 0 200px;
-    width: 200px;
-    min-width: 200px;
-    max-width: 200px;
+    width: 260px;
 }
 
 .box__body {

@@ -1,61 +1,70 @@
-import { get, post, put } from "@/plugin/request/api.ts";
+import { del, get, post, put } from "@/plugin/request/api.ts";
 
-const ADMIN_API = "/api/scheduler/admin";
+const QUARTZ_API = "/api/scheduler/quartz";
 
-/** 单体调度管理 API。 */
-export const SchedulerAdminApi = {
-    catalog(): Promise<SchedulerCatalogVO[]> {
-        return get<SchedulerCatalogVO[]>(`${ADMIN_API}/catalog`);
+function resourceKey(value: string): string {
+    return encodeURIComponent(value);
+}
+
+/** Quartz Job、Trigger 和执行历史 API。 */
+export const QuartzSchedulerApi = {
+    /** 查询代码白名单中的 Job 类型和参数 schema。 */
+    jobTypes(): Promise<QuartzJobTypeVO[]> {
+        return get<QuartzJobTypeVO[]>(`${QUARTZ_API}/job-types`);
     },
-    jobs(params?: SchedulerJobQuery): Promise<Page<SchedulerJobVO>> {
-        return get<Page<SchedulerJobVO>>(`${ADMIN_API}/jobs`, params);
+
+    /** 分页查询 Quartz Job。 */
+    jobs(params?: BasePageParams): Promise<Page<QuartzJobVO>> {
+        return get<Page<QuartzJobVO>>(`${QUARTZ_API}/jobs`, params);
     },
-    createJob(params: SchedulerJobSaveParams): Promise<SchedulerJobVO> {
-        return post<SchedulerJobVO>(`${ADMIN_API}/jobs`, params);
+
+    /** 查询单个 Quartz Job 和其唯一 Trigger。 */
+    job(jobKey: string): Promise<QuartzJobVO> {
+        return get<QuartzJobVO>(`${QUARTZ_API}/jobs/${resourceKey(jobKey)}`);
     },
-    updateJob(id: string, params: SchedulerJobSaveParams): Promise<SchedulerJobVO> {
-        return put<SchedulerJobVO>(`${ADMIN_API}/jobs/${id}`, params);
+
+    /** 创建由服务端生成 JobKey 的普通 Job。 */
+    createJob(params: QuartzJobCreateParams): Promise<QuartzJobVO> {
+        return post<QuartzJobVO>(`${QUARTZ_API}/jobs`, params);
     },
-    enableJob(id: string, params: SchedulerOperationParams): Promise<SchedulerJobVO> {
-        return post<SchedulerJobVO>(`${ADMIN_API}/jobs/${id}/enable`, params);
+
+    /** 更新 Job 的展示信息、参数和唯一 Trigger。 */
+    updateJob(jobKey: string, params: QuartzJobUpdateParams): Promise<QuartzJobVO> {
+        return put<QuartzJobVO>(`${QUARTZ_API}/jobs/${resourceKey(jobKey)}`, params);
     },
-    disableJob(id: string, params: SchedulerOperationParams): Promise<SchedulerJobVO> {
-        return post<SchedulerJobVO>(`${ADMIN_API}/jobs/${id}/disable`, params);
+
+    /** 删除普通 Job；内置 Job 由服务端拒绝。 */
+    deleteJob(jobKey: string): Promise<void> {
+        return del<void>(`${QUARTZ_API}/jobs/${resourceKey(jobKey)}`);
     },
-    archiveJob(id: string, params: SchedulerOperationParams): Promise<SchedulerJobVO> {
-        return post<SchedulerJobVO>(`${ADMIN_API}/jobs/${id}/archive`, params);
+
+    /** 暂停 Job 的唯一 Trigger。 */
+    pauseJob(jobKey: string): Promise<void> {
+        return post<void>(`${QUARTZ_API}/jobs/${resourceKey(jobKey)}/pause`);
     },
-    triggerJob(id: string, params: SchedulerTriggerParams): Promise<SchedulerExecutionVO> {
-        return post<SchedulerExecutionVO>(`${ADMIN_API}/jobs/${id}/trigger`, params);
+
+    /** 恢复 Job 的唯一 Trigger。 */
+    resumeJob(jobKey: string): Promise<void> {
+        return post<void>(`${QUARTZ_API}/jobs/${resourceKey(jobKey)}/resume`);
     },
-    executions(params?: SchedulerExecutionQuery): Promise<Page<SchedulerExecutionVO>> {
-        return get<Page<SchedulerExecutionVO>>(`${ADMIN_API}/executions`, params);
+
+    /** 使用现有 JobDataMap 立即触发一次 Job。 */
+    triggerJob(jobKey: string): Promise<void> {
+        return post<void>(`${QUARTZ_API}/jobs/${resourceKey(jobKey)}/trigger`);
     },
-    execution(id: string): Promise<SchedulerExecutionVO> {
-        return get<SchedulerExecutionVO>(`${ADMIN_API}/executions/${id}`);
+
+    /** 查询 Trigger 详情。 */
+    trigger(triggerKey: string): Promise<QuartzTriggerVO> {
+        return get<QuartzTriggerVO>(`${QUARTZ_API}/triggers/${resourceKey(triggerKey)}`);
     },
-    retryExecution(id: string, params: SchedulerExecutionActionParams): Promise<SchedulerExecutionVO> {
-        return post<SchedulerExecutionVO>(`${ADMIN_API}/executions/${id}/retry`, params);
+
+    /** 分页查询执行历史。 */
+    executionHistory(params?: QuartzHistoryQuery): Promise<Page<QuartzExecutionHistoryVO>> {
+        return get<Page<QuartzExecutionHistoryVO>>(`${QUARTZ_API}/execution-history`, params);
     },
-    cancelExecution(id: string, params: SchedulerExecutionActionParams): Promise<SchedulerExecutionVO> {
-        return post<SchedulerExecutionVO>(`${ADMIN_API}/executions/${id}/cancel`, params);
-    },
-    resolveExecution(id: string, params: SchedulerExecutionActionParams): Promise<SchedulerExecutionVO> {
-        return post<SchedulerExecutionVO>(`${ADMIN_API}/executions/${id}/resolve`, params);
-    },
-    loops(params?: SchedulerLoopQuery): Promise<Page<SchedulerLoopRuntimeVO>> {
-        return get<Page<SchedulerLoopRuntimeVO>>(`${ADMIN_API}/loops`, params);
-    },
-    command(jobId: string, params: SchedulerLoopCommandParams): Promise<SchedulerControlCommandVO> {
-        return post<SchedulerControlCommandVO>(`${ADMIN_API}/loops/${jobId}/commands`, params);
-    },
-    commands(jobId: string, params?: BasePageParams): Promise<Page<SchedulerControlCommandVO>> {
-        return get<Page<SchedulerControlCommandVO>>(`${ADMIN_API}/loops/${jobId}/commands`, params);
-    },
-    operations(jobId: string, params?: BasePageParams): Promise<Page<SchedulerOperationVO>> {
-        return get<Page<SchedulerOperationVO>>(`${ADMIN_API}/jobs/${jobId}/operations`, params);
-    },
-    errors(jobId: string, params?: Omit<SchedulerLoopErrorQuery, "job_id">): Promise<Page<SchedulerLoopErrorVO>> {
-        return get<Page<SchedulerLoopErrorVO>>(`${ADMIN_API}/loops/${jobId}/errors`, params);
+
+    /** 查询单条执行历史详情。 */
+    executionHistoryDetail(id: string): Promise<QuartzExecutionHistoryVO> {
+        return get<QuartzExecutionHistoryVO>(`${QUARTZ_API}/execution-history/${resourceKey(id)}`);
     }
 };

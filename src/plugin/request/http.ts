@@ -210,7 +210,7 @@ async function encryptRequest(body: unknown): Promise<{
     const bodyStr = typeof body === "string" ? body : JSON.stringify(body);
     const iv = generateIv();
     const timestamp = Math.floor(Date.now() / 1000);
-    const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+    const nonce = generateNonce();
 
     const { encryptedData, encryptedKey } = await encrypt(bodyStr, iv, pubKey);
 
@@ -245,7 +245,7 @@ async function encryptBodyWithoutSign(body: unknown): Promise<{
     const bodyStr = typeof body === "string" ? body : JSON.stringify(body);
     const iv = generateIv();
     const timestamp = Math.floor(Date.now() / 1000);
-    const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+    const nonce = generateNonce();
 
     const { encryptedData, encryptedKey } = await encrypt(bodyStr, iv, pubKey);
 
@@ -256,6 +256,15 @@ async function encryptBodyWithoutSign(body: unknown): Promise<{
         nonce,
         timestamp
     };
+}
+
+/** 生成后端 nonce 校验允许的 URL-safe、无填充 Base64 nonce。 */
+function generateNonce(): string {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    return btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "");
 }
 
 /**

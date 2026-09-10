@@ -8,6 +8,15 @@ function source(path: string): string {
 }
 
 describe("缓存监控与维护页面", () => {
+    it("监控页刷新操作行应该只保留右侧刷新按钮", () => {
+        const text = source("src/views/Devops/Monitor/Cache/index.vue");
+
+        expect(text).not.toContain("<h2>缓存监控</h2>");
+        expect(text).not.toContain("普通业务缓存与安全运行态只读总览；不展示安全键或敏感值。");
+        expect(text).toContain('class="cache-toolbar"');
+        expect(text).toContain("justify-content: flex-end");
+    });
+
     it("监控页应该并行读取三类状态、关闭请求缓存并清理轮询定时器", () => {
         const text = source("src/views/Devops/Monitor/Cache/index.vue");
 

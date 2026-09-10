@@ -130,11 +130,7 @@ onUnmounted(stopPolling);
 
 <template>
     <div class="cache-monitor page-container">
-        <div class="page-header">
-            <div>
-                <h2>缓存监控</h2>
-                <p>普通业务缓存与安全运行态只读总览；不展示安全键或敏感值。</p>
-            </div>
+        <div class="cache-toolbar">
             <el-button :loading="refreshing" :icon="Refresh" @click="loadData()">刷新</el-button>
         </div>
 
@@ -252,7 +248,7 @@ onUnmounted(stopPolling);
     padding: 20px;
 }
 
-.page-header,
+.cache-toolbar,
 .section-header {
     display: flex;
     align-items: center;
@@ -260,11 +256,11 @@ onUnmounted(stopPolling);
     gap: 16px;
 }
 
-.page-header h2 {
-    margin: 0 0 8px;
+.cache-toolbar {
+    min-height: 32px;
+    justify-content: flex-end;
 }
 
-.page-header p,
 .security-note {
     margin: 0;
     color: var(--el-text-color-secondary);

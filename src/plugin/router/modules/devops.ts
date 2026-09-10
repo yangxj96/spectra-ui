@@ -20,7 +20,7 @@ export default [
             {
                 path: "monitor/application-health",
                 name: "DevopsApplicationHealth",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
+                component: () => import("@/views/Devops/Monitor/ApplicationHealth/index.vue"),
                 meta: { title: "应用健康检查", requiresAuth: true, requiredMenu: "DevopsApplicationHealth" }
             },
             {

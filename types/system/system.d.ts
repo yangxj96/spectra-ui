@@ -9,14 +9,14 @@ declare global {
 
     type ServiceMonitorDependency = {
         name: string;
-        status: "UP" | "DOWN";
+        status: "UP" | "DEGRADED" | "DOWN" | "UNKNOWN";
         latency_ms: number;
         message: string;
     };
 
     type ServiceMonitorHealthComponent = {
         name: string;
-        status: "UP" | "DOWN" | "OUT_OF_SERVICE" | "UNKNOWN";
+        status: "UP" | "DEGRADED" | "DOWN" | "OUT_OF_SERVICE" | "UNKNOWN";
         message: string;
         checked_at: string;
     };

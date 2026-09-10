@@ -132,7 +132,7 @@ export default [
             {
                 path: "system-maintenance/cache-clear",
                 name: "DevopsCacheClear",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
+                component: () => import("@/views/Devops/SystemMaintenance/CacheClear/index.vue"),
                 meta: { title: "缓存清理", requiresAuth: true, requiredMenu: "DevopsCacheClear" }
             },
             {

@@ -3,19 +3,16 @@ import { type FormInstance, type FormRules } from "element-plus";
 import { computed, onMounted, reactive, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { initCrypto } from "@/api/system/crypto-api.ts";
 import { SystemGuideApi } from "@/api/system/system-guide-api.ts";
 import DictSelect from "@/components/DictSelect/index.vue";
 import DictTag from "@/components/DictTag/index.vue";
 import RegionSelectLazy from "@/components/RegionSelectLazy/index.vue";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
-import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
-const cryptoStore = useCryptoStore();
 const loading = ref(true);
 const submitting = ref(false);
 const currentStep = ref(0);
@@ -24,7 +21,6 @@ const form = reactive<SystemGuideCompleteFrom>({
     root_department_region_id: "",
     root_department_region_name: "",
     root_department_type: undefined,
-    crypto_enabled: cryptoStore.enabled,
     notification_enabled: true,
     copyright_enabled: appStore.system.copyright_enabled,
     copyright_name: appStore.system.copyright_name || "devops00",
@@ -33,7 +29,6 @@ const form = reactive<SystemGuideCompleteFrom>({
 
 const steps = [
     { title: "组织机构", description: "设置根部门" },
-    { title: "接口安全", description: "配置请求加解密" },
     { title: "通知中心", description: "配置统一通知模块" },
     { title: "底部版权", description: "配置页脚显示" },
     { title: "完成设置", description: "确认并提交配置" }
@@ -83,7 +78,7 @@ const nextStep = async () => {
         }
         form.root_department_name = name;
     }
-    if (currentStep.value === 3 && form.copyright_enabled) {
+    if (currentStep.value === 2 && form.copyright_enabled) {
         const valid = await copyrightFormRef.value?.validate().catch(() => false);
         if (!valid) return;
         form.copyright_name = form.copyright_name.trim();
@@ -118,7 +113,6 @@ const completeGuide = async () => {
     submitting.value = true;
     try {
         await SystemGuideApi.complete(form);
-        await initCrypto();
         appStore.setCopyrightConfig({
             copyright_enabled: form.copyright_enabled,
             copyright_name: form.copyright_name,
@@ -154,7 +148,7 @@ onMounted(async () => {
                     <el-alert
                         class="guide-alert"
                         title="这些设置会保存到系统配置中"
-                        description="完成后才可以进入管理首页。启用相关模块时，系统会自动生成所需密钥，不需要再配置对应环境变量。"
+                        description="完成后才可以进入管理首页。系统内部密钥会在首次系统初始化时自动生成，接口加解密开关可在密钥管理页面调整。"
                         type="info"
                         :closable="false"
                         show-icon />
@@ -212,27 +206,11 @@ onMounted(async () => {
                 </section>
 
                 <section v-else-if="currentStep === 1" class="setting-panel">
-                    <div class="setting-icon security-icon">S</div>
-                    <div class="setting-copy">
-                        <div class="setting-title">接口请求加解密</div>
-                        <div class="setting-description">
-                            启用后，系统自动生成服务端和客户端 RSA 密钥，用于接口请求与响应的加解密。
-                        </div>
-                    </div>
-                    <el-switch
-                        v-model="form.crypto_enabled"
-                        class="setting-switch"
-                        :width="72"
-                        active-text="启用"
-                        inactive-text="关闭" />
-                </section>
-
-                <section v-else-if="currentStep === 2" class="setting-panel">
                     <div class="setting-icon notification-icon">N</div>
                     <div class="setting-copy">
                         <div class="setting-title">统一通知模块</div>
                         <div class="setting-description">
-                            启用站内通知及后续外部渠道能力。系统会自动生成通知地址和敏感载荷的 AES-GCM 密钥。
+                            启用站内通知及后续外部渠道能力。通知内部保护密钥已在首次系统初始化时自动生成。
                         </div>
                     </div>
                     <el-switch
@@ -243,7 +221,7 @@ onMounted(async () => {
                         inactive-text="关闭" />
                 </section>
 
-                <section v-else-if="currentStep === 3" class="setting-panel">
+                <section v-else-if="currentStep === 2" class="setting-panel">
                     <div class="setting-icon copyright-icon">C</div>
                     <div class="setting-copy">
                         <div class="setting-title">底部版权</div>
@@ -308,12 +286,6 @@ onMounted(async () => {
                                 v-if="form.root_department_type !== undefined"
                                 v-model="form.root_department_type"
                                 dict_code="sys_organization_type" />
-                        </div>
-                        <div class="review-item">
-                            <span>接口请求加解密</span>
-                            <el-tag :type="form.crypto_enabled ? 'success' : 'info'" effect="plain">
-                                {{ form.crypto_enabled ? "启用" : "关闭" }}
-                            </el-tag>
                         </div>
                         <div class="review-item">
                             <span>统一通知模块</span>

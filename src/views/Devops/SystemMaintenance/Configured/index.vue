@@ -1,13 +1,10 @@
 ﻿<script setup lang="ts">
-import { ElMessageBox } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
 
 import { ConfiguredApi } from "@/api/system/configured-api.ts";
-import { CryptoApi, initCrypto } from "@/api/system/crypto-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
 import { configuredConverter } from "@/converter/configured-converter.ts";
 import useTable from "@/hooks/use-table.ts";
-import { MessageUtils } from "@/utils/message-utils.ts";
 import ConfiguredEdit from "@/views/Devops/SystemMaintenance/Configured/components/ConfiguredEdit/index.vue";
 
 const edit = reactive({
@@ -44,35 +41,6 @@ const handleConfiguredEdit = (row: ConfiguredPageVO) => {
         edit.show = true;
     }, 0);
 };
-
-const handleGenerateKeyPair = async () => {
-    try {
-        await ElMessageBox.confirm(
-            "此操作将重新生成两对 RSA 密钥对（服务端 + 客户端），现有密钥将立即失效。确认继续？",
-            "生成 RSA 密钥对",
-            { confirmButtonText: "确认生成", cancelButtonText: "取消", type: "warning" }
-        );
-        await CryptoApi.generateKeyPair();
-        MessageUtils.success("RSA 密钥对已生成并生效");
-        await handlerConditionQuery();
-    } catch (e: unknown) {
-        if (e !== "cancel") {
-            MessageUtils.error(e instanceof Error ? e.message : "生成失败");
-        }
-    }
-};
-
-const handleRefreshCrypto = async () => {
-    try {
-        await CryptoApi.refreshKeys();
-        await initCrypto();
-        MessageUtils.success("加密状态已刷新");
-    } catch (e: unknown) {
-        if (e !== "cancel") {
-            MessageUtils.error(e instanceof Error ? e.message : "刷新失败");
-        }
-    }
-};
 </script>
 
 <template>
@@ -85,12 +53,6 @@ const handleRefreshCrypto = async () => {
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery()">查询</el-button>
                 <el-button>重置</el-button>
-                <el-button v-permission="'security:crypto:manage'" type="danger" plain @click="handleGenerateKeyPair()">
-                    生成RSA密钥对
-                </el-button>
-                <el-button v-permission="'security:crypto:manage'" type="warning" plain @click="handleRefreshCrypto()">
-                    刷新加密状态
-                </el-button>
             </el-form-item>
         </el-form>
     </el-row>

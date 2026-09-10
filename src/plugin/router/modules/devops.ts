@@ -124,10 +124,10 @@ export default [
                 meta: { title: "文件类型策略", requiresAuth: true, requiredMenu: "DevopsFileTypes" }
             },
             {
-                path: "system-maintenance/encryption-key",
-                name: "DevopsEncryptionKey",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
-                meta: { title: "加密密钥", requiresAuth: true, requiredMenu: "DevopsEncryptionKey" }
+                path: "system-maintenance/secret-management",
+                name: "DevopsSecretManagement",
+                component: () => import("@/views/Devops/SystemMaintenance/SecretManagement/index.vue"),
+                meta: { title: "密钥管理", requiresAuth: true, requiredMenu: "DevopsSecretManagement" }
             },
             {
                 path: "system-maintenance/cache-clear",

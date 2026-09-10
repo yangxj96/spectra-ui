@@ -1,4 +1,3 @@
-import { post } from "@/plugin/request/api.ts";
 import { request } from "@/plugin/request/http.ts";
 import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 
@@ -50,24 +49,3 @@ export async function fetchClientPrivateKey(): Promise<void> {
         console.warn("[Crypto] 获取客户端私钥失败:", e);
     }
 }
-
-// =================================================
-// 密钥管理 API
-// =================================================
-
-export const CryptoApi = {
-    /**
-     * 生成 RSA 密钥对（服务端 + 客户端）
-     * 需要 ROLE_DEV_OPS 权限
-     */
-    generateKeyPair(): Promise<Record<string, string>> {
-        return post("/api/system/crypto/keypair/generate");
-    },
-    /**
-     * 刷新加解密密钥状态
-     * 需要 ROLE_DEV_OPS 权限
-     */
-    refreshKeys(): Promise<void> {
-        return post("/api/system/crypto/keypair/refresh");
-    }
-};

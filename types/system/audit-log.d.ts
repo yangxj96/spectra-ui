@@ -1,7 +1,8 @@
 export {};
 
 declare global {
-    type SecurityAuditPageParams = BasePageParams & {
+    type AuditLogPageParams = BasePageParams & {
+        category?: "OPERATION" | "SECURITY";
         event_type?: string;
         operator_id?: string;
         target_id?: string;
@@ -10,28 +11,27 @@ declare global {
         to?: string;
     };
 
-    type SecurityAuditVO = {
+    type AuditLogVO = {
         event_id: string;
+        occurred_at: string;
+        category: "OPERATION" | "SECURITY";
         event_type: string;
         operator_id?: string;
         target_id?: string;
         client?: string;
         ip?: string;
         user_agent?: string;
+        http_method?: string;
+        request_url?: string;
+        http_status?: number;
+        duration_ms?: number;
         before: Record<string, unknown>;
         after: Record<string, unknown>;
         reason?: string;
-        occurred_at: string;
         result: "STARTED" | "SUCCEEDED" | "FAILED" | "DENIED";
+        failure_code?: string;
+        failure_type?: string;
+        failure_reason?: string;
         correlation_id?: string;
-    };
-
-    type SecurityAuditRetention = {
-        policy_key: string;
-        hot_retention_months: number;
-        total_retention_years: number;
-        archive_backend: string;
-        state: string;
-        version: number;
     };
 }

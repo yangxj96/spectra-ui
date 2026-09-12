@@ -142,22 +142,16 @@ export default [
                 meta: { title: "安全上下文", requiresAuth: true, requiredMenu: "DevopsSecurityContext" }
             },
             {
-                path: "security/audit",
-                name: "DevopsSecurityAudit",
-                component: () => import("@/views/Devops/Security/Audit/index.vue"),
-                meta: { title: "安全审计", requiresAuth: true, requiredMenu: "DevopsSecurityAudit" }
+                path: "audit-log",
+                name: "DevopsAuditLog",
+                component: () => import("@/views/Devops/AuditLog/index.vue"),
+                meta: { title: "审计日志", requiresAuth: true, requiredMenu: "DevopsAuditLog" }
             },
             {
                 path: "security/online",
                 name: "DevopsSecurityOnline",
                 component: () => import("@/views/Devops/Security/Online/index.vue"),
                 meta: { title: "在线用户", requiresAuth: true, requiredMenu: "DevopsSecurityOnline" }
-            },
-            {
-                path: "security/operation-log",
-                name: "DevopsOperationLog",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
-                meta: { title: "操作日志", requiresAuth: true, requiredMenu: "DevopsOperationLog" }
             },
             {
                 path: "security/security-event",

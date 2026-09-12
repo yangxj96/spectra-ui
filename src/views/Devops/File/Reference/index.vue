@@ -69,13 +69,21 @@ onMounted(() => {
         <el-row class="box__search">
             <el-form :inline="true">
                 <el-form-item label="资产 ID">
-                    <el-input v-model="query.file_asset_id" clearable placeholder="按资产 ID 搜索" />
+                    <el-input
+                        v-model="query.file_asset_id"
+                        class="search-field"
+                        clearable
+                        placeholder="按资产 ID 搜索" />
                 </el-form-item>
                 <el-form-item label="引用类型">
-                    <el-input v-model="query.reference_type" clearable placeholder="例如 DOCUMENT_VERSION" />
+                    <el-input
+                        v-model="query.reference_type"
+                        class="search-field"
+                        clearable
+                        placeholder="例如 DOCUMENT_VERSION" />
                 </el-form-item>
                 <el-form-item label="用途">
-                    <el-input v-model="query.purpose" clearable placeholder="例如 CONTENT" />
+                    <el-input v-model="query.purpose" class="search-field" clearable placeholder="例如 CONTENT" />
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="search">查询</el-button>
@@ -89,17 +97,42 @@ onMounted(() => {
                 title="文件引用是业务访问权限的事实记录，本页面只读，不提供绕过业务权限的删除操作。"
                 type="info"
                 show-icon />
-            <el-table :data="tableData" height="calc(100% - 90px)" border stripe empty-text="暂无文件引用">
-                <el-table-column prop="asset_original_name" label="文件名" min-width="180" show-overflow-tooltip />
-                <el-table-column prop="file_asset_id" label="文件资产 ID" width="280" show-overflow-tooltip />
+            <el-table :data="tableData" height="calc(100% - 90px)" stripe empty-text="暂无文件引用">
+                <el-table-column
+                    prop="asset_original_name"
+                    label="文件名"
+                    min-width="180"
+                    align="center"
+                    show-overflow-tooltip />
+                <el-table-column
+                    prop="file_asset_id"
+                    label="文件资产 ID"
+                    width="280"
+                    align="center"
+                    show-overflow-tooltip />
                 <el-table-column label="文件大小" width="110" align="center">
                     <template #default="scope">{{ formatSize(scope.row.asset_size) }}</template>
                 </el-table-column>
-                <el-table-column prop="reference_type" label="引用类型" width="170" show-overflow-tooltip />
-                <el-table-column prop="business_reference_id" label="业务对象 ID" width="280" show-overflow-tooltip />
+                <el-table-column
+                    prop="reference_type"
+                    label="引用类型"
+                    width="170"
+                    align="center"
+                    show-overflow-tooltip />
+                <el-table-column
+                    prop="business_reference_id"
+                    label="业务对象 ID"
+                    width="280"
+                    align="center"
+                    show-overflow-tooltip />
                 <el-table-column prop="purpose" label="用途" width="120" align="center" />
-                <el-table-column prop="display_name" label="显示名称" min-width="150" show-overflow-tooltip />
-                <el-table-column label="创建时间" width="175">
+                <el-table-column
+                    prop="display_name"
+                    label="显示名称"
+                    min-width="150"
+                    align="center"
+                    show-overflow-tooltip />
+                <el-table-column label="创建时间" width="175" align="center">
                     <template #default="scope">{{ formatOptional(scope.row.created_at) }}</template>
                 </el-table-column>
             </el-table>
@@ -109,7 +142,6 @@ onMounted(() => {
                 :page-sizes="[15, 50, 100]"
                 layout="total, sizes, prev, pager, next"
                 :total="total"
-                style="padding: 0 10px; margin-left: auto"
                 @change="loadData" />
         </el-row>
     </div>
@@ -120,18 +152,36 @@ onMounted(() => {
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    background: var(--el-bg-color);
 }
 
 .box__search {
     display: flex;
     height: 10%;
     align-items: center;
-    padding-left: 20px;
+    overflow-x: auto;
+    padding: 0 20px;
+}
+
+.box__search :deep(.el-form--inline) {
+    display: flex;
+    flex-wrap: nowrap;
+    flex: 0 0 max-content;
+    width: max-content;
+    min-width: max-content;
+    align-items: center;
 }
 
 .box__search :deep(.el-form-item) {
+    flex: 0 0 auto;
+    margin-right: 12px;
     margin-bottom: 0;
+}
+
+.box__search :deep(.search-field) {
+    flex: 0 0 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
 }
 
 .box__body {

@@ -183,54 +183,65 @@ onMounted(() => {
 
 <template>
     <div v-loading="loading" class="file-type-page">
-        <el-row class="toolbar">
+        <el-row class="box__search toolbar">
             <el-alert
                 title="策略只允许扩展名、媒体类型和结构化魔数规则；保存前后端都会校验规则形状。"
                 type="info"
                 show-icon />
             <el-button v-permission="'file:admin:manage'" type="primary" @click="openCreate">新增策略</el-button>
         </el-row>
-        <el-table :data="tableData" height="calc(100% - 125px)" border stripe empty-text="暂无文件类型策略">
-            <el-table-column prop="code" label="编码" width="110" />
-            <el-table-column prop="display_name" label="名称" width="150" />
-            <el-table-column label="扩展名" min-width="180" show-overflow-tooltip>
-                <template #default="scope">{{ listText(scope.row.allowed_extensions) }}</template>
-            </el-table-column>
-            <el-table-column label="媒体类型" min-width="220" show-overflow-tooltip>
-                <template #default="scope">{{ listText(scope.row.allowed_content_types) }}</template>
-            </el-table-column>
-            <el-table-column label="大小上限" width="120" align="center">
-                <template #default="scope">{{ formatSize(scope.row.max_size) }}</template>
-            </el-table-column>
-            <el-table-column label="状态" width="100" align="center">
-                <template #default="scope">
-                    <el-tag size="small" :type="statusType(scope.row.enabled)">
-                        {{ scope.row.enabled ? "已启用" : "已停用" }}
-                    </el-tag>
-                </template>
-            </el-table-column>
-            <el-table-column label="更新时间" width="175">
-                <template #default="scope">{{ formatOptional(scope.row.updated_at) }}</template>
-            </el-table-column>
-            <el-table-column label="操作" width="170" fixed="right">
-                <template #default="scope">
-                    <el-button v-permission="'file:admin:manage'" link type="primary" @click="openEdit(scope.row)">
-                        编辑
-                    </el-button>
-                    <el-button v-permission="'file:admin:manage'" link type="warning" @click="changeEnabled(scope.row)">
-                        {{ scope.row.enabled ? "停用" : "启用" }}
-                    </el-button>
-                </template>
-            </el-table-column>
-        </el-table>
-        <el-pagination
-            v-model:current-page="page"
-            v-model:page-size="pageSize"
-            :page-sizes="[15, 50, 100]"
-            layout="total, sizes, prev, pager, next"
-            :total="total"
-            style="padding: 0 20px; justify-content: flex-end"
-            @change="loadData" />
+        <el-row class="box__body">
+            <el-col :span="24">
+                <el-table :data="tableData" height="92%" stripe empty-text="暂无文件类型策略">
+                    <el-table-column prop="code" label="编码" width="110" align="center" />
+                    <el-table-column prop="display_name" label="名称" width="150" align="center" />
+                    <el-table-column label="扩展名" min-width="180" align="center" show-overflow-tooltip>
+                        <template #default="scope">{{ listText(scope.row.allowed_extensions) }}</template>
+                    </el-table-column>
+                    <el-table-column label="媒体类型" min-width="220" align="center" show-overflow-tooltip>
+                        <template #default="scope">{{ listText(scope.row.allowed_content_types) }}</template>
+                    </el-table-column>
+                    <el-table-column label="大小上限" width="120" align="center">
+                        <template #default="scope">{{ formatSize(scope.row.max_size) }}</template>
+                    </el-table-column>
+                    <el-table-column label="状态" width="100" align="center">
+                        <template #default="scope">
+                            <el-tag size="small" :type="statusType(scope.row.enabled)">
+                                {{ scope.row.enabled ? "已启用" : "已停用" }}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="更新时间" width="175" align="center">
+                        <template #default="scope">{{ formatOptional(scope.row.updated_at) }}</template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="170" fixed="right" align="center">
+                        <template #default="scope">
+                            <el-button
+                                v-permission="'file:admin:manage'"
+                                link
+                                type="primary"
+                                @click="openEdit(scope.row)">
+                                编辑
+                            </el-button>
+                            <el-button
+                                v-permission="'file:admin:manage'"
+                                link
+                                type="warning"
+                                @click="changeEnabled(scope.row)">
+                                {{ scope.row.enabled ? "停用" : "启用" }}
+                            </el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-pagination
+                    v-model:current-page="page"
+                    v-model:page-size="pageSize"
+                    :page-sizes="[15, 50, 100]"
+                    layout="total, sizes, prev, pager, next"
+                    :total="total"
+                    @change="loadData" />
+            </el-col>
+        </el-row>
 
         <el-dialog
             v-model="editVisible"
@@ -293,28 +304,41 @@ onMounted(() => {
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    padding: 20px;
     box-sizing: border-box;
-    background: var(--el-bg-color);
+}
+
+.box__search {
+    height: 10%;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    padding: 0 20px;
 }
 
 .toolbar {
-    display: flex;
-    align-items: center;
     gap: 12px;
-    margin-bottom: 12px;
 }
 
 .toolbar :deep(.el-alert) {
     flex: 1;
 }
 
-.file-type-page :deep(.el-table) {
+.box__body {
+    display: block;
+    height: 90%;
+    padding: 0 20px;
+}
+
+.box__body :deep(.el-col) {
+    height: 100%;
+}
+
+.box__body :deep(.el-table) {
     width: 100%;
 }
 
-.file-type-page :deep(.el-pagination) {
-    display: flex;
-    margin-top: 8px;
+.box__body :deep(.el-pagination) {
+    justify-content: flex-end;
+    margin-top: 4px;
 }
 </style>

@@ -81,7 +81,7 @@ const handleEditClose = () => {
     <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item label="区域名称" prop="name">
-                <el-input v-model="condition.name" placeholder="请输入区域名称" clearable />
+                <el-input v-model="condition.name" class="search-field" placeholder="请输入区域名称" clearable />
             </el-form-item>
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
@@ -92,7 +92,7 @@ const handleEditClose = () => {
     </el-row>
     <!-- 数据区 -->
     <el-row class="box__body">
-        <el-table :data="table_data" height="95%" border stripe default-expand-all row-key="id">
+        <el-table :data="table_data" height="92%" stripe default-expand-all row-key="id">
             <el-table-column align="center" prop="name" label="名称" />
             <el-table-column align="center" prop="full_name" label="全称" :show-overflow-tooltip="true" />
             <el-table-column align="center" prop="short_name" label="简称" />
@@ -137,7 +137,6 @@ const handleEditClose = () => {
             :page-size="pagination.size"
             :page-sizes="pagination.page_sizes"
             :total="pagination.total"
-            style="padding: 0 10px; margin-left: auto"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
     </el-row>
@@ -155,16 +154,40 @@ const handleEditClose = () => {
     height: 10%;
     display: flex;
     align-items: center;
-    padding-left: 20px;
+    overflow-x: auto;
+    padding: 0 20px;
 
-    .el-form-item {
+    :deep(.el-form--inline) {
+        display: flex;
+        flex-wrap: nowrap;
+        flex: 0 0 max-content;
+        width: max-content;
+        min-width: max-content;
+        align-items: center;
+    }
+
+    :deep(.el-form-item) {
+        flex: 0 0 auto;
+        margin-right: 12px;
         margin-bottom: 0;
+    }
+
+    :deep(.search-field) {
+        flex: 0 0 150px;
+        width: 150px;
+        min-width: 150px;
+        max-width: 150px;
     }
 }
 
 .box__body {
-    padding-left: 1vw;
-    padding-right: 1vw;
+    display: block;
     height: 90%;
+    padding: 0 20px;
+}
+
+.box__body :deep(.el-pagination) {
+    justify-content: flex-end;
+    margin-top: 4px;
 }
 </style>

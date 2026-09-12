@@ -82,65 +82,83 @@ const handleReset = () => {
 </script>
 
 <template>
-    <div class="audit-log-page">
-        <el-card shadow="never">
-            <el-form :inline="true" class="search-form">
-                <el-form-item label="分类">
-                    <el-select v-model="condition.category" clearable placeholder="全部" style="width: 150px">
-                        <el-option label="普通操作" value="OPERATION" />
-                        <el-option label="安全操作" value="SECURITY" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="事件类型">
-                    <el-input
-                        v-model="condition.event_type"
-                        clearable
-                        placeholder="如 USER_PROFILE_UPDATED 或操作说明" />
-                </el-form-item>
-                <el-form-item label="操作人">
-                    <el-input v-model="condition.operator" clearable placeholder="输入用户 ID 或姓名" />
-                </el-form-item>
-                <el-form-item label="目标">
-                    <el-input v-model="condition.target_id" clearable />
-                </el-form-item>
-                <el-form-item label="结果">
-                    <el-select v-model="condition.result" clearable placeholder="全部" style="width: 140px">
-                        <el-option label="开始" value="STARTED" />
-                        <el-option label="成功" value="SUCCEEDED" />
-                        <el-option label="失败" value="FAILED" />
-                        <el-option label="拒绝" value="DENIED" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
-                    <el-button @click="handleReset">重置</el-button>
-                    <el-button v-permission="'audit:export'" type="success" @click="handleExport">导出</el-button>
-                </el-form-item>
-            </el-form>
-            <el-table :data="table_data" border stripe height="calc(100vh - 260px)">
-                <el-table-column label="发生时间" width="190">
+    <el-row class="box__search">
+        <el-form :inline="true" :model="condition">
+            <el-form-item label="分类">
+                <el-select v-model="condition.category" class="search-field" clearable placeholder="全部">
+                    <el-option label="普通操作" value="OPERATION" />
+                    <el-option label="安全操作" value="SECURITY" />
+                </el-select>
+            </el-form-item>
+            <el-form-item label="事件类型">
+                <el-input
+                    v-model="condition.event_type"
+                    class="search-field"
+                    clearable
+                    placeholder="如 USER_PROFILE_UPDATED 或操作说明" />
+            </el-form-item>
+            <el-form-item label="操作人">
+                <el-input
+                    v-model="condition.operator"
+                    class="search-field"
+                    clearable
+                    placeholder="输入用户 ID 或姓名" />
+            </el-form-item>
+            <el-form-item label="目标">
+                <el-input v-model="condition.target_id" class="search-field" clearable />
+            </el-form-item>
+            <el-form-item label="结果">
+                <el-select v-model="condition.result" class="search-field" clearable placeholder="全部">
+                    <el-option label="开始" value="STARTED" />
+                    <el-option label="成功" value="SUCCEEDED" />
+                    <el-option label="失败" value="FAILED" />
+                    <el-option label="拒绝" value="DENIED" />
+                </el-select>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
+                <el-button @click="handleReset">重置</el-button>
+                <el-button v-permission="'audit:export'" type="success" @click="handleExport">导出</el-button>
+            </el-form-item>
+        </el-form>
+    </el-row>
+
+    <el-row class="box__body">
+        <el-col :span="24">
+            <el-table :data="table_data" stripe height="92%">
+                <el-table-column label="发生时间" width="190" align="center">
                     <template #default="scope">{{ formatDateTime(scope.row.occurred_at) }}</template>
                 </el-table-column>
-                <el-table-column label="分类" width="110">
+                <el-table-column label="分类" width="110" align="center">
                     <template #default="scope">{{ formatCategory(scope.row.category) }}</template>
                 </el-table-column>
-                <el-table-column label="事件类型" min-width="220" show-overflow-tooltip>
+                <el-table-column label="事件类型" min-width="220" align="center" show-overflow-tooltip>
                     <template #default="scope">{{ formatEventType(scope.row) }}</template>
                 </el-table-column>
-                <el-table-column label="结果" width="100">
+                <el-table-column label="结果" width="100" align="center">
                     <template #default="scope">
                         <el-tag :type="resultTagType(scope.row.result)" size="small">
                             {{ formatResult(scope.row.result) }}
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="operator_id" label="操作人" min-width="200" show-overflow-tooltip />
-                <el-table-column label="姓名" min-width="120" show-overflow-tooltip>
+                <el-table-column
+                    prop="operator_id"
+                    label="操作人"
+                    min-width="200"
+                    align="center"
+                    show-overflow-tooltip />
+                <el-table-column label="姓名" min-width="120" align="center" show-overflow-tooltip>
                     <template #default="scope">{{ scope.row.operator_name || "-" }}</template>
                 </el-table-column>
-                <el-table-column prop="target_id" label="目标" min-width="200" show-overflow-tooltip />
-                <el-table-column prop="failure_reason" label="失败原因" min-width="180" show-overflow-tooltip />
-                <el-table-column label="操作" width="90" fixed="right">
+                <el-table-column prop="target_id" label="目标" min-width="200" align="center" show-overflow-tooltip />
+                <el-table-column
+                    prop="failure_reason"
+                    label="失败原因"
+                    min-width="180"
+                    align="center"
+                    show-overflow-tooltip />
+                <el-table-column label="操作" width="90" fixed="right" align="center">
                     <template #default="scope">
                         <el-button link type="primary" @click="handleDetail(scope.row)">详情</el-button>
                     </template>
@@ -153,19 +171,52 @@ const handleReset = () => {
                 :total="pagination.total"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange" />
-        </el-card>
-    </div>
+        </el-col>
+    </el-row>
 </template>
 
 <style scoped lang="scss">
-.audit-log-page {
+.box__search {
+    height: 10%;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    overflow-x: auto;
+    padding: 0 20px;
+
+    :deep(.el-form--inline) {
+        display: flex;
+        flex-wrap: nowrap;
+        flex: 0 0 max-content;
+        width: max-content;
+        min-width: max-content;
+        align-items: center;
+    }
+
+    :deep(.el-form-item) {
+        flex: 0 0 auto;
+        margin-right: 12px;
+        margin-bottom: 0;
+    }
+
+    :deep(.search-field) {
+        flex: 0 0 150px;
+        width: 150px;
+        min-width: 150px;
+        max-width: 150px;
+    }
+}
+
+.box__body {
+    height: 90%;
+    padding: 0 20px;
+}
+
+.box__body :deep(.el-col) {
     height: 100%;
 }
 
-.search-form {
-    margin-bottom: 12px;
+.box__body :deep(.el-pagination) {
+    justify-content: flex-end;
+    margin-top: 4px;
 }
 </style>

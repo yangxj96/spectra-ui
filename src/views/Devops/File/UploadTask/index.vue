@@ -131,12 +131,13 @@ onMounted(() => {
                 <el-form-item label="文件名">
                     <el-input
                         v-model="query.original_name"
+                        class="search-field"
                         clearable
                         placeholder="按文件名搜索"
                         @keyup.enter="search" />
                 </el-form-item>
                 <el-form-item label="状态">
-                    <el-select v-model="query.status" clearable placeholder="全部状态" style="width: 150px">
+                    <el-select v-model="query.status" class="search-field" clearable placeholder="全部状态">
                         <el-option v-for="(label, value) in statusLabels" :key="value" :label="label" :value="value" />
                     </el-select>
                 </el-form-item>
@@ -148,10 +149,15 @@ onMounted(() => {
         </el-row>
 
         <el-row class="box__body">
-            <el-table :data="tableData" height="92%" border stripe empty-text="暂无上传任务">
+            <el-table :data="tableData" height="92%" stripe empty-text="暂无上传任务">
                 <el-table-column type="index" label="序号" width="70" align="center" />
-                <el-table-column prop="original_name" label="文件名" min-width="190" show-overflow-tooltip />
-                <el-table-column prop="owner_user_id" label="上传者" width="280" show-overflow-tooltip />
+                <el-table-column
+                    prop="original_name"
+                    label="文件名"
+                    min-width="190"
+                    align="center"
+                    show-overflow-tooltip />
+                <el-table-column prop="owner_user_id" label="上传者" width="280" align="center" show-overflow-tooltip />
                 <el-table-column label="状态" width="100" align="center">
                     <template #default="scope">
                         <el-tag size="small" :type="statusType(scope.row.status)">
@@ -171,13 +177,13 @@ onMounted(() => {
                         {{ scope.row.storage_provider }} / {{ scope.row.transport_mode }}
                     </template>
                 </el-table-column>
-                <el-table-column label="最后活动" width="175">
+                <el-table-column label="最后活动" width="175" align="center">
                     <template #default="scope">{{ formatOptional(scope.row.last_activity_at) }}</template>
                 </el-table-column>
-                <el-table-column label="过期时间" width="175">
+                <el-table-column label="过期时间" width="175" align="center">
                     <template #default="scope">{{ formatOptional(scope.row.expires_at) }}</template>
                 </el-table-column>
-                <el-table-column label="操作" width="170" fixed="right">
+                <el-table-column label="操作" width="170" fixed="right" align="center">
                     <template #default="scope">
                         <el-button link type="primary" @click="openDetail(scope.row)">详情</el-button>
                         <el-button
@@ -197,7 +203,6 @@ onMounted(() => {
                 :page-sizes="[15, 50, 100]"
                 layout="total, sizes, prev, pager, next"
                 :total="total"
-                style="padding: 0 10px; margin-left: auto"
                 @change="loadData" />
         </el-row>
 
@@ -240,18 +245,36 @@ onMounted(() => {
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    background: var(--el-bg-color);
 }
 
 .box__search {
     display: flex;
     height: 10%;
     align-items: center;
-    padding-left: 20px;
+    overflow-x: auto;
+    padding: 0 20px;
+}
+
+.box__search :deep(.el-form--inline) {
+    display: flex;
+    flex-wrap: nowrap;
+    flex: 0 0 max-content;
+    width: max-content;
+    min-width: max-content;
+    align-items: center;
 }
 
 .box__search :deep(.el-form-item) {
+    flex: 0 0 auto;
+    margin-right: 12px;
     margin-bottom: 0;
+}
+
+.box__search :deep(.search-field) {
+    flex: 0 0 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
 }
 
 .box__body {

@@ -145,30 +145,34 @@ const handleReset = () => {
     <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item label="文件名" prop="original_name">
-                <el-input v-model="condition.original_name" placeholder="请输入文件名" clearable />
+                <el-input v-model="condition.original_name" class="search-field" placeholder="请输入文件名" clearable />
             </el-form-item>
             <el-form-item label="存储类型" prop="storage_provider">
                 <el-select
                     v-model="condition.storage_provider"
+                    class="search-field"
                     placeholder="请选择存储类型"
-                    clearable
-                    style="width: 180px">
+                    clearable>
                     <el-option label="本地存储" value="LOCAL" />
                     <el-option label="S3存储" value="S3" />
                 </el-select>
             </el-form-item>
             <el-form-item label="状态" prop="status">
-                <el-select v-model="condition.status" placeholder="请选择状态" clearable style="width: 150px">
+                <el-select v-model="condition.status" class="search-field" placeholder="请选择状态" clearable>
                     <el-option label="可用" value="READY" />
                     <el-option label="删除中" value="DELETING" />
                     <el-option label="已删除" value="DELETED" />
                 </el-select>
             </el-form-item>
             <el-form-item label="摘要" prop="content_sha256">
-                <el-input v-model="condition.content_sha256" placeholder="SHA-256" clearable style="width: 260px" />
+                <el-input v-model="condition.content_sha256" class="search-field" placeholder="SHA-256" clearable />
             </el-form-item>
             <el-form-item label="媒体类型" prop="content_type">
-                <el-input v-model="condition.content_type" placeholder="例如 application/pdf" clearable />
+                <el-input
+                    v-model="condition.content_type"
+                    class="search-field"
+                    placeholder="例如 application/pdf"
+                    clearable />
             </el-form-item>
             <el-form-item>
                 <el-button type="primary" @click="handlerConditionQuery">查询</el-button>
@@ -178,7 +182,7 @@ const handleReset = () => {
     </el-row>
     <!-- 数据区 -->
     <el-row class="box__body">
-        <el-table :data="table_data" height="95%" border stripe>
+        <el-table :data="table_data" height="92%" stripe>
             <el-table-column align="center" prop="file_asset_id" label="ID" width="300" show-overflow-tooltip />
             <el-table-column align="center" prop="original_name" label="文件名" min-width="200" show-overflow-tooltip />
             <el-table-column
@@ -251,7 +255,6 @@ const handleReset = () => {
             :page-size="pagination.size"
             :page-sizes="pagination.page_sizes"
             :total="pagination.total"
-            style="padding: 0 10px; margin-left: auto"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange" />
     </el-row>
@@ -262,16 +265,40 @@ const handleReset = () => {
     height: 10%;
     display: flex;
     align-items: center;
-    padding-left: 20px;
+    overflow-x: auto;
+    padding: 0 20px;
 
-    .el-form-item {
+    :deep(.el-form--inline) {
+        display: flex;
+        flex-wrap: nowrap;
+        flex: 0 0 max-content;
+        width: max-content;
+        min-width: max-content;
+        align-items: center;
+    }
+
+    :deep(.el-form-item) {
+        flex: 0 0 auto;
+        margin-right: 12px;
         margin-bottom: 0;
+    }
+
+    :deep(.search-field) {
+        flex: 0 0 150px;
+        width: 150px;
+        min-width: 150px;
+        max-width: 150px;
     }
 }
 
 .box__body {
-    padding-left: 1vw;
-    padding-right: 1vw;
+    display: block;
     height: 90%;
+    padding: 0 20px;
+}
+
+.box__body :deep(.el-pagination) {
+    justify-content: flex-end;
+    margin-top: 4px;
 }
 </style>

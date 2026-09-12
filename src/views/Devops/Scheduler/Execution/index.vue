@@ -132,22 +132,27 @@ onMounted(() => {
 
 <template>
     <div v-loading="loading" class="scheduler-history-page">
-        <el-card shadow="never" class="toolbar">
+        <el-row class="box__search">
             <el-form :inline="true" @submit.prevent="search">
                 <el-form-item label="任务键">
-                    <el-input v-model="jobKey" clearable placeholder="支持完整或简写任务键" />
+                    <el-input v-model="jobKey" class="search-field" clearable placeholder="支持完整或简写任务键" />
                 </el-form-item>
                 <el-form-item label="触发器键">
-                    <el-input v-model="triggerKey" clearable placeholder="支持完整或简写触发器键" />
+                    <el-input
+                        v-model="triggerKey"
+                        class="search-field"
+                        clearable
+                        placeholder="支持完整或简写触发器键" />
                 </el-form-item>
                 <el-form-item label="状态">
-                    <el-select v-model="status" clearable placeholder="全部状态" style="width: 140px">
+                    <el-select v-model="status" class="search-field" clearable placeholder="全部状态">
                         <el-option v-for="(label, value) in statusLabels" :key="value" :label="label" :value="value" />
                     </el-select>
                 </el-form-item>
                 <el-form-item label="执行时间">
                     <el-date-picker
                         v-model="timeRange"
+                        class="search-field search-range"
                         type="datetimerange"
                         value-format="YYYY-MM-DDTHH:mm:ss.SSSZ"
                         start-placeholder="开始"
@@ -160,51 +165,65 @@ onMounted(() => {
                     <el-button @click="reset">重置</el-button>
                 </el-form-item>
             </el-form>
-        </el-card>
+        </el-row>
 
-        <el-card shadow="never" class="table-card">
-            <el-table :data="records" border stripe height="100%" empty-text="暂无执行历史">
-                <el-table-column label="执行 ID" prop="id" min-width="235" show-overflow-tooltip />
-                <el-table-column label="触发实例标识" prop="fire_instance_id" min-width="220" show-overflow-tooltip />
-                <el-table-column label="任务键" prop="job_key" min-width="220" show-overflow-tooltip />
-                <el-table-column label="触发器" min-width="180" show-overflow-tooltip>
-                    <template #default="scope">
-                        <el-tag size="small" type="info">{{ triggerLabel(scope.row.trigger_type) }}</el-tag>
-                        <small>{{ scope.row.trigger_key }}</small>
-                    </template>
-                </el-table-column>
-                <el-table-column label="状态" width="100" align="center">
-                    <template #default="scope">
-                        <el-tag :type="tag(scope.row.status)" size="small">{{ statusLabel(scope.row.status) }}</el-tag>
-                    </template>
-                </el-table-column>
-                <el-table-column label="开始时间" width="175">
-                    <template #default="scope">{{ date(scope.row.started_at) }}</template>
-                </el-table-column>
-                <el-table-column label="结束时间" width="175">
-                    <template #default="scope">{{ date(scope.row.finished_at) }}</template>
-                </el-table-column>
-                <el-table-column label="耗时" width="100" align="right">
-                    <template #default="scope">{{ scope.row.duration_ms ?? "—" }} ms</template>
-                </el-table-column>
-                <el-table-column label="错误" min-width="190" show-overflow-tooltip>
-                    <template #default="scope">{{ scope.row.error_code ?? "—" }}</template>
-                </el-table-column>
-                <el-table-column label="操作" width="80" fixed="right">
-                    <template #default="scope">
-                        <el-button link type="primary" @click="openDetail(scope.row)">详情</el-button>
-                    </template>
-                </el-table-column>
-            </el-table>
-            <el-pagination
-                :current-page="page"
-                :page-size="size"
-                :page-sizes="[15, 50, 100]"
-                layout="total, sizes, prev, pager, next"
-                :total="total"
-                @current-change="changePage"
-                @size-change="changePageSize" />
-        </el-card>
+        <el-row class="box__body">
+            <el-col :span="24">
+                <el-table :data="records" stripe height="92%" empty-text="暂无执行历史">
+                    <el-table-column label="执行 ID" prop="id" min-width="235" align="center" show-overflow-tooltip />
+                    <el-table-column
+                        label="触发实例标识"
+                        prop="fire_instance_id"
+                        min-width="220"
+                        align="center"
+                        show-overflow-tooltip />
+                    <el-table-column
+                        label="任务键"
+                        prop="job_key"
+                        min-width="220"
+                        align="center"
+                        show-overflow-tooltip />
+                    <el-table-column label="触发器" min-width="180" align="center" show-overflow-tooltip>
+                        <template #default="scope">
+                            <el-tag size="small" type="info">{{ triggerLabel(scope.row.trigger_type) }}</el-tag>
+                            <small>{{ scope.row.trigger_key }}</small>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="状态" width="100" align="center">
+                        <template #default="scope">
+                            <el-tag :type="tag(scope.row.status)" size="small">
+                                {{ statusLabel(scope.row.status) }}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="开始时间" width="175" align="center">
+                        <template #default="scope">{{ date(scope.row.started_at) }}</template>
+                    </el-table-column>
+                    <el-table-column label="结束时间" width="175" align="center">
+                        <template #default="scope">{{ date(scope.row.finished_at) }}</template>
+                    </el-table-column>
+                    <el-table-column label="耗时" width="100" align="center">
+                        <template #default="scope">{{ scope.row.duration_ms ?? "—" }} ms</template>
+                    </el-table-column>
+                    <el-table-column label="错误" min-width="190" align="center" show-overflow-tooltip>
+                        <template #default="scope">{{ scope.row.error_code ?? "—" }}</template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="80" fixed="right" align="center">
+                        <template #default="scope">
+                            <el-button link type="primary" @click="openDetail(scope.row)">详情</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-pagination
+                    :current-page="page"
+                    :page-size="size"
+                    :page-sizes="[15, 50, 100]"
+                    layout="total, sizes, prev, pager, next"
+                    :total="total"
+                    @current-change="changePage"
+                    @size-change="changePageSize" />
+            </el-col>
+        </el-row>
 
         <el-dialog v-model="detailVisible" title="执行历史详情" width="760px">
             <el-descriptions v-if="selected" :column="2" border label-width="110px" class="history-detail">
@@ -243,33 +262,65 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .scheduler-history-page {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 12px;
     height: 100%;
     min-height: 0;
-    padding: 12px;
-    box-sizing: border-box;
+    overflow: hidden;
 }
 
-.toolbar :deep(.el-form-item) {
+.box__search {
+    height: 10%;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    padding: 0 20px;
+}
+
+.box__search :deep(.el-form--inline) {
+    display: flex;
+    flex-wrap: nowrap;
+    flex: 0 0 max-content;
+    width: max-content;
+    min-width: max-content;
+    align-items: center;
+}
+
+.box__search :deep(.el-form-item) {
+    flex: 0 0 auto;
+    margin-right: 12px;
     margin-bottom: 0;
 }
 
-.table-card {
-    min-height: 0;
+.box__search :deep(.search-field) {
+    flex: 0 0 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
 }
 
-.table-card :deep(.el-card__body) {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 8px;
+.box__search :deep(.search-range) {
+    flex-basis: 300px;
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+}
+
+.box__body {
+    display: block;
+    height: 90%;
+    padding: 0 20px;
+}
+
+.box__body :deep(.el-col) {
     height: 100%;
-    box-sizing: border-box;
 }
 
-.table-card :deep(.el-pagination) {
+.box__body :deep(.el-table) {
+    width: 100%;
+}
+
+.box__body :deep(.el-pagination) {
     justify-content: flex-end;
+    margin-top: 4px;
 }
 
 .history-detail :deep(.el-descriptions__content) {

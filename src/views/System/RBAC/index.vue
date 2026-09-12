@@ -87,13 +87,13 @@ async function handleRoleDelete(row: RolePageVO): Promise<void> {
 
 <template>
     <div class="role-list-page">
-        <div class="role-list-search">
+        <div class="role-list-search box__search">
             <el-form :inline="true" :model="condition" @submit.prevent>
                 <el-form-item label="角色名称">
-                    <el-input v-model="condition.name" placeholder="请输入角色名称" clearable style="width: 190px" />
+                    <el-input v-model="condition.name" class="search-field" placeholder="请输入角色名称" clearable />
                 </el-form-item>
                 <el-form-item label="角色状态">
-                    <el-select v-model="condition.state" placeholder="请选择角色状态" clearable style="width: 190px">
+                    <el-select v-model="condition.state" class="search-field" placeholder="请选择角色状态" clearable>
                         <el-option label="激活" :value="true" />
                         <el-option label="禁用" :value="false" />
                     </el-select>
@@ -105,8 +105,8 @@ async function handleRoleDelete(row: RolePageVO): Promise<void> {
             </el-form>
         </div>
 
-        <div class="role-list-body">
-            <el-table :data="table_data" border height="100%">
+        <div class="role-list-body box__body">
+            <el-table :data="table_data" stripe height="92%">
                 <el-table-column align="center" width="60" label="序号">
                     <template #default="scope">
                         {{ (pagination.page - 1) * pagination.size + scope.$index + 1 }}
@@ -160,17 +160,15 @@ async function handleRoleDelete(row: RolePageVO): Promise<void> {
                     </template>
                 </el-table-column>
             </el-table>
+            <el-pagination
+                layout="total, sizes, prev, pager, next"
+                v-model:current-page="pagination.page"
+                v-model:page-size="pagination.size"
+                :page-sizes="pagination.page_sizes"
+                :total="pagination.total"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange" />
         </div>
-
-        <el-pagination
-            background
-            layout="total, sizes, prev, pager, next"
-            v-model:current-page="pagination.page"
-            v-model:page-size="pagination.size"
-            :page-sizes="pagination.page_sizes"
-            :total="pagination.total"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange" />
     </div>
 </template>
 
@@ -180,29 +178,51 @@ async function handleRoleDelete(row: RolePageVO): Promise<void> {
     height: 100%;
     min-height: 0;
     flex-direction: column;
-    padding: 10px 20px 16px;
     overflow: hidden;
-    background: var(--el-bg-color);
     box-sizing: border-box;
 }
 
 .role-list-search {
-    flex: 0 0 auto;
-    padding: 8px 0 18px;
+    flex: 0 0 10%;
+    height: 10%;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    padding: 0 20px;
+    box-sizing: border-box;
 }
 
-.role-list-search .el-form-item {
+.role-list-search :deep(.el-form--inline) {
+    display: flex;
+    flex-wrap: nowrap;
+    flex: 0 0 max-content;
+    width: max-content;
+    min-width: max-content;
+    align-items: center;
+}
+
+.role-list-search :deep(.el-form-item) {
+    flex: 0 0 auto;
+    margin-right: 12px;
     margin-bottom: 0;
+}
+
+.role-list-search :deep(.search-field) {
+    flex: 0 0 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
 }
 
 .role-list-body {
     flex: 1 1 auto;
     min-height: 0;
+    padding: 0 20px;
+    box-sizing: border-box;
 }
 
-.role-list-page > .el-pagination {
-    flex: 0 0 auto;
-    align-self: flex-end;
-    padding: 14px 0 0;
+.role-list-body :deep(.el-pagination) {
+    justify-content: flex-end;
+    margin-top: 4px;
 }
 </style>

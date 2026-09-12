@@ -60,7 +60,7 @@ const handleDialogClose = () => {
     <el-row class="box__search">
         <el-form :inline="true">
             <el-form-item label="部门名称" prop="name">
-                <el-input placeholder="请输入部门名称" clearable />
+                <el-input class="search-field" placeholder="请输入部门名称" clearable />
             </el-form-item>
             <el-form-item>
                 <el-button type="primary" @click="handleCriteriaQuery">查询</el-button>
@@ -71,9 +71,9 @@ const handleDialogClose = () => {
     </el-row>
     <!-- 数据区 -->
     <el-row class="box__body">
-        <el-table :data="table_data" height="100%" border stripe default-expand-all row-key="id">
+        <el-table :data="table_data" height="100%" stripe default-expand-all row-key="id">
             <el-table-column align="center" width="060" type="index" label="序号" />
-            <el-table-column header-align="center" align="left" width="200" prop="name" label="名称" />
+            <el-table-column align="center" width="200" prop="name" label="名称" />
             <el-table-column align="center" width="300" prop="code" label="编码" />
             <el-table-column align="center" width="150" prop="type" label="类型">
                 <template #default="scope">
@@ -106,16 +106,35 @@ const handleDialogClose = () => {
     height: 10%;
     display: flex;
     align-items: center;
-    padding-left: 20px;
+    overflow-x: auto;
+    padding: 0 20px;
 
-    .el-form-item {
+    :deep(.el-form--inline) {
+        display: flex;
+        flex-wrap: nowrap;
+        flex: 0 0 max-content;
+        width: max-content;
+        min-width: max-content;
+        align-items: center;
+    }
+
+    :deep(.el-form-item) {
+        flex: 0 0 auto;
+        margin-right: 12px;
         margin-bottom: 0;
+    }
+
+    :deep(.search-field) {
+        flex: 0 0 150px;
+        width: 150px;
+        min-width: 150px;
+        max-width: 150px;
     }
 }
 
 .box__body {
-    padding-left: 1vw;
-    padding-right: 1vw;
+    display: block;
     height: 90%;
+    padding: 0 20px;
 }
 </style>

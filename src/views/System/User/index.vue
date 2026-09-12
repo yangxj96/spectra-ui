@@ -268,7 +268,7 @@ onMounted(async () => {
                 :page-size="pagination.size"
                 :page-sizes="pagination.page_sizes"
                 :total="pagination.total"
-                style="padding: 0 10px; margin-left: auto"
+                style="padding: 0 10px"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange" />
         </el-col>
@@ -332,6 +332,10 @@ onMounted(async () => {
 
 .box__body {
     height: 90%;
+}
+
+.box__body :deep(.el-pagination) {
+    justify-content: flex-end;
 }
 
 .temporary-password-content {

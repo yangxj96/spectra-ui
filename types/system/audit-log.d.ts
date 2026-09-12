@@ -4,7 +4,7 @@ declare global {
     type AuditLogPageParams = BasePageParams & {
         category?: "OPERATION" | "SECURITY";
         event_type?: string;
-        operator_id?: string;
+        operator?: string;
         target_id?: string;
         result?: "STARTED" | "SUCCEEDED" | "FAILED" | "DENIED";
         from?: string;
@@ -17,6 +17,7 @@ declare global {
         category: "OPERATION" | "SECURITY";
         event_type: string;
         operator_id?: string;
+        operator_name?: string;
         target_id?: string;
         client?: string;
         ip?: string;

@@ -10,9 +10,12 @@ defineOptions({
 interface Props {
     modelValue?: JsonValue;
     readOnly?: boolean;
+    expandAll?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    expandAll: false
+});
 
 const emit = defineEmits<{
     (e: "update:modelValue", value: JsonValue): void;
@@ -66,11 +69,10 @@ onMounted(() => {
         if (props.modelValue) {
             instance.setText(safeStringify(props.modelValue));
         }
-    }
-
-    // 如果有只读属性，则设置为只读模式
-    if (props.readOnly && instance) {
-        instance.setMode("view");
+        if (props.readOnly) {
+            instance.setMode("view");
+            if (props.expandAll) instance.expandAll();
+        }
     }
 });
 
@@ -84,6 +86,7 @@ watch(
 
         if (!isFocused && !isUserTyping) {
             instance.setText(safeStringify(newVal));
+            if (props.readOnly && props.expandAll) instance.expandAll();
         }
         isUserTyping = false;
     },
@@ -95,7 +98,15 @@ watch(
     val => {
         if (instance) {
             instance.setMode(val ? "view" : "code");
+            if (val && props.expandAll) instance.expandAll();
         }
+    }
+);
+
+watch(
+    () => props.expandAll,
+    expand => {
+        if (expand && props.readOnly) instance?.expandAll();
     }
 );
 </script>

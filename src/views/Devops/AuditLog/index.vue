@@ -1,35 +1,66 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { AuditLogApi } from "@/api/system/audit-log-api.ts";
 import useTable from "@/hooks/use-table.ts";
+import { formatDateTime } from "@/utils/date-utils.ts";
 
 const condition = ref<AuditLogPageParams>({
     page_num: 1,
     page_size: 15,
     category: undefined,
     event_type: "",
+    operator: "",
     result: undefined
 });
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<AuditLogVO>(
     AuditLogApi.page,
     condition.value
 );
-const detailVisible = ref(false);
-const detail = ref<AuditLogVO>();
+const router = useRouter();
 
-const formatSnapshot = (snapshot: Record<string, unknown>) => JSON.stringify(snapshot, null, 2);
+const categoryLabels: Record<AuditLogVO["category"], string> = {
+    OPERATION: "普通操作",
+    SECURITY: "安全操作"
+};
+const resultLabels: Record<AuditLogVO["result"], string> = {
+    STARTED: "开始",
+    SUCCEEDED: "成功",
+    FAILED: "失败",
+    DENIED: "拒绝"
+};
+const resultTagTypes: Record<AuditLogVO["result"], "success" | "danger" | "warning" | "info"> = {
+    STARTED: "info",
+    SUCCEEDED: "success",
+    FAILED: "danger",
+    DENIED: "warning"
+};
 
-const handleDetail = async (row: AuditLogVO) => {
-    detail.value = await AuditLogApi.detail(row.event_id, row.occurred_at);
-    detailVisible.value = true;
+const formatCategory = (category: string) => categoryLabels[category as keyof typeof categoryLabels] ?? category;
+const formatResult = (result: string) => resultLabels[result as keyof typeof resultLabels] ?? result;
+const resultTagType = (result: string) => resultTagTypes[result as keyof typeof resultTagTypes] ?? "info";
+const formatEventType = (row: AuditLogVO) => {
+    const description = row.reason?.trim();
+    if (!description) {
+        return row.event_type;
+    }
+    const unquotedDescription =
+        description.startsWith("'") && description.endsWith("'") ? description.slice(1, -1).trim() : description;
+    return unquotedDescription || row.event_type;
+};
+const handleDetail = (row: AuditLogVO) => {
+    void router.push({
+        name: "DevopsAuditLogDetail",
+        query: { event_id: row.event_id, occurred_at: row.occurred_at }
+    });
 };
 
 const handleExport = async () => {
     await AuditLogApi.export({
         category: condition.value.category,
         event_type: condition.value.event_type || undefined,
-        operator_id: condition.value.operator_id,
+        operator: condition.value.operator || undefined,
         target_id: condition.value.target_id,
         result: condition.value.result,
         from: condition.value.from,
@@ -40,7 +71,7 @@ const handleExport = async () => {
 const handleReset = () => {
     condition.value.category = undefined;
     condition.value.event_type = "";
-    condition.value.operator_id = undefined;
+    condition.value.operator = "";
     condition.value.target_id = undefined;
     condition.value.result = undefined;
     condition.value.from = undefined;
@@ -61,10 +92,13 @@ const handleReset = () => {
                     </el-select>
                 </el-form-item>
                 <el-form-item label="事件类型">
-                    <el-input v-model="condition.event_type" clearable placeholder="如 USER_PROFILE_UPDATED" />
+                    <el-input
+                        v-model="condition.event_type"
+                        clearable
+                        placeholder="如 USER_PROFILE_UPDATED 或操作说明" />
                 </el-form-item>
-                <el-form-item label="操作者">
-                    <el-input v-model="condition.operator_id" clearable />
+                <el-form-item label="操作人">
+                    <el-input v-model="condition.operator" clearable placeholder="输入用户 ID 或姓名" />
                 </el-form-item>
                 <el-form-item label="目标">
                     <el-input v-model="condition.target_id" clearable />
@@ -84,11 +118,26 @@ const handleReset = () => {
                 </el-form-item>
             </el-form>
             <el-table :data="table_data" border stripe height="calc(100vh - 260px)">
-                <el-table-column prop="occurred_at" label="发生时间" width="190" />
-                <el-table-column prop="category" label="分类" width="110" />
-                <el-table-column prop="event_type" label="事件类型" min-width="220" show-overflow-tooltip />
-                <el-table-column prop="result" label="结果" width="100" />
-                <el-table-column prop="operator_id" label="操作者" min-width="200" show-overflow-tooltip />
+                <el-table-column label="发生时间" width="190">
+                    <template #default="scope">{{ formatDateTime(scope.row.occurred_at) }}</template>
+                </el-table-column>
+                <el-table-column label="分类" width="110">
+                    <template #default="scope">{{ formatCategory(scope.row.category) }}</template>
+                </el-table-column>
+                <el-table-column label="事件类型" min-width="220" show-overflow-tooltip>
+                    <template #default="scope">{{ formatEventType(scope.row) }}</template>
+                </el-table-column>
+                <el-table-column label="结果" width="100">
+                    <template #default="scope">
+                        <el-tag :type="resultTagType(scope.row.result)" size="small">
+                            {{ formatResult(scope.row.result) }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="operator_id" label="操作人" min-width="200" show-overflow-tooltip />
+                <el-table-column label="姓名" min-width="120" show-overflow-tooltip>
+                    <template #default="scope">{{ scope.row.operator_name || "-" }}</template>
+                </el-table-column>
                 <el-table-column prop="target_id" label="目标" min-width="200" show-overflow-tooltip />
                 <el-table-column prop="failure_reason" label="失败原因" min-width="180" show-overflow-tooltip />
                 <el-table-column label="操作" width="90" fixed="right">
@@ -105,31 +154,6 @@ const handleReset = () => {
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange" />
         </el-card>
-
-        <el-dialog v-model="detailVisible" title="审计日志详情" width="760px">
-            <el-descriptions v-if="detail" :column="2" border>
-                <el-descriptions-item label="事件 ID">{{ detail.event_id }}</el-descriptions-item>
-                <el-descriptions-item label="发生时间">{{ detail.occurred_at }}</el-descriptions-item>
-                <el-descriptions-item label="分类">{{ detail.category }}</el-descriptions-item>
-                <el-descriptions-item label="事件类型">{{ detail.event_type }}</el-descriptions-item>
-                <el-descriptions-item label="结果">{{ detail.result }}</el-descriptions-item>
-                <el-descriptions-item label="请求">
-                    {{ detail.http_method }} {{ detail.request_url }}
-                </el-descriptions-item>
-                <el-descriptions-item label="失败码">{{ detail.failure_code || "-" }}</el-descriptions-item>
-                <el-descriptions-item label="异常类型">{{ detail.failure_type || "-" }}</el-descriptions-item>
-                <el-descriptions-item label="原因" :span="2">{{ detail.reason || "-" }}</el-descriptions-item>
-                <el-descriptions-item label="失败原因" :span="2">
-                    {{ detail.failure_reason || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="变更前快照" :span="2">
-                    <pre>{{ formatSnapshot(detail.before) }}</pre>
-                </el-descriptions-item>
-                <el-descriptions-item label="变更后快照" :span="2">
-                    <pre>{{ formatSnapshot(detail.after) }}</pre>
-                </el-descriptions-item>
-            </el-descriptions>
-        </el-dialog>
     </div>
 </template>
 
@@ -143,13 +167,5 @@ const handleReset = () => {
 
 .search-form {
     margin-bottom: 12px;
-}
-
-pre {
-    max-height: 220px;
-    overflow: auto;
-    margin: 0;
-    white-space: pre-wrap;
-    word-break: break-word;
 }
 </style>

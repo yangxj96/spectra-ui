@@ -148,6 +148,12 @@ export default [
                 meta: { title: "审计日志", requiresAuth: true, requiredMenu: "DevopsAuditLog" }
             },
             {
+                path: "audit-log/detail",
+                name: "DevopsAuditLogDetail",
+                component: () => import("@/views/Devops/AuditLog/Detail/index.vue"),
+                meta: { title: "审计日志详情", requiresAuth: true, requiredMenu: "DevopsAuditLog" }
+            },
+            {
                 path: "security/online",
                 name: "DevopsSecurityOnline",
                 component: () => import("@/views/Devops/Security/Online/index.vue"),

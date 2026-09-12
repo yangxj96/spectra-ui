@@ -46,4 +46,11 @@ describe("HTTP 请求加密", () => {
         expect(envelope.nonce).toMatch(/^[A-Za-z0-9_-]+$/);
         expect(envelope.nonce).not.toContain("=");
     });
+
+    it("所有 Web 请求都应声明大写客户端类型", async () => {
+        await request("/api/audit/page", { loading: false });
+
+        const [, options] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+        expect(options.headers).toMatchObject({ "X-Client-Type": "WEB" });
+    });
 });

@@ -484,7 +484,8 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
                         ? { "X-XSRF-TOKEN": readCookie("XSRF-TOKEN") ?? "" }
                         : {}),
                     ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
-                    ...headers
+                    ...headers,
+                    "X-Client-Type": "WEB"
                 },
                 credentials: "include",
                 signal: controller.signal

@@ -136,12 +136,6 @@ export default [
                 meta: { title: "缓存清理", requiresAuth: true, requiredMenu: "DevopsCacheClear" }
             },
             {
-                path: "security/context",
-                name: "DevopsSecurityContext",
-                component: () => import("@/views/Devops/Security/Context/index.vue"),
-                meta: { title: "安全上下文", requiresAuth: true, requiredMenu: "DevopsSecurityContext" }
-            },
-            {
                 path: "audit-log",
                 name: "DevopsAuditLog",
                 component: () => import("@/views/Devops/AuditLog/index.vue"),

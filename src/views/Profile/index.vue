@@ -8,6 +8,7 @@ import avatar from "@/assets/images/avatar.png";
 import ProfileInfo from "./components/ProfileInfo/index.vue";
 import ProfileNotificationSettings from "./components/ProfileNotificationSettings/index.vue";
 import ProfilePassword from "./components/ProfilePassword/index.vue";
+import ProfileSecurityContext from "./components/ProfileSecurityContext/index.vue";
 import ProfileSettings from "./components/ProfileSettings/index.vue";
 
 defineOptions({
@@ -92,6 +93,9 @@ onMounted(() => {
                     </el-tab-pane>
                     <el-tab-pane label="安全设置" name="settings">
                         <ProfileSettings />
+                    </el-tab-pane>
+                    <el-tab-pane label="安全上下文" name="security-context">
+                        <ProfileSecurityContext />
                     </el-tab-pane>
                     <el-tab-pane label="通知设置" name="notification-settings">
                         <ProfileNotificationSettings />

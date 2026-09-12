@@ -3,6 +3,10 @@ import { onMounted, ref } from "vue";
 
 import { SecurityContextApi, type SecurityContextResponse } from "@/api/auth/security-context-api.ts";
 
+defineOptions({
+    name: "ProfileSecurityContext"
+});
+
 const loading = ref(true);
 const context = ref<SecurityContextResponse>({ permissions: [] });
 

@@ -158,18 +158,6 @@ export default [
                 name: "DevopsSecurityOnline",
                 component: () => import("@/views/Devops/Security/Online/index.vue"),
                 meta: { title: "在线用户", requiresAuth: true, requiredMenu: "DevopsSecurityOnline" }
-            },
-            {
-                path: "security/security-event",
-                name: "DevopsSecurityEvent",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
-                meta: { title: "安全事件", requiresAuth: true, requiredMenu: "DevopsSecurityEvent" }
-            },
-            {
-                path: "security/session-kick",
-                name: "DevopsSessionKick",
-                component: () => import("@/views/Devops/Placeholder/index.vue"),
-                meta: { title: "会话踢出", requiresAuth: true, requiredMenu: "DevopsSessionKick" }
             }
         ]
     }

@@ -16,6 +16,9 @@ describe("统一审计日志页面与路由契约", () => {
         expect(router).toContain('name: "DevopsAuditLogDetail"');
         expect(router).toContain('path: "audit-log/detail"');
         expect(router).toContain("@/views/Devops/AuditLog/Detail/index.vue");
+        expect(router).toContain('name: "DevopsSecurityOnline"');
+        expect(router).not.toContain('name: "DevopsSecurityEvent"');
+        expect(router).not.toContain('name: "DevopsSessionKick"');
         expect(router).not.toContain("DevopsSecurityAudit");
         expect(router).not.toContain("DevopsOperationLog");
     });

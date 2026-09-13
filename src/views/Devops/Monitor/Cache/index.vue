@@ -37,8 +37,6 @@ const statusType = computed<"success" | "warning" | "danger" | "info">(() => {
     switch (overview.value?.status ?? security.value?.status) {
         case "AVAILABLE":
             return "success";
-        case "PARTIAL":
-            return "warning";
         case "UNAVAILABLE":
             return "danger";
         default:

@@ -42,7 +42,7 @@ async function operate(row: AssetVO, action: "assign" | "return" | "transfer" | 
         confirmButtonText: "确认",
         cancelButtonText: "取消"
     });
-    const value = result.value?.trim();
+    const value = MessageUtils.box.promptValue(result).trim();
     let params: AssetOperationParams;
     if (action === "maintenance") {
         params = { maintenance_content: value, reason: value };

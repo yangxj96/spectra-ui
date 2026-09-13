@@ -55,7 +55,7 @@ function statusTagType(status: string): "success" | "warning" | "danger" | "info
     return "info";
 }
 
-function toIso(value: DateModelType): string | undefined {
+function toIso(value: DateModelType | undefined): string | undefined {
     if (!value) return undefined;
     return new Date(value).toISOString();
 }

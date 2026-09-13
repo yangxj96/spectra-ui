@@ -104,9 +104,14 @@ async function cancelTask(row: FileUploadAdminTask): Promise<void> {
             inputPlaceholder: "例如：任务长时间无进展",
             inputValidator: value => (value?.trim() ? true : "取消原因不能为空")
         });
+        const reason = MessageUtils.box.promptValue(result).trim();
+        if (!reason) {
+            MessageUtils.warning("取消原因不能为空");
+            return;
+        }
         await FileApi.adminCancelUpload(row.upload_id, {
             idempotency_key: operationKey("file-upload-cancel"),
-            reason: result.value.trim()
+            reason
         });
         MessageUtils.success("上传任务已进入清理流程");
         await loadData();

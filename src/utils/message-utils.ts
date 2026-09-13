@@ -131,6 +131,10 @@ async function prompt(message: unknown, title = "输入", options?: Partial<Para
     });
 }
 
+function promptValue(result: Awaited<ReturnType<typeof ElMessageBox.prompt>>): string {
+    return typeof result === "string" ? "" : result.value;
+}
+
 /* ===================== 统一出口 ===================== */
 
 /**
@@ -158,6 +162,7 @@ export const MessageUtils = {
     box: {
         confirm,
         alert,
-        prompt
+        prompt,
+        promptValue
     }
 };

@@ -150,7 +150,8 @@ function handleRoleStepChange(key: string): void {
 
 function handleRoleStepPrevious(): void {
     if (activeRoleStepIndex.value > 0) {
-        handleRoleStepChange(roleSteps.value[activeRoleStepIndex.value - 1].key);
+        const previousStep = roleSteps.value[activeRoleStepIndex.value - 1];
+        if (previousStep) handleRoleStepChange(previousStep.key);
         return;
     }
     activeStep.value = 1;

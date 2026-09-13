@@ -228,7 +228,8 @@ function decodeBase64(value: string): Uint8Array {
 async function exportSecrets(): Promise<void> {
     try {
         const result = await SecretManagementApi.exportCurrent();
-        const blob = new Blob([decodeBase64(result.package_base64)], { type: "application/octet-stream" });
+        const exportBytes = Uint8Array.from(decodeBase64(result.package_base64));
+        const blob = new Blob([exportBytes.buffer], { type: "application/octet-stream" });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
@@ -243,6 +244,10 @@ async function exportSecrets(): Promise<void> {
     } catch (error: unknown) {
         if (error !== "cancel" && error !== "close") MessageUtils.error("密钥导出失败。");
     }
+}
+
+function handleCryptoSwitchChange(value: string | number | boolean): void {
+    void toggleCrypto(Boolean(value));
 }
 
 function handleImportFile(upload: UploadFile): void {
@@ -310,7 +315,7 @@ onMounted(() => void loadPage());
                     :disabled="cryptoSubmitting"
                     active-text="启用"
                     inactive-text="关闭"
-                    @change="value => void toggleCrypto(Boolean(value))" />
+                    @change="handleCryptoSwitchChange" />
             </div>
         </div>
 

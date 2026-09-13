@@ -147,7 +147,10 @@ const handleToggleActive = async (row: FormDefinitionVO) => {
         await FormApi.update(row.id, {
             name: row.name,
             code: row.code,
-            description: row.description
+            description: row.description,
+            rule_json: row.rule_json ?? "[]",
+            options_json: row.options_json ?? "{}",
+            form_json: row.form_json ?? "{}"
         });
 
         MessageUtils.success(`${action}成功`);

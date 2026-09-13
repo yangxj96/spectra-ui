@@ -119,7 +119,7 @@ async function approve(task: TaskVO): Promise<void> {
         confirmButtonText: "通过",
         cancelButtonText: "取消"
     });
-    await WorkflowApi.completeTask(task.id, result.value || "同意");
+    await WorkflowApi.completeTask(task.id, MessageUtils.box.promptValue(result) || "同意");
     MessageUtils.success("审批已通过");
     await load();
 }
@@ -132,7 +132,12 @@ async function reject(task: TaskVO): Promise<void> {
         cancelButtonText: "取消",
         type: "warning"
     });
-    await WorkflowApi.rejectTask(task.id, result.value.trim());
+    const reason = MessageUtils.box.promptValue(result).trim();
+    if (!reason) {
+        MessageUtils.warning("驳回原因不能为空");
+        return;
+    }
+    await WorkflowApi.rejectTask(task.id, reason);
     MessageUtils.success("申请已驳回");
     await load();
 }

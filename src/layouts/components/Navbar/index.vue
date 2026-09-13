@@ -107,7 +107,10 @@ function handleGoToNotification() {
             </el-menu>
         </el-col>
 
-        <el-col v-if="!passwordChangeRequired" :span="1" style="display: flex; align-items: center; justify-content: center">
+        <el-col
+            v-if="!passwordChangeRequired"
+            :span="1"
+            style="display: flex; align-items: center; justify-content: center">
             <NotificationBell />
         </el-col>
 

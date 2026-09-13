@@ -5,6 +5,7 @@ import { onMounted, reactive, ref } from "vue";
 import { CacheManagementApi } from "@/api/system/cache-management-api.ts";
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import { UserApi } from "@/api/user/user-api.ts";
+import { MessageUtils } from "@/utils/message-utils.ts";
 
 const condition = reactive<OnlineUserPageParams>({ page_num: 1, page_size: 15 });
 const users = ref<OnlineUserPageVO[]>([]);
@@ -110,7 +111,11 @@ async function confirmAndRun(
             confirmButtonText: "继续",
             cancelButtonText: "取消"
         });
-        const reason = response.value.trim();
+        const reason = MessageUtils.box.promptValue(response).trim();
+        if (!reason) {
+            MessageUtils.warning("操作原因不能为空");
+            return;
+        }
         await ElMessageBox.confirm(confirmationMessage, "确认下线", {
             type: "warning",
             confirmButtonText: "确认下线",

@@ -16,15 +16,15 @@
         "format:check": "prettier . --check --config ./.prettierrc.yml --log-level warn",
         "lint": "eslint . --cache",
         "lint:fix": "eslint . --fix --cache",
-        "type-check": "vue-tsc --noEmit --composite false",
+        "type-check": "vue-tsc -p tsconfig.app.json --noEmit --composite false && tsc -p tsconfig.node.json --noEmit",
         "prestart": "pnpm run format && pnpm run lint:fix && pnpm run type-check"
     },
     "dependencies": {
         "@element-plus/icons-vue": "2.3.2",
         "@form-create/designer": "3.4.0",
         "@form-create/element-ui": "3.2.38",
-        "@logicflow/core": "2.2.0",
-        "@logicflow/extension": "2.2.0",
+        "@logicflow/core": "2.2.4",
+        "@logicflow/extension": "2.3.0",
         "@tsparticles/engine": "4.3.1",
         "@tsparticles/slim": "4.3.1",
         "@tsparticles/vue3": "4.3.1",

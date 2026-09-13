@@ -96,8 +96,10 @@ export async function parseUserImportFile(file: File): Promise<UserImportRow[]> 
     const workbook = read(await file.arrayBuffer(), { type: "array", cellText: true, cellDates: false });
     const [sheetName] = workbook.SheetNames;
     if (!sheetName) throw new Error("Excel 文件没有可读取的工作表");
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) throw new Error("Excel 文件的第一个工作表无法读取");
 
-    const values = utils.sheet_to_json<unknown[]>(workbook.Sheets[sheetName], {
+    const values = utils.sheet_to_json<unknown[]>(sheet, {
         header: 1,
         raw: false,
         defval: ""
@@ -108,8 +110,10 @@ export async function parseUserImportFile(file: File): Promise<UserImportRow[]> 
 
 function parseUserImportRecords(records: string[][]): UserImportRow[] {
     if (!records.length) throw new Error("Excel 文件不能为空");
+    const headerRow = records[0];
+    if (!headerRow) throw new Error("Excel 文件没有表头");
 
-    const headers = records[0].map(value => {
+    const headers = headerRow.map(value => {
         const header = value.trim();
         return USER_IMPORT_HEADER_ALIASES[header] ?? USER_IMPORT_HEADER_ALIASES[header.toLowerCase()];
     });

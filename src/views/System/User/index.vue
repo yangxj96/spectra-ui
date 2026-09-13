@@ -85,6 +85,10 @@ const userStatusMeta: Record<UserStatus, { label: string; type: "success" | "war
     DEPARTED: { label: "离职", type: "info" }
 };
 
+function getUserStatusMeta(status: UserStatus | undefined) {
+    return status ? userStatusMeta[status] : undefined;
+}
+
 // 用户重置密码
 const handleTableItemResetPassword = async (row: UserPageVO) => {
     if (resettingUserId.value) return;
@@ -209,8 +213,8 @@ onMounted(async () => {
                 </el-table-column>
                 <el-table-column align="center" width="100" show-overflow-tooltip label="状态" prop="status">
                     <template #default="scope">
-                        <el-tag :type="userStatusMeta[scope.row.status]?.type ?? 'info'">
-                            {{ userStatusMeta[scope.row.status]?.label ?? scope.row.status }}
+                        <el-tag :type="getUserStatusMeta(scope.row.status)?.type ?? 'info'">
+                            {{ getUserStatusMeta(scope.row.status)?.label ?? scope.row.status }}
                         </el-tag>
                     </template>
                 </el-table-column>

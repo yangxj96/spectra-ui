@@ -197,7 +197,8 @@ async function addRoles(): Promise<void> {
         });
     }
     draftAssignments.value.push(...added);
-    if (added.length) activeDraftKey.value = added[0].key;
+    const firstAdded = added[0];
+    if (firstAdded) activeDraftKey.value = firstAdded.key;
 }
 
 async function applyProfile(): Promise<void> {
@@ -247,7 +248,8 @@ async function applyProfile(): Promise<void> {
             selectedIds.add(role.id);
         }
         draftAssignments.value.push(...added);
-        if (added.length) activeDraftKey.value = added[0].key;
+        const firstAdded = added[0];
+        if (firstAdded) activeDraftKey.value = firstAdded.key;
         selectedProfileId.value = "";
         if (duplicateRoles.length) {
             MessageUtils.warning(`角色已存在当前用户，已跳过：${duplicateRoles.join("、")}`);

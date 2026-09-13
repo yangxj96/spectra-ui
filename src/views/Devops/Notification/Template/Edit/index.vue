@@ -164,7 +164,10 @@ function collectTemplateVariables(...templates: Array<string | null | undefined>
     const variables = new Set<string>();
     for (const template of templates) {
         if (!template) continue;
-        for (const match of template.matchAll(templateVariablePattern)) variables.add(match[1]);
+        for (const match of template.matchAll(templateVariablePattern)) {
+            const variable = match[1];
+            if (variable) variables.add(variable);
+        }
     }
     return variables;
 }
@@ -253,7 +256,10 @@ function validateTemplateDefinition(
         return undefined;
     }
     const invalidSensitiveDefinitions = Object.entries(properties).filter(
-        ([, definition]) => definition.sensitive !== undefined && typeof definition.sensitive !== "boolean"
+        ([, definition]) =>
+            isObjectRecord(definition) &&
+            definition.sensitive !== undefined &&
+            typeof definition.sensitive !== "boolean"
     );
     if (invalidSensitiveDefinitions.length) {
         MessageUtils.error(`参数敏感标识必须是布尔值：${invalidSensitiveDefinitions.map(([name]) => name).join(", ")}`);

@@ -22,7 +22,7 @@ const queryParams = ref<NotificationQueryParams>({
 /** 搜索表单 */
 const searchForm = ref({
     keyword: "",
-    purpose: "" as NotificationPurpose | "all",
+    purpose: "all" as NotificationPurpose | "all",
     is_read: "" as boolean | "",
     dateRange: [] as string[]
 });
@@ -56,11 +56,11 @@ function handleSearch(): void {
     if (searchForm.value.keyword) {
         queryParams.value.keyword = searchForm.value.keyword;
     }
-    if (searchForm.value.purpose && searchForm.value.purpose !== "all") {
+    if (searchForm.value.purpose !== "all") {
         queryParams.value.purpose = searchForm.value.purpose;
     }
     if (searchForm.value.is_read !== "") {
-        queryParams.value.is_read = searchForm.value.is_read === "true";
+        queryParams.value.is_read = searchForm.value.is_read;
     }
     const dateRange = toIsoDateRange(searchForm.value.dateRange);
     if (dateRange) {
@@ -75,7 +75,7 @@ function handleSearch(): void {
 function handleReset(): void {
     searchForm.value = {
         keyword: "",
-        purpose: "",
+        purpose: "all",
         is_read: "",
         dateRange: []
     };
@@ -140,14 +140,16 @@ async function handleDelete(id: string): Promise<void> {
 /** 上一条 */
 function handlePrev(): void {
     if (hasPrevious.value && currentDetailIndex.value > 0) {
-        currentNotification.value = notificationStore.filteredNotifications[currentDetailIndex.value - 1];
+        const notification = notificationStore.filteredNotifications[currentDetailIndex.value - 1];
+        if (notification) currentNotification.value = notification;
     }
 }
 
 /** 下一条 */
 function handleNext(): void {
     if (hasNext.value && currentDetailIndex.value < notificationStore.filteredNotifications.length - 1) {
-        currentNotification.value = notificationStore.filteredNotifications[currentDetailIndex.value + 1];
+        const notification = notificationStore.filteredNotifications[currentDetailIndex.value + 1];
+        if (notification) currentNotification.value = notification;
     }
 }
 
@@ -207,8 +209,8 @@ onMounted(() => {
                         style="width: 200px" />
                 </el-form-item>
                 <el-form-item label="消息类型">
-                    <el-select v-model="searchForm.purpose" placeholder="全部" clearable style="width: 140px">
-                        <el-option label="全部" value="" />
+                    <el-select v-model="searchForm.purpose" placeholder="全部" style="width: 140px">
+                        <el-option label="全部" value="all" />
                         <el-option
                             v-for="item in notificationStore.purposeConfigs"
                             :key="item.purpose"
@@ -219,8 +221,8 @@ onMounted(() => {
                 <el-form-item label="状态">
                     <el-select v-model="searchForm.is_read" placeholder="全部" clearable style="width: 120px">
                         <el-option label="全部" value="" />
-                        <el-option label="已读" value="true" />
-                        <el-option label="未读" value="false" />
+                        <el-option label="已读" :value="true" />
+                        <el-option label="未读" :value="false" />
                     </el-select>
                 </el-form-item>
                 <el-form-item label="时间范围">

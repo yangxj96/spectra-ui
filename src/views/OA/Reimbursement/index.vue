@@ -70,7 +70,7 @@ async function markPaid(row: ReimbursementVO): Promise<void> {
         confirmButtonText: "确认付款",
         cancelButtonText: "取消"
     });
-    await ReimbursementApi.payment(row.id, { payment_remark: result.value });
+    await ReimbursementApi.payment(row.id, { payment_remark: MessageUtils.box.promptValue(result) });
     MessageUtils.success("付款状态已更新");
     handlerConditionQuery();
 }

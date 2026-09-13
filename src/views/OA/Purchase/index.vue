@@ -88,7 +88,10 @@ async function execute(row: PurchaseVO): Promise<void> {
         confirmButtonText: "确认执行",
         cancelButtonText: "取消"
     });
-    await PurchaseApi.execute(row.id, { order_no: result.value, execution_status: "ORDERED" });
+    await PurchaseApi.execute(row.id, {
+        order_no: MessageUtils.box.promptValue(result),
+        execution_status: "ORDERED"
+    });
     MessageUtils.success("已登记采购执行");
     handlerConditionQuery();
 }

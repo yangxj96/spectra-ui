@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-import { useFileUpload } from "@/composables/use-file-upload";
-import { FileUploadStore, type UploadResumeRecord } from "@/services/file-upload-store";
 import { MessageUtils } from "@/utils/message-utils";
+
+import { FileUploadStore, type UploadResumeRecord } from "./file-upload-store";
+import { useFileUpload } from "./use-file-upload";
 
 const fileInput = ref<HTMLInputElement>();
 const selectedFile = ref<File>();

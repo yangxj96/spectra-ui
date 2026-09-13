@@ -12,7 +12,9 @@ const categories: Array<{ key: ConfiguredSettingsCategory; label: string; descri
     { key: "OTHER", label: "其他配置", description: "管理其他业务模块使用的全局配置。" }
 ];
 
-const settings = ref<ConfiguredSettingVO[]>([]);
+type ConfiguredSettingFormItem = Omit<ConfiguredSettingVO, "value"> & { value: string };
+
+const settings = ref<ConfiguredSettingFormItem[]>([]);
 const activeCategory = ref<ConfiguredSettingsCategory>("SYSTEM");
 const loading = ref(false);
 const saving = ref(false);
@@ -31,7 +33,10 @@ const editableSettings = computed(() => currentSettings.value.filter(setting => 
 const loadSettings = async (notifyOnFailure = true): Promise<boolean> => {
     loading.value = true;
     try {
-        settings.value = await ConfiguredApi.settings();
+        settings.value = (await ConfiguredApi.settings()).map(setting => ({
+            ...setting,
+            value: setting.value ?? ""
+        }));
         if (!visibleCategories.value.some(category => category.key === activeCategory.value)) {
             activeCategory.value = visibleCategories.value[0]?.key ?? "SYSTEM";
         }
@@ -64,7 +69,7 @@ const handleSave = async () => {
         });
 
         settings.value = settings.value.map(setting =>
-            setting.type === "SECRET" ? { ...setting, value: null } : setting
+            setting.type === "SECRET" ? { ...setting, value: "" } : setting
         );
         const refreshed = await loadSettings(false);
         MessageUtils.notify.success(

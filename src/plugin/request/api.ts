@@ -6,14 +6,10 @@ import { request } from "./http";
  * @param params 查询参数
  * @param options 额外请求选项
  */
-export function get<T, U extends string = string>(
-    url: U,
-    params?: Record<string, unknown>,
-    options?: RequestOptions<U>
-) {
+export function get<T, U extends string = string>(url: U, params?: object, options?: RequestOptions<U>) {
     return request<T, U>(url, {
         method: "GET",
-        params,
+        params: params ? { ...params } : undefined,
         ...options
     });
 }
@@ -52,14 +48,10 @@ export function put<T, U extends string = string>(url: U, data?: unknown, option
  * @param params 查询参数
  * @param options 额外请求选项
  */
-export function del<T, U extends string = string>(
-    url: U,
-    params?: Record<string, unknown>,
-    options?: RequestOptions<U>
-) {
+export function del<T, U extends string = string>(url: U, params?: object, options?: RequestOptions<U>) {
     return request<T, U>(url, {
         method: "DELETE",
-        params,
+        params: params ? { ...params } : undefined,
         ...options
     });
 }

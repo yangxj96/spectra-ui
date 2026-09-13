@@ -1,7 +1,7 @@
 import { onBeforeUnmount, ref } from "vue";
 
-import { FileUploadClient, type FileUploadClientOptions, type FileUploadSnapshot } from "@/services/file-upload-client";
-import { FileUploadStore, type UploadResumeRecord } from "@/services/file-upload-store";
+import { FileUploadClient, type FileUploadClientOptions, type FileUploadSnapshot } from "./file-upload-client";
+import { FileUploadStore, type UploadResumeRecord } from "./file-upload-store";
 
 export function useFileUpload(options: FileUploadClientOptions) {
     const store = options.store ?? new FileUploadStore();

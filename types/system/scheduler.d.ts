@@ -45,6 +45,7 @@ declare global {
         protected_job: boolean;
         job_class_name: string;
         parameter_version: string;
+        parameters_json: string;
         trigger: QuartzTriggerVO | null;
     }
 

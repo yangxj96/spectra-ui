@@ -674,7 +674,10 @@ export function requestBinary(
             }
             options.signal.addEventListener("abort", () => xhr.abort(), { once: true });
         }
-        xhr.send(body);
+        const requestBody = ArrayBuffer.isView(body)
+            ? new Uint8Array(body.buffer, body.byteOffset, body.byteLength).slice().buffer
+            : body;
+        xhr.send(requestBody);
     });
 }
 

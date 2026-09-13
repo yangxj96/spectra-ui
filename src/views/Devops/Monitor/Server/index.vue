@@ -409,6 +409,7 @@ function healthStatusText(status: ServiceMonitorHealthComponent["status"]) {
         UP: "正常",
         DOWN: "异常",
         OUT_OF_SERVICE: "不可用",
+        DEGRADED: "部分可用",
         UNKNOWN: "未知"
     }[status];
 }

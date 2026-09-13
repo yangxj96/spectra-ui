@@ -73,13 +73,18 @@ function createRemoteSearch<T>(load: (keyword: string) => Promise<T[]>) {
     return { options, loading, search, clear };
 }
 
-const sessionUserSearch = createRemoteSearch(keyword => CacheManagementApi.searchSessionCandidates({ keyword }));
-const verificationTargetSearch = createRemoteSearch(keyword =>
+const sessionUserSearch = createRemoteSearch<SecurityUserCandidate>(keyword =>
+    CacheManagementApi.searchSessionCandidates({ keyword })
+);
+const { options: sessionUserOptions, loading: sessionUserLoading } = sessionUserSearch;
+const verificationTargetSearch = createRemoteSearch<SecurityVerificationCandidate>(keyword =>
     CacheManagementApi.searchVerificationCandidates({ type: verificationForm.type, keyword })
 );
-const loginFailureUserSearch = createRemoteSearch(keyword =>
+const { options: verificationTargetOptions, loading: verificationTargetLoading } = verificationTargetSearch;
+const loginFailureUserSearch = createRemoteSearch<SecurityUserCandidate>(keyword =>
     CacheManagementApi.searchLoginFailureCandidates({ keyword })
 );
+const { options: loginFailureUserOptions, loading: loginFailureUserLoading } = loginFailureUserSearch;
 
 const verificationTargetPlaceholder = computed(() =>
     verificationForm.type === "KAPTCHA" ? "当前类型无候选，请输入会话句柄" : "输入手机号或邮箱关键字搜索"
@@ -445,11 +450,11 @@ onUnmounted(stopOperationPolling);
                                     default-first-option
                                     reserve-keyword
                                     :remote-method="searchSessionUsers"
-                                    :loading="sessionUserSearch.loading"
+                                    :loading="sessionUserLoading"
                                     placeholder="输入用户编号、用户名、姓名或工号搜索"
                                     style="width: 100%">
                                     <el-option
-                                        v-for="candidate in sessionUserSearch.options"
+                                        v-for="candidate in sessionUserOptions"
                                         :key="candidate.id"
                                         :label="userCandidateLabel(candidate)"
                                         :value="candidate.id" />
@@ -499,11 +504,11 @@ onUnmounted(stopOperationPolling);
                                     default-first-option
                                     reserve-keyword
                                     :remote-method="searchVerificationTargets"
-                                    :loading="verificationTargetSearch.loading"
+                                    :loading="verificationTargetLoading"
                                     :placeholder="verificationTargetPlaceholder"
                                     style="width: 100%">
                                     <el-option
-                                        v-for="candidate in verificationTargetSearch.options"
+                                        v-for="candidate in verificationTargetOptions"
                                         :key="`${candidate.target}-${candidate.user_id}`"
                                         :label="verificationCandidateLabel(candidate)"
                                         :value="candidate.target" />
@@ -540,11 +545,11 @@ onUnmounted(stopOperationPolling);
                                     default-first-option
                                     reserve-keyword
                                     :remote-method="searchLoginFailureUsers"
-                                    :loading="loginFailureUserSearch.loading"
+                                    :loading="loginFailureUserLoading"
                                     placeholder="输入账号、姓名或工号搜索"
                                     style="width: 100%">
                                     <el-option
-                                        v-for="candidate in loginFailureUserSearch.options"
+                                        v-for="candidate in loginFailureUserOptions"
                                         :key="candidate.id"
                                         :label="userCandidateLabel(candidate)"
                                         :value="candidate.username || ''" />

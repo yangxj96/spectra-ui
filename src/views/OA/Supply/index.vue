@@ -42,7 +42,7 @@ async function operate(row: SupplyItemVO, action: "inbound" | "issue" | "returnS
         inputPattern: /^\d+(\.\d+)?$/,
         inputErrorMessage: "请输入非负数字"
     });
-    const value = Number(result.value);
+    const value = Number(MessageUtils.box.promptValue(result));
     const params = action === "adjust" ? { target_stock: value, reason: "盘点调整" } : { quantity: value };
     await SupplyApi[action](row.id, params);
     MessageUtils.success("库存操作已完成");

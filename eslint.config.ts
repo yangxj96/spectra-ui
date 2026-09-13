@@ -7,7 +7,7 @@ import pluginVue from "eslint-plugin-vue";
 // import autoImport from "./.eslintrc-auto-import.json";
 
 // 定义VueTs版本的配置, 靠后的规则覆盖靠前的规则
-export default defineConfigWithVueTs(
+const eslintConfig: ReturnType<typeof defineConfigWithVueTs> = defineConfigWithVueTs(
     // 全局忽略
     globalIgnores([
         "**/node_modules/**",
@@ -158,3 +158,5 @@ export default defineConfigWithVueTs(
         }
     }
 );
+
+export default eslintConfig;

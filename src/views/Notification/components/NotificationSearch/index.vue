@@ -17,7 +17,7 @@ const notificationStore = useNotificationStore();
 
 const searchForm = reactive({
     keyword: "",
-    purpose: "" as NotificationPurpose | "all",
+    purpose: "all" as NotificationPurpose | "all",
     is_read: "" as boolean | "",
     dateRange: [] as string[]
 });
@@ -32,11 +32,11 @@ function handleSearch(): void {
     if (searchForm.keyword) {
         params.keyword = searchForm.keyword;
     }
-    if (searchForm.purpose) {
+    if (searchForm.purpose !== "all") {
         params.purpose = searchForm.purpose;
     }
     if (searchForm.is_read !== "") {
-        params.is_read = searchForm.is_read === "true";
+        params.is_read = searchForm.is_read;
     }
     const dateRange = toIsoDateRange(searchForm.dateRange);
     if (dateRange) {
@@ -50,7 +50,7 @@ function handleSearch(): void {
 /** 重置 */
 function handleReset(): void {
     searchForm.keyword = "";
-    searchForm.purpose = "";
+    searchForm.purpose = "all";
     searchForm.is_read = "";
     searchForm.dateRange = [];
     emit("reset");
@@ -63,8 +63,8 @@ function handleReset(): void {
             <el-input v-model="searchForm.keyword" placeholder="搜索标题或内容" clearable style="width: 200px" />
         </el-form-item>
         <el-form-item label="消息类型">
-            <el-select v-model="searchForm.purpose" placeholder="全部" clearable style="width: 140px">
-                <el-option label="全部" value="" />
+            <el-select v-model="searchForm.purpose" placeholder="全部" style="width: 140px">
+                <el-option label="全部" value="all" />
                 <el-option
                     v-for="item in notificationStore.purposeConfigs"
                     :key="item.purpose"
@@ -75,8 +75,8 @@ function handleReset(): void {
         <el-form-item label="状态">
             <el-select v-model="searchForm.is_read" placeholder="全部" clearable style="width: 120px">
                 <el-option label="全部" value="" />
-                <el-option label="已读" value="true" />
-                <el-option label="未读" value="false" />
+                <el-option label="已读" :value="true" />
+                <el-option label="未读" :value="false" />
             </el-select>
         </el-form-item>
         <el-form-item label="时间范围">

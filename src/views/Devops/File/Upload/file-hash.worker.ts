@@ -9,15 +9,17 @@ const ROUND_CONSTANTS = new Uint32Array([
     0xc67178f2
 ]);
 
+type Sha256State = [number, number, number, number, number, number, number, number];
+
 function rotateRight(value: number, bits: number): number {
     return (value >>> bits) | (value << (32 - bits));
 }
 
 /** 可增量更新的 SHA-256，单次只保留一个分析窗口。 */
 export class IncrementalSha256 {
-    private readonly state = new Uint32Array([
+    private readonly state: Sha256State = [
         0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
-    ]);
+    ];
 
     private readonly block = new Uint8Array(64);
     private blockLength = 0;
@@ -60,18 +62,18 @@ export class IncrementalSha256 {
         const view = new DataView(block.buffer, block.byteOffset, block.byteLength);
         for (let index = 0; index < 16; index++) words[index] = view.getUint32(index * 4);
         for (let index = 16; index < 64; index++) {
-            const lower = words[index - 15];
-            const upper = words[index - 2];
+            const lower = words[index - 15]!;
+            const upper = words[index - 2]!;
             const sigma0 = rotateRight(lower, 7) ^ rotateRight(lower, 18) ^ (lower >>> 3);
             const sigma1 = rotateRight(upper, 17) ^ rotateRight(upper, 19) ^ (upper >>> 10);
-            words[index] = (words[index - 16] + sigma0 + words[index - 7] + sigma1) >>> 0;
+            words[index] = (words[index - 16]! + sigma0 + words[index - 7]! + sigma1) >>> 0;
         }
 
         let [a, b, c, d, e, f, g, h] = this.state;
         for (let index = 0; index < 64; index++) {
             const sigma1 = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
             const choice = (e & f) ^ (~e & g);
-            const temporary1 = (h + sigma1 + choice + ROUND_CONSTANTS[index] + words[index]) >>> 0;
+            const temporary1 = (h + sigma1 + choice + ROUND_CONSTANTS[index]! + words[index]!) >>> 0;
             const sigma0 = rotateRight(a, 2) ^ rotateRight(a, 13) ^ rotateRight(a, 22);
             const majority = (a & b) ^ (a & c) ^ (b & c);
             const temporary2 = (sigma0 + majority) >>> 0;

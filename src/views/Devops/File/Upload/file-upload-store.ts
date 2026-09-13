@@ -77,6 +77,7 @@ function isValidRecord(value: Partial<UploadResumeRecord> | undefined): value is
         typeof value.key === "string" &&
         typeof value.upload_id === "string" &&
         typeof value.original_name === "string" &&
+        typeof value.size === "number" &&
         Number.isSafeInteger(value.size) &&
         value.size >= 0 &&
         typeof value.content_sha256 === "string" &&

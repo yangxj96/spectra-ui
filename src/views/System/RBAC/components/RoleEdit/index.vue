@@ -493,7 +493,7 @@ async function validateBasicInfo(): Promise<boolean> {
 
 function goPrevious(): void {
     const previousNode = editorNodes[Math.max(editorNodes.findIndex(node => node.id === currentNode.value) - 1, 0)];
-    selectNode(previousNode.id);
+    if (previousNode) selectNode(previousNode.id);
 }
 
 async function handleNextStep(): Promise<void> {

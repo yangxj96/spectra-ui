@@ -55,17 +55,20 @@ export const SecretManagementApi = {
         const form = new FormData();
         form.append("file", file);
         form.append("passphrase", passphrase);
-        return request<SecretImportPreviewVO>("/api/security/secrets/import/preview", {
-            method: "POST",
-            body: form
-        });
+        return request<SecretImportPreviewVO, "/api/security/secrets/import/preview">(
+            "/api/security/secrets/import/preview",
+            {
+                method: "POST",
+                body: form
+            }
+        );
     },
 
     importPending(file: File, passphrase: string): Promise<number> {
         const form = new FormData();
         form.append("file", file);
         form.append("passphrase", passphrase);
-        return request<number>("/api/security/secrets/import", {
+        return request<number, "/api/security/secrets/import">("/api/security/secrets/import", {
             method: "POST",
             body: form
         });

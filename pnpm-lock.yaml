@@ -28,11 +28,11 @@ importers:
         specifier: 3.2.38
         version: 3.2.38(vue@3.5.28(typescript@5.9.3))
       '@logicflow/core':
-        specifier: 2.2.0
-        version: 2.2.0
+        specifier: 2.2.4
+        version: 2.2.4
       '@logicflow/extension':
-        specifier: 2.2.0
-        version: 2.2.0(@logicflow/core@2.2.0)(@logicflow/vue-node-registry@1.2.0(@logicflow/core@2.2.0)(vue@3.5.28(typescript@5.9.3)))
+        specifier: 2.3.0
+        version: 2.3.0(@logicflow/core@2.2.4)
       '@tsparticles/engine':
         specifier: 4.3.1
         version: 4.3.1
@@ -44,7 +44,7 @@ importers:
         version: 4.3.1(@tsparticles/engine@4.3.1)(vue@3.5.28(typescript@5.9.3))
       '@yangxj96/logicflow-plugin-flowable':
         specifier: file:../logicflow-plugin-flowable
-        version: file:../logicflow-plugin-flowable(@logicflow/core@2.2.0)(@logicflow/extension@2.2.0(@logicflow/core@2.2.0)(@logicflow/vue-node-registry@1.2.0(@logicflow/core@2.2.0)(vue@3.5.28(typescript@5.9.3))))(element-plus@2.13.2(vue@3.5.28(typescript@5.9.3)))(preact@10.29.1)(vue@3.5.28(typescript@5.9.3))
+        version: file:../logicflow-plugin-flowable(@logicflow/core@2.2.4)(@logicflow/extension@2.3.0(@logicflow/core@2.2.4))(element-plus@2.13.2(vue@3.5.28(typescript@5.9.3)))(preact@10.29.1)(vue@3.5.28(typescript@5.9.3))
       echarts:
         specifier: 6.1.0
         version: 6.1.0
@@ -435,24 +435,13 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@logicflow/core@2.2.0':
-    resolution: {integrity: sha512-QpiJijEPEpCeGk6v8Rx/NAjk9S17VJ9/fjOm7JCbuijmOPD7k0i4kn7enEObbBq3ofL5U2NzzNHQ4RrZaYP/pg==}
+  '@logicflow/core@2.2.4':
+    resolution: {integrity: sha512-lupgH9pUJ5cv3JB1+U+ahVwgQJyp1QBK6t3TXGOczzL6FwE53z8DYBj91WQQ2dFgDGShdcp4oSY1ZHMDhRZvmQ==}
 
-  '@logicflow/extension@2.2.0':
-    resolution: {integrity: sha512-5DjhtsS1Eok01HLNJJwdeFePwQSHPIufwk8CJFSVzTZDef38mM9m8OUplvxRPh9qGn5W+mQepFlY5KjOYkMiIw==}
+  '@logicflow/extension@2.3.0':
+    resolution: {integrity: sha512-7PGiWlGJ8oqXvHkfrr7vaMnLZgp4Ue6+TD371p8IxK2UbDQ6uWcJOoyij0pRpseU3+rL9oVyPo8qtIODKiaENQ==}
     peerDependencies:
-      '@logicflow/core': 2.2.0
-      '@logicflow/vue-node-registry': 1.2.0
-
-  '@logicflow/vue-node-registry@1.2.0':
-    resolution: {integrity: sha512-1rqzSrVcTljobF6sbg3nbkwr0h0YgincL35CK13NnokJ8y0TmBq28e+EN+BoI/iJ7e1Fdgs6bI1qeyfeIkVVTA==}
-    peerDependencies:
-      '@logicflow/core': 2.2.0
-      '@vue/composition-api': ^1.0.0-rc.10
-      vue: ^2.0.0 || >=3.0.0
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
+      '@logicflow/core': 2.2.4
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -1271,8 +1260,8 @@ packages:
     resolution: {directory: ../logicflow-plugin-flowable, type: directory}
     engines: {node: '>=18'}
     peerDependencies:
-      '@logicflow/core': ^2.1.11
-      '@logicflow/extension': ^2.1.11
+      '@logicflow/core': ^2.2.4
+      '@logicflow/extension': ^2.3.0
       element-plus: '>=2.13.2 <3'
       preact: ^10.17.1
       vue: '>=3.5.28 <4'
@@ -3432,7 +3421,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@logicflow/core@2.2.0':
+  '@logicflow/core@2.2.4':
     dependencies:
       classnames: 2.5.1
       lodash-es: 4.18.1
@@ -3443,11 +3432,10 @@ snapshots:
       preact: 10.29.1
       uuid: 11.1.1
 
-  '@logicflow/extension@2.2.0(@logicflow/core@2.2.0)(@logicflow/vue-node-registry@1.2.0(@logicflow/core@2.2.0)(vue@3.5.28(typescript@5.9.3)))':
+  '@logicflow/extension@2.3.0(@logicflow/core@2.2.4)':
     dependencies:
       '@antv/hierarchy': 0.6.11
-      '@logicflow/core': 2.2.0
-      '@logicflow/vue-node-registry': 1.2.0(@logicflow/core@2.2.0)(vue@3.5.28(typescript@5.9.3))
+      '@logicflow/core': 2.2.4
       classnames: 2.5.1
       lodash-es: 4.18.1
       medium-editor: 5.23.3
@@ -3455,13 +3443,6 @@ snapshots:
       preact: 10.29.1
       rangy: 1.3.2
       vanilla-picker: 2.12.3
-
-  '@logicflow/vue-node-registry@1.2.0(@logicflow/core@2.2.0)(vue@3.5.28(typescript@5.9.3))':
-    dependencies:
-      '@logicflow/core': 2.2.0
-      lodash-es: 4.18.1
-      vue: 3.5.28(typescript@5.9.3)
-      vue-demi: 0.14.10(vue@3.5.28(typescript@5.9.3))
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
@@ -4274,10 +4255,10 @@ snapshots:
       - '@vue/composition-api'
       - vue
 
-  '@yangxj96/logicflow-plugin-flowable@file:../logicflow-plugin-flowable(@logicflow/core@2.2.0)(@logicflow/extension@2.2.0(@logicflow/core@2.2.0)(@logicflow/vue-node-registry@1.2.0(@logicflow/core@2.2.0)(vue@3.5.28(typescript@5.9.3))))(element-plus@2.13.2(vue@3.5.28(typescript@5.9.3)))(preact@10.29.1)(vue@3.5.28(typescript@5.9.3))':
+  '@yangxj96/logicflow-plugin-flowable@file:../logicflow-plugin-flowable(@logicflow/core@2.2.4)(@logicflow/extension@2.3.0(@logicflow/core@2.2.4))(element-plus@2.13.2(vue@3.5.28(typescript@5.9.3)))(preact@10.29.1)(vue@3.5.28(typescript@5.9.3))':
     dependencies:
-      '@logicflow/core': 2.2.0
-      '@logicflow/extension': 2.2.0(@logicflow/core@2.2.0)(@logicflow/vue-node-registry@1.2.0(@logicflow/core@2.2.0)(vue@3.5.28(typescript@5.9.3)))
+      '@logicflow/core': 2.2.4
+      '@logicflow/extension': 2.3.0(@logicflow/core@2.2.4)
       element-plus: 2.13.2(vue@3.5.28(typescript@5.9.3))
       vue: 3.5.28(typescript@5.9.3)
     optionalDependencies:

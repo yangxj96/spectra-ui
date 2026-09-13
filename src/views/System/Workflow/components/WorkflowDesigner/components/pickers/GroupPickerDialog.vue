@@ -40,8 +40,10 @@ const restoreSelection = () => {
         if (props.multiple) {
             treeRef.value?.setCheckedKeys(ids);
         } else {
-            treeRef.value?.setCurrentKey(ids[0]);
-            const node = treeRef.value?.getNode(ids[0]);
+            const selectedId = ids[0];
+            if (!selectedId) return;
+            treeRef.value?.setCurrentKey(selectedId);
+            const node = treeRef.value?.getNode(selectedId);
             if (node) currentNode.value = node.data as DepartmentTreeVO;
         }
     });

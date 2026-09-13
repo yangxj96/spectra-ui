@@ -19,7 +19,7 @@ defineOptions({
 const route = useRoute();
 const userStore = useUserStore();
 const passwordChangeRequired = userStore.token.password_change_required === true;
-const activeTab = ref(passwordChangeRequired ? "password" : route.query.tab === "password" ? "password" : "info");
+const activeTab = ref(passwordChangeRequired || route.query.tab === "password" ? "password" : "info");
 const profileLoading = ref(true);
 
 const userInfo = ref<UserProfileVO>({

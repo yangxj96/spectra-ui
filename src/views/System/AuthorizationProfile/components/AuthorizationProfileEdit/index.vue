@@ -362,11 +362,12 @@ function canApplyGrant(assignment: ProfileAssignmentDraft): boolean {
 
 function handleBatchSelectionChange(assignment: ProfileAssignmentDraft): void {
     const modes = commonScopeModes(assignment);
-    if (modes.length && !modes.includes(assignment.batch_access.mode)) {
-        assignment.batch_access.mode = modes[0];
+    const [firstMode] = modes;
+    if (firstMode && !modes.includes(assignment.batch_access.mode)) {
+        assignment.batch_access.mode = firstMode;
     }
-    if (modes.length && !modes.includes(assignment.batch_grant.mode)) {
-        assignment.batch_grant.mode = modes[0];
+    if (firstMode && !modes.includes(assignment.batch_grant.mode)) {
+        assignment.batch_grant.mode = firstMode;
     }
     if (!canApplyGrant(assignment)) {
         assignment.batch_grant_configured = false;
@@ -508,7 +509,7 @@ async function validateBasicInfo(): Promise<boolean> {
 async function waitForStepTransition(): Promise<void> {
     await nextTick();
     await new Promise<void>(resolve => {
-        requestAnimationFrame(() => requestAnimationFrame(resolve));
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 }
 

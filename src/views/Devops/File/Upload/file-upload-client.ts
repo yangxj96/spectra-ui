@@ -284,7 +284,9 @@ export class FileUploadClient {
             async () => {
                 while (next.value < partNumbers.length) {
                     if (this.paused || this.canceled) return;
-                    const partNumber = partNumbers[next.value++];
+                    const partNumber = partNumbers[next.value];
+                    next.value += 1;
+                    if (partNumber === undefined) return;
                     await this.uploadPart(session, partNumber, confirmed);
                 }
             }
@@ -402,7 +404,7 @@ export class FileUploadClient {
     private async analyze(file: File): Promise<string> {
         const id = crypto.randomUUID();
         return new Promise<string>((resolve, reject) => {
-            const worker = new Worker(new URL("../workers/file-hash.worker.ts", import.meta.url), { type: "module" });
+            const worker = new Worker(new URL("./file-hash.worker.ts", import.meta.url), { type: "module" });
             this.analysisWorker = worker;
             this.analysisWorkerId = id;
             const cleanup = () => worker.terminate();

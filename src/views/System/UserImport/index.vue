@@ -126,6 +126,7 @@ function handleStepChange(step: number): void {
 function emptyRow(): UserImportRow {
     return {
         real_name: "",
+        username: "",
         phone: "",
         email: ""
     };

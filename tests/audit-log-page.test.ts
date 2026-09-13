@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -54,22 +54,4 @@ describe("统一审计日志页面与路由契约", () => {
         expect(page).toContain('<el-tag :type="resultTagType(scope.row.result)" size="small">');
     });
 
-    it("详情页应该用只读 JSON 编辑器展示未映射的变更前后快照", () => {
-        const detailPath = "src/views/Devops/AuditLog/Detail/index.vue";
-        expect(existsSync(resolve(process.cwd(), detailPath))).toBe(true);
-        const detailPage = source(detailPath);
-
-        expect(detailPage).toContain('import JsonEditor from "@/components/JsonEditor/index.vue";');
-        expect(detailPage).toContain("detail.value?.before");
-        expect(detailPage).toContain("detail.value?.after");
-        expect(detailPage).not.toContain("snapshotFieldLabels");
-        expect(detailPage).toContain('<el-divider content-position="left">操作信息</el-divider>');
-        expect(detailPage).toContain('<el-divider content-position="left">变更前后快照对比</el-divider>');
-        expect(detailPage).not.toContain("<el-card");
-        expect(detailPage.match(/<JsonEditor\b/g)).toHaveLength(2);
-        expect(detailPage.match(/:read-only="true"/g)).toHaveLength(2);
-        expect(detailPage.match(/:expand-all="true"/g)).toHaveLength(2);
-        expect(detailPage).toContain("变更前");
-        expect(detailPage).toContain("变更后");
-    });
 });

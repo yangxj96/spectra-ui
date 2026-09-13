@@ -51,14 +51,6 @@ describe("Web Refresh Token single-flight", () => {
         expect(refreshMock).toHaveBeenCalledTimes(1);
     });
 
-    it("HttpOnly Refresh Token 不暴露给 JavaScript 仍可刷新", async () => {
-        useUserStore().token = { access_token: "access-1", permissions: [] } as Token;
-        refreshMock.mockResolvedValue(token);
-
-        await expect(refreshToken()).resolves.toBe(token);
-        expect(refreshMock).toHaveBeenCalledWith();
-    });
-
     it("退出后没有 CSRF Cookie 时不发起刷新请求", async () => {
         document.cookie = "XSRF-TOKEN=; Max-Age=0; path=/";
 

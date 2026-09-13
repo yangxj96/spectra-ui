@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { CircleCheck, CircleClose, Lock } from "@element-plus/icons-vue";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { AuthApi } from "@/api/auth/auth-api";
+import { SecurityPolicyApi } from "@/api/auth/security-policy-api.ts";
 import { UserApi } from "@/api/user/user-api";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
 import { GlobalUtils } from "@/utils/global-utils";
@@ -16,6 +17,8 @@ defineOptions({
 
 const formRef = ref<FormInstance>();
 const loading = ref(false);
+const policyLoading = ref(true);
+const securityPasswordPolicy = ref<SecurityPasswordPolicyVO>();
 
 const passwordForm = ref<ChangePasswordFrom>({
     old_password: "",
@@ -23,56 +26,106 @@ const passwordForm = ref<ChangePasswordFrom>({
     verify_password: ""
 });
 
-// 密码强度计算
-const passwordStrength = computed(() => {
-    const password = passwordForm.value.new_password;
+type PasswordRule = { key: string; label: string; message: string; met: boolean };
 
-    if (!password) {
+function evaluatePasswordRules(password: string, policy: SecurityPasswordPolicyVO): PasswordRule[] {
+    const rules: PasswordRule[] = [
+        {
+            key: "length",
+            label: `密码长度 ${policy.min_length}-${policy.max_length} 位`,
+            message: `密码长度必须在 ${policy.min_length}-${policy.max_length} 位之间`,
+            met: password.length >= policy.min_length && password.length <= policy.max_length
+        }
+    ];
+    if (policy.require_uppercase) {
+        rules.push({
+            key: "uppercase",
+            label: "包含大写字母",
+            message: "密码必须包含大写字母",
+            met: /\p{Uppercase}/u.test(password)
+        });
+    }
+    if (policy.require_lowercase) {
+        rules.push({
+            key: "lowercase",
+            label: "包含小写字母",
+            message: "密码必须包含小写字母",
+            met: /\p{Lowercase}/u.test(password)
+        });
+    }
+    if (policy.require_digit) {
+        rules.push({
+            key: "digit",
+            label: "包含数字",
+            message: "密码必须包含数字",
+            met: /\p{Nd}/u.test(password)
+        });
+    }
+    if (policy.require_special) {
+        rules.push({
+            key: "special",
+            label: "包含特殊字符",
+            message: "密码必须包含特殊字符",
+            met: Array.from(password).some(character => !/[\p{L}\p{Nd}]/u.test(character))
+        });
+    }
+    return rules;
+}
+
+// 密码规则实时检查
+const passwordRules = computed(() => {
+    const policy = securityPasswordPolicy.value;
+    if (!policy) return [];
+    return evaluatePasswordRules(passwordForm.value.new_password, policy);
+});
+
+// 密码强度根据当前生效策略计算，避免页面规则关闭后仍按旧固定要求打分。
+const passwordStrength = computed(() => {
+    if (!passwordForm.value.new_password) {
+        return { level: "empty" as const, percent: 0, text: "", color: "" };
+    }
+    if (!securityPasswordPolicy.value) {
         return { level: "empty" as const, percent: 0, text: "", color: "" };
     }
 
-    let score = 0;
-
-    // 长度检查
-    if (password.length >= 6) score++;
-    if (password.length >= 10) score++;
-
-    // 字符类型检查
-    if (/[a-z]/.test(password)) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    if (/[@$!%*?&]/.test(password)) score++;
-
-    // 判断强度等级
-    if (score <= 2) {
-        return { level: "weak" as const, percent: 33, text: "弱", color: "var(--el-color-danger)" };
-    } else if (score <= 4) {
-        return { level: "medium" as const, percent: 66, text: "中", color: "var(--el-color-warning)" };
-    } else {
+    const ratio = passwordRules.value.filter(rule => rule.met).length / passwordRules.value.length;
+    if (ratio === 1) {
         return { level: "strong" as const, percent: 100, text: "强", color: "var(--el-color-success)" };
     }
+    if (ratio >= 0.5) {
+        return { level: "medium" as const, percent: 66, text: "中", color: "var(--el-color-warning)" };
+    }
+    return { level: "weak" as const, percent: 33, text: "弱", color: "var(--el-color-danger)" };
 });
 
-// 密码规则实时检查
-const passwordRules = computed(() => [
-    { label: "密码长度 6-20 位", met: passwordForm.value.new_password.length >= 6 },
-    { label: "包含小写字母", met: /[a-z]/.test(passwordForm.value.new_password) },
-    { label: "包含大写字母", met: /[A-Z]/.test(passwordForm.value.new_password) },
-    { label: "包含数字", met: /\d/.test(passwordForm.value.new_password) },
-    { label: "包含特殊字符（@$!%*?&）", met: /[@$!%*?&]/.test(passwordForm.value.new_password) }
-]);
+async function loadPasswordPolicy(): Promise<void> {
+    policyLoading.value = true;
+    try {
+        securityPasswordPolicy.value = await SecurityPolicyApi.passwordPolicy();
+    } catch {
+        securityPasswordPolicy.value = undefined;
+        MessageUtils.error("当前密码规则暂不可用，请刷新后重试");
+    } finally {
+        policyLoading.value = false;
+    }
+}
+
+function passwordPolicyViolation(value: string): string | undefined {
+    const policy = securityPasswordPolicy.value;
+    if (!value) return "请输入新密码";
+    if (!policy) return "当前密码规则暂不可用，请刷新后重试";
+
+    const missingRule = evaluatePasswordRules(value, policy).find(rule => !rule.met);
+    if (missingRule?.key === "length") {
+        return missingRule.message;
+    }
+    if (missingRule) return missingRule.message;
+}
 
 // 密码强度验证
 const validatePassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
-    if (!value) {
-        callback(new Error("请输入新密码"));
-    } else if (value.length < 6 || value.length > 20) {
-        callback(new Error("密码长度必须在6-20位之间"));
-    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(value)) {
-        callback(new Error("密码必须包含大小写字母、数字和特殊字符"));
-    } else {
-        callback();
-    }
+    const violation = passwordPolicyViolation(value);
+    callback(violation ? new Error(violation) : undefined);
 };
 
 // 确认密码验证
@@ -93,7 +146,12 @@ const rules = {
 };
 
 async function handleChangePassword() {
-    if (!formRef.value) return;
+    if (!formRef.value || !securityPasswordPolicy.value) return;
+    const policyViolation = passwordPolicyViolation(passwordForm.value.new_password);
+    if (policyViolation) {
+        MessageUtils.error(policyViolation);
+        return;
+    }
     await formRef.value.validate(async valid => {
         if (!valid) return;
         loading.value = true;
@@ -114,6 +172,10 @@ async function handleChangePassword() {
         }
     });
 }
+
+onMounted(() => {
+    void loadPasswordPolicy();
+});
 </script>
 
 <template>
@@ -131,6 +193,7 @@ async function handleChangePassword() {
                     v-model="passwordForm.new_password"
                     type="password"
                     show-password
+                    :maxlength="securityPasswordPolicy?.max_length ?? 20"
                     placeholder="请输入新密码" />
                 <!-- 密码强度显示 -->
                 <div v-if="passwordForm.new_password" class="password-strength">
@@ -155,7 +218,11 @@ async function handleChangePassword() {
                     placeholder="请再次输入新密码" />
             </el-form-item>
             <el-form-item>
-                <el-button type="primary" :loading="loading" @click="handleChangePassword">
+                <el-button
+                    type="primary"
+                    :loading="loading"
+                    :disabled="policyLoading || !securityPasswordPolicy"
+                    @click="handleChangePassword">
                     <el-icon><Lock /></el-icon>
                     修改密码
                 </el-button>
@@ -163,7 +230,7 @@ async function handleChangePassword() {
         </el-form>
 
         <!-- 密码规则说明 -->
-        <div class="password-rules">
+        <div v-if="securityPasswordPolicy" class="password-rules">
             <h4 class="rules-title">密码规则</h4>
             <ul class="rules-list">
                 <li v-for="rule in passwordRules" :key="rule.label" :class="{ 'is-met': rule.met }">
@@ -174,6 +241,9 @@ async function handleChangePassword() {
                     {{ rule.label }}
                 </li>
             </ul>
+        </div>
+        <div v-else class="password-rules">
+            {{ policyLoading ? "正在读取当前密码规则…" : "当前密码规则暂不可用，请刷新后重试" }}
         </div>
     </div>
 </template>

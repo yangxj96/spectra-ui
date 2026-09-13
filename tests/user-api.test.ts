@@ -30,4 +30,21 @@ describe("用户开通 API", () => {
         expect(postMock).toHaveBeenCalledWith("/api/user/onboarding", params);
         expect(putMock).toHaveBeenCalledWith("/api/user/onboarding", params);
     });
+
+    it("管理员重置密码只调用无密码响应的重置接口", async () => {
+        putMock.mockResolvedValue(undefined);
+
+        await expect(UserApi.passwordResetById("user-1")).resolves.toBeUndefined();
+
+        expect(putMock).toHaveBeenCalledWith("/api/user/password/reset/user-1", undefined, { noBody: true });
+    });
+
+    it("修改密码接口把成功响应按空正文处理", async () => {
+        const params = {} as ChangePasswordFrom;
+        putMock.mockResolvedValue(undefined);
+
+        await expect(UserApi.changePassword(params)).resolves.toBeUndefined();
+
+        expect(putMock).toHaveBeenCalledWith("/api/user/password", params, { noBody: true });
+    });
 });

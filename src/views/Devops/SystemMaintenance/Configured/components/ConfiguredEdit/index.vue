@@ -24,7 +24,20 @@ const formRef = useTemplateRef<FormInstance>("formRef");
 
 // 表单验证规则
 const rules: FormRules<ConfiguredForm> = {
-    value: [{ required: true, message: "请输入配置值", trigger: "blur" }]
+    value: [
+        {
+            validator: (_rule, value, callback) => {
+                if (form.value.type === "SECRET" && form.value.configured && !value) {
+                    callback();
+                } else if (value) {
+                    callback();
+                } else {
+                    callback(new Error("请输入配置值"));
+                }
+            },
+            trigger: "blur"
+        }
+    ]
 };
 
 // 定义响应方法
@@ -75,6 +88,13 @@ const handleConfiguredSave = async () => {
                         active-value="true"
                         inactive-value="false" />
                     <DictSelect v-else-if="form.type === 'SELECT'" v-model="form.value" :dict_code="form.dict_code" />
+                    <el-input
+                        v-else-if="form.type === 'SECRET'"
+                        v-model="form.value"
+                        type="password"
+                        show-password
+                        autocomplete="new-password"
+                        placeholder="留空则保留当前值" />
                     <el-input v-else v-model="form.value" type="textarea" :rows="3" placeholder="请输入配置值" />
                 </el-form-item>
                 <el-form-item label="备注" prop="remarks">

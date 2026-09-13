@@ -5,7 +5,7 @@ export {};
 declare global {
     // 系统配置分页请求参数定义
     type ConfiguredPageParams = BasePageParams & {
-        username?: string;
+        key?: string;
     };
 
     // 系统配置信息
@@ -15,7 +15,9 @@ declare global {
         // 系统配置 键
         key: string;
         // 系统配置 值
-        value: any;
+        value: string | null;
+        // 秘密配置是否已经设置，秘密本身不会回传
+        configured: boolean;
         // 系统配置类型
         type: string;
         // 如果为字典则是字典组CODE
@@ -31,7 +33,9 @@ declare global {
         // 系统配置 键
         key: string;
         // 系统配置 值
-        value: any;
+        value: string | undefined;
+        // 编辑页是否已有已配置的秘密值
+        configured: boolean;
         // 系统配置类型
         type: string;
         // 如果为字典则是字典组CODE
@@ -47,7 +51,7 @@ declare global {
         // 系统配置 键
         key: string;
         // 系统配置 值
-        value: any;
+        value: string;
         // 系统配置类型
         type: string;
         // 如果为字典则是字典组CODE

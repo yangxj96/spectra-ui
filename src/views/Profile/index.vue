@@ -4,6 +4,7 @@ import { useRoute } from "vue-router";
 
 import { UserApi } from "@/api/user/user-api";
 import avatar from "@/assets/images/avatar.png";
+import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 
 import ProfileInfo from "./components/ProfileInfo/index.vue";
 import ProfileNotificationSettings from "./components/ProfileNotificationSettings/index.vue";
@@ -16,7 +17,9 @@ defineOptions({
 });
 
 const route = useRoute();
-const activeTab = ref(route.query.tab === "password" ? "password" : "info");
+const userStore = useUserStore();
+const passwordChangeRequired = userStore.token.password_change_required === true;
+const activeTab = ref(passwordChangeRequired ? "password" : route.query.tab === "password" ? "password" : "info");
 const profileLoading = ref(true);
 
 const userInfo = ref<UserProfileVO>({
@@ -45,12 +48,23 @@ async function loadUserProfile() {
 }
 
 onMounted(() => {
-    loadUserProfile();
+    if (!passwordChangeRequired) void loadUserProfile();
 });
 </script>
 
 <template>
-    <div v-loading="profileLoading" class="profile-container">
+    <div v-if="passwordChangeRequired" class="mandatory-password-change">
+        <el-alert
+            title="请先修改初始密码"
+            description="修改密码前，系统仅允许访问密码规则、密码修改和退出功能。"
+            type="warning"
+            :closable="false"
+            show-icon />
+        <el-card class="mandatory-password-change__card">
+            <ProfilePassword />
+        </el-card>
+    </div>
+    <div v-else v-loading="profileLoading" class="profile-container">
         <!-- 左侧：头像与基本信息 -->
         <div class="left-panel">
             <el-card class="avatar-card">
@@ -116,6 +130,15 @@ onMounted(() => {
     background-color: var(--el-bg-color-page);
     box-sizing: border-box;
     overflow: hidden;
+}
+
+.mandatory-password-change {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 760px;
+    margin: 40px auto;
+    padding: 16px;
 }
 
 /* 左侧面板 */

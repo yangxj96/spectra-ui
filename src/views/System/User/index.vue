@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { DepartmentApi } from "@/api/user/department-api.ts";
@@ -17,11 +17,10 @@ const condition = ref<UserPageParams>({
 });
 
 const organizationTree = ref<DepartmentTreeVO[]>([]);
+const resettingUserId = ref<string | null>(null);
 
 const dictStore = useDictStore();
 const router = useRouter();
-const temporaryPasswordDialogVisible = ref(false);
-const temporaryPasswordResult = ref<UserPasswordResetVO>();
 
 // table分页请求
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<UserPageVO>(
@@ -86,39 +85,38 @@ const userStatusMeta: Record<UserStatus, { label: string; type: "success" | "war
     DEPARTED: { label: "离职", type: "info" }
 };
 
-const temporaryPasswordExpiresText = computed(() => {
-    const expiresAt = temporaryPasswordResult.value?.expires_at;
-    return expiresAt ? new Date(expiresAt).toLocaleString() : "—";
-});
-
 // 用户重置密码
 const handleTableItemResetPassword = async (row: UserPageVO) => {
+    if (resettingUserId.value) return;
+
     try {
         await MessageUtils.box.confirm(`是否要重置[${row.real_name}]的密码`, "提示");
     } catch {
         return;
     }
 
-    const result = await UserApi.passwordResetById(row.id);
-    temporaryPasswordResult.value = result;
-    temporaryPasswordDialogVisible.value = true;
-    await handlerConditionQuery();
-};
-
-const handleCopyTemporaryPassword = async () => {
-    const password = temporaryPasswordResult.value?.temporary_password;
-    if (!password) return;
-
+    resettingUserId.value = row.id;
     try {
-        await navigator.clipboard.writeText(password);
-        MessageUtils.success("临时密码已复制");
-    } catch {
-        MessageUtils.error("复制失败，请手动复制临时密码");
-    }
-};
+        await UserApi.passwordResetById(row.id);
 
-const handleTemporaryPasswordDialogClosed = () => {
-    temporaryPasswordResult.value = undefined;
+        let refreshFailed = false;
+        try {
+            await handlerConditionQuery();
+        } catch {
+            refreshFailed = true;
+        }
+
+        MessageUtils.notify.success(
+            refreshFailed
+                ? "密码已重置，但用户列表刷新失败，请手动刷新查看最新状态。"
+                : "密码已重置为系统默认密码，用户下次登录后必须立即修改。",
+            "密码重置成功"
+        );
+    } catch (error) {
+        MessageUtils.notify.error(error instanceof Error ? error.message : "请求失败，请稍后重试。", "密码重置失败");
+    } finally {
+        resettingUserId.value = null;
+    }
 };
 
 // 组织机构树节点被单击
@@ -250,7 +248,12 @@ onMounted(async () => {
                 <el-table-column align="center" width="150" fixed="right" label="操作">
                     <template #default="scope">
                         <el-tooltip content="重置密码" placement="top">
-                            <el-button link type="primary" @click="handleTableItemResetPassword(scope.row)">
+                            <el-button
+                                link
+                                type="primary"
+                                :loading="resettingUserId === scope.row.id"
+                                :disabled="resettingUserId !== null && resettingUserId !== scope.row.id"
+                                @click="handleTableItemResetPassword(scope.row)">
                                 <ComponentsIcons name="icon-reset-passwords" style="width: 1.4em; height: 1.4em" />
                             </el-button>
                         </el-tooltip>
@@ -273,42 +276,6 @@ onMounted(async () => {
                 @current-change="handleCurrentChange" />
         </el-col>
     </el-row>
-
-    <el-dialog
-        v-model="temporaryPasswordDialogVisible"
-        title="临时密码（仅显示一次）"
-        width="500px"
-        :close-on-click-modal="false"
-        :close-on-press-escape="false"
-        @closed="handleTemporaryPasswordDialogClosed">
-        <el-alert
-            title="请立即复制并安全转交给用户"
-            description="关闭此窗口后将无法再次查看临时密码；如遗失，请重新执行重置密码。用户首次登录后必须修改密码。"
-            type="warning"
-            :closable="false"
-            show-icon />
-        <div v-if="temporaryPasswordResult" class="temporary-password-content">
-            <div class="temporary-password-field">
-                <span class="temporary-password-label">临时密码</span>
-                <div class="temporary-password-input">
-                    <el-input
-                        :model-value="temporaryPasswordResult.temporary_password"
-                        type="password"
-                        readonly
-                        show-password
-                        autocomplete="off" />
-                    <el-button type="primary" plain @click="handleCopyTemporaryPassword">复制</el-button>
-                </div>
-            </div>
-            <div class="temporary-password-meta">
-                <span>有效期至</span>
-                <strong>{{ temporaryPasswordExpiresText }}</strong>
-            </div>
-        </div>
-        <template #footer>
-            <el-button type="primary" @click="temporaryPasswordDialogVisible = false">我已保存</el-button>
-        </template>
-    </el-dialog>
 </template>
 
 <style scoped lang="scss">
@@ -336,43 +303,5 @@ onMounted(async () => {
 
 .box__body :deep(.el-pagination) {
     justify-content: flex-end;
-}
-
-.temporary-password-content {
-    margin-top: 20px;
-}
-
-.temporary-password-field {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.temporary-password-label,
-.temporary-password-meta span {
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
-}
-
-.temporary-password-input {
-    display: flex;
-    gap: 10px;
-
-    .el-input {
-        flex: 1;
-    }
-}
-
-.temporary-password-meta {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px solid var(--el-border-color-lighter);
-
-    strong {
-        color: var(--el-text-color-primary);
-        font-weight: 500;
-    }
 }
 </style>

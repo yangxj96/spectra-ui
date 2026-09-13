@@ -9,6 +9,7 @@ import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import NotificationBell from "@/components/NotificationBell/index.vue";
 import { cancelAllRequests } from "@/plugin/request/http.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
+import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { GlobalUtils } from "@/utils/global-utils.ts";
 import { findFirstRoutableMenu, findMenuPath } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -21,6 +22,8 @@ defineOptions({
 const router = useRouter();
 const route = useRoute();
 const appStore = useAppStore();
+const userStore = useUserStore();
+const passwordChangeRequired = computed(() => userStore.token.password_change_required === true);
 const prefixes = computed(() => appStore.menus);
 const currentLogo = computed(() => appStore.system.logo || "/logo.svg");
 const systemName = computed(() => appStore.system.name);
@@ -81,14 +84,22 @@ function handleGoToNotification() {
 <template>
     <el-row style="height: 60px">
         <el-col :span="4">
-            <router-link class="system-brand" :to="{ name: 'Dashboard' }" :title="`${systemName} - 返回首页`">
+            <router-link
+                v-if="!passwordChangeRequired"
+                class="system-brand"
+                :to="{ name: 'Dashboard' }"
+                :title="`${systemName} - 返回首页`">
                 <img class="system-brand__logo" :src="currentLogo" :alt="systemName" />
                 <span class="system-brand__name" :style="systemNameStyle">{{ systemName }}</span>
             </router-link>
+            <div v-else class="system-brand" :title="systemName">
+                <img class="system-brand__logo" :src="currentLogo" :alt="systemName" />
+                <span class="system-brand__name" :style="systemNameStyle">{{ systemName }}</span>
+            </div>
         </el-col>
 
         <el-col :span="18" style="padding-right: 40px">
-            <el-menu :default-active="active" mode="horizontal">
+            <el-menu v-if="!passwordChangeRequired" :default-active="active" mode="horizontal">
                 <el-menu-item v-for="o in prefixes" :key="o.id" :index="o.id" @click="handleTopMenu(o)">
                     <ComponentsIcons :name="o.icon" class-name="icon-sidebar" />
                     {{ o.name }}
@@ -96,11 +107,11 @@ function handleGoToNotification() {
             </el-menu>
         </el-col>
 
-        <el-col :span="1" style="display: flex; align-items: center; justify-content: center">
+        <el-col v-if="!passwordChangeRequired" :span="1" style="display: flex; align-items: center; justify-content: center">
             <NotificationBell />
         </el-col>
 
-        <el-col :span="1">
+        <el-col :span="passwordChangeRequired ? 2 : 1">
             <el-dropdown>
                 <img
                     :src="avatar"
@@ -109,11 +120,11 @@ function handleGoToNotification() {
                     class="el-avatar el-avatar--circle el-tooltip__trigger" />
                 <template #dropdown>
                     <el-dropdown-menu>
-                        <el-dropdown-item @click="handleGoToNotification">
+                        <el-dropdown-item v-if="!passwordChangeRequired" @click="handleGoToNotification">
                             <el-icon :size="16" class-name="icon-navbar"><Bell /></el-icon>
                             <span>消息中心</span>
                         </el-dropdown-item>
-                        <el-dropdown-item @click="handleGoToProfile">
+                        <el-dropdown-item v-if="!passwordChangeRequired" @click="handleGoToProfile">
                             <ComponentsIcons name="icon-user" class-name="icon-navbar" />
                             <span>个人中心</span>
                         </el-dropdown-item>

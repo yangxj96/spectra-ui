@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { reactive, ref } from "vue";
 
 import { ConfiguredApi } from "@/api/system/configured-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
@@ -22,7 +22,26 @@ const condition = ref<ConfiguredPageParams>({
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } =
     useTable<ConfiguredPageVO>(ConfiguredApi.page, condition.value);
 
-onMounted(() => {});
+const handleSearch = () => {
+    condition.value.key = condition.value.key?.trim();
+    condition.value.page_num = 1;
+    pagination.value.page = 1;
+    handlerConditionQuery();
+};
+
+const handleReset = () => {
+    condition.value.key = undefined;
+    condition.value.page_num = 1;
+    pagination.value.page = 1;
+    handlerConditionQuery();
+};
+
+const handleDefaultPasswordSearch = () => {
+    condition.value.key = "user.default-password";
+    condition.value.page_num = 1;
+    pagination.value.page = 1;
+    handlerConditionQuery();
+};
 
 // 处理dialog框关闭,如果有其他的dialog也在这里处理关闭
 const handleDialogClose = () => {
@@ -46,13 +65,18 @@ const handleConfiguredEdit = (row: ConfiguredPageVO) => {
 <template>
     <!-- 搜索区 -->
     <el-row class="box__search">
-        <el-form :inline="true">
-            <el-form-item label="菜单名称" prop="name">
-                <el-input placeholder="请输入菜单名称" clearable />
+        <el-form :inline="true" @submit.prevent>
+            <el-form-item label="配置键" prop="key">
+                <el-input
+                    v-model="condition.key"
+                    placeholder="输入配置键，例如 user.default-password"
+                    clearable
+                    @keyup.enter="handleSearch" />
             </el-form-item>
             <el-form-item>
-                <el-button type="primary" @click="handlerConditionQuery()">查询</el-button>
-                <el-button>重置</el-button>
+                <el-button type="primary" @click="handleSearch">查询</el-button>
+                <el-button @click="handleReset">重置</el-button>
+                <el-button @click="handleDefaultPasswordSearch">默认密码设置</el-button>
             </el-form-item>
         </el-form>
     </el-row>
@@ -61,12 +85,24 @@ const handleConfiguredEdit = (row: ConfiguredPageVO) => {
         <el-table :data="table_data" height="95%" stripe default-expand-all row-key="id">
             <el-table-column align="center" type="index" label="序号" width="100" />
             <el-table-column align="center" prop="id" label="主键" />
-            <el-table-column align="center" prop="key" label="配置键" />
+            <el-table-column align="center" prop="key" label="配置键">
+                <template #default="scope">
+                    <div>{{ scope.row.key }}</div>
+                    <el-tag v-if="scope.row.key === 'user.default-password'" type="info" effect="plain" size="small">
+                        新用户默认密码
+                    </el-tag>
+                </template>
+            </el-table-column>
             <el-table-column align="center" prop="value" label="配置值">
                 <template v-slot:default="scope">
                     <!-- 布尔类型 -->
                     <el-tag v-if="scope.row.type === 'BOOL'" :type="scope.row.value === 'true' ? 'success' : 'danger'">
                         {{ scope.row.value === "true" ? "启用" : "禁用" }}
+                    </el-tag>
+                    <el-tag
+                        v-else-if="scope.row.type === 'SECRET'"
+                        :type="scope.row.configured ? 'success' : 'warning'">
+                        {{ scope.row.configured ? "已设置" : "未设置" }}
                     </el-tag>
                     <!-- 下拉选择的类型 -->
                     <DictTag
@@ -101,8 +137,9 @@ const handleConfiguredEdit = (row: ConfiguredPageVO) => {
         </el-table>
         <!-- 分页 -->
         <el-pagination
+            v-model:current-page="pagination.page"
+            v-model:page-size="pagination.size"
             layout="total, sizes, prev, pager, next"
-            :page-size="pagination.size"
             :page-sizes="pagination.page_sizes"
             :total="pagination.total"
             style="padding: 0 10px; margin-left: auto"

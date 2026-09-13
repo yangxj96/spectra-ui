@@ -9,7 +9,7 @@ import routes from "@/plugin/router/routes";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
-import { getRouteTitle, loadMenu, resolveRouteAccess } from "@/utils/route-utils.ts";
+import { getRouteTitle, loadMenu, resolvePasswordChangeRedirect, resolveRouteAccess } from "@/utils/route-utils.ts";
 
 /**
  * 路由实例
@@ -59,6 +59,14 @@ router.beforeEach(async (to, _, next) => {
         }
         tokenValidated = true;
     }
+
+    // 首次登录或管理员重置后的默认密码会限制为仅修改密码和退出。
+    const passwordChangeRedirect = resolvePasswordChangeRedirect(
+        to.path,
+        to.query.tab,
+        userStore.token.password_change_required === true
+    );
+    if (passwordChangeRedirect) return next(passwordChangeRedirect);
 
     // 3. 有 token 但访问登录页：重定向到主页
     if (to.path === "/login") {

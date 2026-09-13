@@ -43,7 +43,7 @@ const finishLogin = async (token: Token) => {
     await fetchClientPrivateKey();
     const requiresPasswordChange = token.password_change_required === true;
     MessageUtils[requiresPasswordChange ? "warning" : "success"](
-        requiresPasswordChange ? "这是临时密码，请先修改密码" : "登录成功"
+        requiresPasswordChange ? "这是默认密码，请先修改密码" : "登录成功"
     );
     const path = requiresPasswordChange ? "/profile?tab=password" : "/redirect" + (redirect.value ?? "");
     await router.push({ path });

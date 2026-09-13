@@ -20,7 +20,7 @@ declare global {
         refresh_token?: string;
         // Permission Catalog 权限编码；不包含角色名称
         permissions: string[];
-        // 是否需要先修改临时密码
+        // 是否必须先修改当前密码
         password_change_required?: boolean;
     };
 
@@ -140,13 +140,6 @@ declare global {
     type UserOnboardingVO = {
         id: string;
         real_name: string;
-    };
-
-    /** 管理员重置密码后的一次性临时凭证。 */
-    type UserPasswordResetVO = {
-        temporary_password: string;
-        expires_at: string;
-        must_change: boolean;
     };
 
     // 用户表单相关使用的

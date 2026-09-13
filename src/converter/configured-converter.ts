@@ -12,6 +12,7 @@ export const configuredConverter = {
             id: "",
             key: "",
             value: undefined,
+            configured: false,
             type: "",
             dict_code: "",
             remarks: ""
@@ -23,7 +24,8 @@ export const configuredConverter = {
         return {
             id: datum.id ?? "",
             key: datum.key ?? "",
-            value: datum.value ?? undefined,
+            value: datum.type === "SECRET" ? "" : datum.value ?? undefined,
+            configured: datum.configured ?? false,
             type: datum.type ?? "",
             dict_code: datum.dict_code ?? "",
             remarks: datum.remarks ?? ""
@@ -35,7 +37,7 @@ export const configuredConverter = {
         return {
             id: datum.id ?? "",
             key: datum.key ?? "",
-            value: datum.value ?? undefined,
+            value: datum.type === "SECRET" ? datum.value ?? "" : datum.value ?? "",
             type: datum.type ?? "",
             dict_code: datum.dict_code ?? "",
             remarks: datum.remarks ?? ""

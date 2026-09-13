@@ -11,8 +11,8 @@ export const ConfiguredApi = {
     /**
      * 分页查询系统配置信息
      */
-    page(): Promise<Page<ConfiguredPageVO>> {
-        return get<Page<ConfiguredPageVO>>("/api/configured/page");
+    page(params?: ConfiguredPageParams): Promise<Page<ConfiguredPageVO>> {
+        return get<Page<ConfiguredPageVO>>("/api/configured/page", params);
     },
     /**
      * 修改系统配置

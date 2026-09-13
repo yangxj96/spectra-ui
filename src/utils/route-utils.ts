@@ -14,6 +14,12 @@ export function resolveRouteAccess(requiredMenu: string | undefined, authorizedR
     return undefined;
 }
 
+/** Force sessions that require a password change to stay on the password form. */
+export function resolvePasswordChangeRedirect(path: string, tab: unknown, required: boolean) {
+    if (!required || (path === "/profile" && tab === "password")) return undefined;
+    return { path: "/profile", query: { tab: "password" }, replace: true } as const;
+}
+
 /** 加载当前登录用户的授权菜单 */
 export async function loadMenu(): Promise<boolean> {
     const appStore = useAppStore();

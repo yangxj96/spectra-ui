@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import routes from "@/plugin/router/routes";
-import { resolveRouteAccess } from "@/utils/route-utils.ts";
+import { resolvePasswordChangeRedirect, resolveRouteAccess } from "@/utils/route-utils.ts";
 
 describe("静态路由菜单权限", () => {
     const authorized = new Set(["SystemWorkflow"]);
@@ -34,5 +34,23 @@ describe("静态路由菜单权限", () => {
         });
         expect(uploadRoute?.component).toBeTypeOf("function");
         expect(expectedRoutes.every(path => devopsRoute?.children?.some(route => route.path === path))).toBe(true);
+    });
+});
+
+describe("强制修改密码路由", () => {
+    it("首次登录未修改默认密码时应该进入密码修改页", () => {
+        expect(resolvePasswordChangeRedirect("/", undefined, true)).toEqual({
+            path: "/profile",
+            query: { tab: "password" },
+            replace: true
+        });
+    });
+
+    it("密码修改页可以继续访问", () => {
+        expect(resolvePasswordChangeRedirect("/profile", "password", true)).toBeUndefined();
+    });
+
+    it("不要求强制改密时不改变路由", () => {
+        expect(resolvePasswordChangeRedirect("/system/user", undefined, false)).toBeUndefined();
     });
 });

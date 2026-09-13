@@ -1,5 +1,7 @@
 import { get, post, put } from "@/plugin/request/api.ts";
 
+const noCache = { cache: false } as const;
+
 /**
  * 用户相关接口
  *
@@ -18,6 +20,17 @@ export const UserApi = {
         options?: Pick<RequestOptions<"/api/user/page">, "loading">
     ): Promise<Page<UserPageVO>> {
         return get<Page<UserPageVO>>("/api/user/page", params, options);
+    },
+    /**
+     * 按用户分组分页获取当前在线会话
+     * @param params 分页和筛选参数
+     * @param options 请求选项
+     */
+    async online(
+        params: OnlineUserPageParams,
+        options?: Pick<RequestOptions<"/api/user/online">, "loading">
+    ): Promise<Page<OnlineUserPageVO>> {
+        return get<Page<OnlineUserPageVO>>("/api/user/online", params, { ...options, ...noCache });
     },
     /**
      * 获取管理员用户详情

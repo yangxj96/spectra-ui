@@ -53,5 +53,4 @@ describe("统一审计日志页面与路由契约", () => {
         expect(page).toContain('DENIED: "warning"');
         expect(page).toContain('<el-tag :type="resultTagType(scope.row.result)" size="small">');
     });
-
 });

@@ -38,6 +38,10 @@ export const CacheManagementApi = {
         return post<CacheOperation>("/api/cache/admin/security/session/revoke", data);
     },
 
+    revokeSingleSession(data: { session_id: string; reason: string; confirmed: boolean }) {
+        return post<CacheOperation>("/api/cache/admin/security/session/revoke-one", data);
+    },
+
     revokeAllSessions(data: { user_id: string; reason: string; confirmed: boolean }) {
         return post<CacheOperation>("/api/cache/admin/security/session/revoke-all", data);
     },

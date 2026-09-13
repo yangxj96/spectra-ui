@@ -9,16 +9,16 @@ import { get, put } from "@/plugin/request/api.ts";
  */
 export const ConfiguredApi = {
     /**
-     * 分页查询系统配置信息
+     * 查询系统配置表单数据
      */
-    page(params?: ConfiguredPageParams): Promise<Page<ConfiguredPageVO>> {
-        return get<Page<ConfiguredPageVO>>("/api/configured/page", params);
+    settings(): Promise<ConfiguredSettingVO[]> {
+        return get<ConfiguredSettingVO[]>("/api/configured/settings");
     },
     /**
-     * 修改系统配置
-     * @param params 系统信息DTO
+     * 按业务分类批量保存系统配置
+     * @param params 当前分类配置项
      */
-    upload(params: ConfiguredDTO): Promise<void> {
-        return put<void>("/api/configured", params);
+    batchModify(params: ConfiguredSettingsBatchDTO): Promise<void> {
+        return put<void>("/api/configured/batch", params, { noBody: true });
     }
 };

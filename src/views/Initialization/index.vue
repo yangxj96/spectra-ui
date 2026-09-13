@@ -211,11 +211,7 @@ onMounted(() => {
                             </el-select>
                         </el-form-item>
                         <el-form-item label="默认时区" prop="default_timezone">
-                            <el-select
-                                v-model="accountForm.default_timezone"
-                                filterable
-                                allow-create
-                                style="width: 100%">
+                            <el-select v-model="accountForm.default_timezone" filterable style="width: 100%">
                                 <el-option label="中国/上海（Asia/Shanghai）" value="Asia/Shanghai" />
                                 <el-option label="协调世界时（UTC）" value="UTC" />
                                 <el-option label="美国/洛杉矶（America/Los_Angeles）" value="America/Los_Angeles" />

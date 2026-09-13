@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { flushPromises, mount } from "@vue/test-utils";
 import { ElOption, ElSelect } from "element-plus";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import DictSelect from "../src/components/DictSelect/index.vue";
 
@@ -18,6 +18,10 @@ vi.mock("../src/plugin/store/modules/use-dict-store.ts", () => ({
 }));
 
 describe("DictSelect 组件", () => {
+    beforeEach(() => {
+        getDictData.mockClear();
+    });
+
     it("应该正确接收并传递dict_code和model值", async () => {
         const wrapper = mount(DictSelect, {
             props: {
@@ -44,5 +48,20 @@ describe("DictSelect 组件", () => {
         expect(wrapper.props("modelValue")).toBe("0");
         expect(wrapper.props("dict_code")).toBe("sys_common_state");
         expect(getDictData).toHaveBeenCalledWith("sys_common_state");
+    });
+
+    it("字典编码为空时不请求字典数据", async () => {
+        const wrapper = mount(DictSelect, {
+            props: { modelValue: "STANDARD", dict_code: undefined },
+            global: {
+                plugins: [createTestingPinia({ stubActions: false })],
+                components: { ElSelect, ElOption }
+            }
+        });
+
+        await flushPromises();
+
+        expect(getDictData).not.toHaveBeenCalled();
+        wrapper.unmount();
     });
 });

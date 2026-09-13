@@ -16,8 +16,8 @@ const model = defineModel<ModelType>({
 });
 
 const dict_code = defineModel("dict_code", {
-    required: true,
-    type: String as PropType<string>
+    required: false,
+    type: String as PropType<string | null>
 });
 
 const dictStore = useDictStore();
@@ -40,8 +40,14 @@ const localComputed = computed({
 
 // 挂载的时候读取字典
 onMounted(async () => {
+    const dictCode = dict_code.value?.trim();
+    if (!dictCode) {
+        options.value = [];
+        return;
+    }
+
     try {
-        options.value = (await dictStore.getDictData(dict_code.value)) || [];
+        options.value = (await dictStore.getDictData(dictCode)) || [];
         // 如果外部 model 未传值，使用 default_flag 的值
         if (model.value === undefined || model.value === null) {
             const defaultItem = options.value.find(item => item.default_flag);

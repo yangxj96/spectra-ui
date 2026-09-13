@@ -17,8 +17,6 @@
         "lint": "eslint . --cache",
         "lint:fix": "eslint . --fix --cache",
         "type-check": "vue-tsc --noEmit --composite false",
-        "test": "vitest run",
-        "test:watch": "vitest",
         "prestart": "pnpm run format && pnpm run lint:fix && pnpm run type-check"
     },
     "dependencies": {
@@ -45,7 +43,6 @@
         "xlsx": "0.18.5"
     },
     "devDependencies": {
-        "@pinia/testing": "1.0.3",
         "@playwright/cli": "0.1.18",
         "@tsconfig/node24": "24.0.4",
         "@types/jsoneditor": "9.9.6",
@@ -55,7 +52,6 @@
         "@vitejs/plugin-vue": "6.0.4",
         "@vitejs/plugin-vue-jsx": "5.1.4",
         "@vue/eslint-config-typescript": "14.6.0",
-        "@vue/test-utils": "2.4.6",
         "@vue/tsconfig": "0.8.1",
         "eslint": "9.39.2",
         "eslint-config-prettier": "10.1.8",
@@ -64,7 +60,6 @@
         "eslint-plugin-prettier": "5.5.5",
         "eslint-plugin-vue": "10.7.0",
         "globals": "17.3.0",
-        "happy-dom": "20.8.9",
         "jiti": "2.6.1",
         "npm-run-all2": "8.0.4",
         "prettier": "3.8.1",
@@ -72,7 +67,6 @@
         "typescript": "5.9.3",
         "vite": "8.0.11",
         "vite-plugin-compression2": "2.5.0",
-        "vitest": "4.0.18",
         "vue-tsc": "3.2.4"
     },
     "browserslist": [

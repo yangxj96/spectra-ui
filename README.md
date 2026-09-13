@@ -29,7 +29,6 @@
 | `pnpm run lint`       | ESLint 检查                                      |
 | `pnpm run format`     | Prettier 格式化                                  |
 | `pnpm run type-check` | TypeScript 类型检查                              |
-| `pnpm run test`       | 运行测试（Vitest）                               |
 
 ## 项目结构
 

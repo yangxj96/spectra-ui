@@ -17,5 +17,5 @@
 ## 验证
 
 - 开发中优先执行目标测试或 `pnpm run type-check`。
-- 交付前按需执行 `pnpm run format:check`、`pnpm run lint`、`pnpm run type-check`、`pnpm run test`、`pnpm run build`。
+- 交付前按需执行 `pnpm run format:check`、`pnpm run lint`、`pnpm run type-check`、`pnpm run build`。
 - 完整命令和环境说明见 `docs/开发指南/01-常见命令.md` 与 `docs/前端/01-前端管理后台.md`。

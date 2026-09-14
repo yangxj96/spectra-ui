@@ -1,4 +1,3 @@
-﻿import formCreate from "@form-create/element-ui";
 import { loadSlim } from "@tsparticles/slim";
 import Particles from "@tsparticles/vue3";
 import ElementPlus from "element-plus";
@@ -19,7 +18,6 @@ CommonUtils.hasReload();
 // 创建APP
 const app = createApp(App);
 
-app.use(formCreate);
 app.use(ElementPlus);
 
 app.use(Particles, {

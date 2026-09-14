@@ -147,28 +147,6 @@ export default [
                     requiredMenu: "SystemWorkflow",
                     activeMenu: "SystemWorkflow"
                 }
-            },
-            {
-                path: "form-edit",
-                name: "FormEdit",
-                component: () => import("@/views/System/Workflow/components/FormDesigner/index.vue"),
-                meta: {
-                    title: "表单编辑",
-                    requiresAuth: true,
-                    requiredMenu: "SystemWorkflow",
-                    activeMenu: "SystemWorkflow"
-                }
-            },
-            {
-                path: "form-preview",
-                name: "FormPreview",
-                component: () => import("@/views/System/Workflow/components/FormPreview/index.vue"),
-                meta: {
-                    title: "表单预览",
-                    requiresAuth: true,
-                    requiredMenu: "SystemWorkflow",
-                    activeMenu: "SystemWorkflow"
-                }
             }
         ]
     }

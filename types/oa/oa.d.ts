@@ -62,7 +62,6 @@ declare global {
         id: string;
         code: string;
         name: string;
-        form_definition_id?: string;
         process_definition_key?: string;
         enabled: boolean;
         sort_order: number;
@@ -72,7 +71,6 @@ declare global {
     type ApplicationTypeSaveParams = {
         code: string;
         name: string;
-        form_definition_id?: string;
         process_definition_key?: string;
         enabled?: boolean;
         sort_order?: number;

@@ -58,10 +58,6 @@ export default defineConfig(({ mode }) => {
         resolve: {
             alias: {
                 "@": srcPath,
-                "@form-create/component-wangeditor": resolve(
-                    __dirname,
-                    "vendor/form-create-component-wangeditor-disabled/index.js"
-                ),
                 "@yangxj96/logicflow-plugin-flowable/style.css": resolve(
                     __dirname,
                     "../logicflow-plugin-flowable/dist/index.css"
@@ -107,9 +103,6 @@ export default defineConfig(({ mode }) => {
                         }
                         if (normalizedId.includes("/@logicflow/extension/")) {
                             return "logicflow-extension";
-                        }
-                        if (normalizedId.includes("/@form-create/") || normalizedId.includes("/codemirror/")) {
-                            return "form-designer";
                         }
                         if (normalizedId.includes("/echarts/") || normalizedId.includes("/zrender/")) {
                             return "charts";

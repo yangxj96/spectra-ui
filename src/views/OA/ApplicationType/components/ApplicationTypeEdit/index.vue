@@ -13,7 +13,6 @@ const loading = ref(false);
 const form = reactive<ApplicationTypeSaveParams>({
     code: "",
     name: "",
-    form_definition_id: "",
     process_definition_key: "",
     enabled: true,
     sort_order: 0,
@@ -29,7 +28,6 @@ async function load(): Promise<void> {
         Object.assign(form, {
             code: row.code,
             name: row.name,
-            form_definition_id: row.form_definition_id || "",
             process_definition_key: row.process_definition_key || "",
             enabled: row.enabled,
             sort_order: row.sort_order,
@@ -44,7 +42,6 @@ async function save(): Promise<void> {
     const payload: ApplicationTypeSaveParams = {
         code: form.code.trim(),
         name: form.name.trim(),
-        form_definition_id: form.form_definition_id?.trim() || undefined,
         process_definition_key: form.process_definition_key?.trim() || undefined,
         enabled: form.enabled,
         sort_order: form.sort_order,
@@ -66,14 +63,13 @@ onMounted(load);
 <template>
     <OaFormPage
         :title="editingId ? '编辑申请类型' : '新建申请类型'"
-        description="维护申请编码与表单、流程定义的映射。"
+        description="维护申请编码与流程定义的映射。"
         back-path="/oa/application-types">
         <el-form v-loading="loading" label-width="110px">
             <el-form-item label="编码" required>
                 <el-input v-model="form.code" :disabled="Boolean(editingId)" placeholder="如 travel" />
             </el-form-item>
             <el-form-item label="名称" required><el-input v-model="form.name" /></el-form-item>
-            <el-form-item label="表单定义 ID"><el-input v-model="form.form_definition_id" /></el-form-item>
             <el-form-item label="流程定义 Key"><el-input v-model="form.process_definition_key" /></el-form-item>
             <el-form-item label="排序"><el-input-number v-model="form.sort_order" :min="0" /></el-form-item>
             <el-form-item label="启用"><el-switch v-model="form.enabled" /></el-form-item>

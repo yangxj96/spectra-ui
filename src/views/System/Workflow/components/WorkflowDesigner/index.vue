@@ -10,7 +10,6 @@ import { useRoute, useRouter } from "vue-router";
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-import FormPickerDialog from "./components/pickers/FormPickerDialog.vue";
 import GroupPickerDialog from "./components/pickers/GroupPickerDialog.vue";
 import JavaClassPickerDialog from "./components/pickers/JavaClassPickerDialog.vue";
 import ProcessPickerDialog from "./components/pickers/ProcessPickerDialog.vue";
@@ -68,7 +67,7 @@ const initLogicFlow = () => {
                     dnd: graph.value!,
                     property: panel.value!
                 },
-                pickers: ["form", "user", "group", "javaClass", "process"]
+                pickers: ["user", "group", "javaClass", "process"]
             }
         }
     });
@@ -142,7 +141,7 @@ const handleDeploy = async () => {
         });
 
         MessageUtils.success(`流程部署成功（版本 ${result.version}）`);
-        router.push({ path: "/system/workflow", query: { tab: "workflow" } });
+        router.push({ path: "/system/workflow" });
     } catch (error) {
         console.error("部署失败:", error);
         MessageUtils.error("部署失败");
@@ -155,7 +154,7 @@ const handleDeploy = async () => {
  * 返回列表
  */
 const handleBack = () => {
-    router.push({ path: "/system/workflow", query: { tab: "workflow" } });
+    router.push({ path: "/system/workflow" });
 };
 
 onMounted(() => {
@@ -186,14 +185,8 @@ onMounted(() => {
         </div>
 
         <!-- Picker 弹框 -->
-        <FormPickerDialog
-            v-if="picker.type === 'form'"
-            v-model:visible="picker.visible"
-            :multiple="picker.multiple"
-            :model-value="picker.value"
-            @confirm="handlePickerConfirm" />
         <UserPickerDialog
-            v-else-if="picker.type === 'user'"
+            v-if="picker.type === 'user'"
             v-model:visible="picker.visible"
             :multiple="picker.multiple"
             :model-value="picker.value"

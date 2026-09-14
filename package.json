@@ -21,8 +21,6 @@
     },
     "dependencies": {
         "@element-plus/icons-vue": "2.3.2",
-        "@form-create/designer": "3.4.0",
-        "@form-create/element-ui": "3.2.38",
         "@logicflow/core": "2.2.4",
         "@logicflow/extension": "2.3.0",
         "@tsparticles/engine": "4.3.1",

@@ -55,7 +55,6 @@ src/
 - 粒子动画登录页
 - PDF 查看器
 - 流程设计器（LogicFlow）
-- 表单设计器（form-create）
 
 ## 首次配置与启动
 

@@ -147,7 +147,6 @@ const permissionResourceLabels: Record<string, string> = {
     session: "在线会话",
     "system:monitor": "系统运行状态",
     user: "用户",
-    "workflow:form": "流程表单",
     "workflow:instance": "流程实例",
     "workflow:process": "流程定义",
     "workflow:task": "流程任务"

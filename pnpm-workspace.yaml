@@ -1,4 +1,5 @@
 allowBuilds:
+    "@logicflow/core": true
     "@parcel/watcher": true
     "@tsparticles/engine": true
     core-js-pure: true

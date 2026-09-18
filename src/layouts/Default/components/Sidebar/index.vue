@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 
-import { cancelAllRequests } from "@/plugin/request/http.ts";
+import { cancelAllRequests } from "@/plugin/request/request-lifecycle.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 
 import MenuItem from "./MenuItem/index.vue";

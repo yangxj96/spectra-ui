@@ -1,5 +1,5 @@
 import { get, post } from "@/plugin/request/api.ts";
-import { request } from "@/plugin/request/http.ts";
+import { request } from "@/plugin/request/fetch-client.ts";
 
 /** 密钥管理接口；后端会再次强制校验 ROLE_DEV_OPS。 */
 export const SecretManagementApi = {

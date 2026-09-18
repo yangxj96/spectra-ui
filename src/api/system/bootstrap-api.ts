@@ -1,4 +1,4 @@
-import { request } from "@/plugin/request/http.ts";
+import { request } from "@/plugin/request/fetch-client.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 

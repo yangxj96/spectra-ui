@@ -1,4 +1,4 @@
-import { request } from "./http";
+import { request } from "./fetch-client";
 
 /**
  * 发起 GET 请求

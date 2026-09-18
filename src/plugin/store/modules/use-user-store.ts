@@ -35,6 +35,18 @@ export const useUserStore = defineStore("user", {
             };
         }
     },
+    actions: {
+        /** 原子写入当前 Access Token；Refresh Token 永远不进入 Store。 */
+        setToken(token: Token): void {
+            this.token = { ...token };
+            this.isLoggedIn = Boolean(token.access_token);
+        },
+        /** 清理当前会话的所有内存认证状态。 */
+        clearSession(): void {
+            this.token = {} as Token;
+            this.isLoggedIn = false;
+        }
+    },
     // Access Token 仅存在内存；Web Refresh Token 由后端 HttpOnly Cookie 管理。
     persist: false
 });

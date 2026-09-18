@@ -40,7 +40,7 @@ const eslintConfig: ReturnType<typeof defineConfigWithVueTs> = defineConfigWithV
             "import/resolver": {
                 typescript: {
                     alwaysTryTypes: true,
-                    project: ["./tsconfig.app.json"]
+                    project: ["./tsconfig.app.json", "./tsconfig.node.json"]
                 },
                 node: true
             }

@@ -11,7 +11,7 @@ export const SystemInitializationApi = {
     /** 查询系统初始化状态。 */
     status(): Promise<SystemInitializationStatus> {
         return get<SystemInitializationStatus>("/api/system/initialization/status", undefined, {
-            skipAuth: true,
+            auth: "skip",
             priority: "high",
             fetchPriority: "high",
             persistent: true
@@ -21,7 +21,7 @@ export const SystemInitializationApi = {
     /** 创建首个 DEV_OPS 用户并开始初始化。 */
     start(from: SystemInitializationStartFrom, initializationToken: string): Promise<SystemInitializationStartVO> {
         return post<SystemInitializationStartVO>("/api/system/initialization/start", from, {
-            skipAuth: true,
+            auth: "skip",
             priority: "high",
             fetchPriority: "high",
             headers: {
@@ -33,7 +33,7 @@ export const SystemInitializationApi = {
     /** 完成初始化；完成后需要重新登录。 */
     complete(from: SystemInitializationCompleteFrom): Promise<void> {
         return post<void>("/api/system/initialization/complete", from, {
-            skipAuth: true,
+            auth: "skip",
             priority: "high",
             fetchPriority: "high"
         });

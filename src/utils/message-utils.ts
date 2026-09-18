@@ -12,7 +12,6 @@ function getContainer(): HTMLElement {
 
 // ElMessage默认配置
 const DEFAULT_OPTIONS: Partial<MessageOptions> = {
-    appendTo: getContainer(),
     showClose: true,
     duration: MESSAGE_DURATION
 };
@@ -57,6 +56,7 @@ function createMessage(type: MessageType) {
         ElMessage({
             ...DEFAULT_OPTIONS,
             ...options,
+            appendTo: getContainer(),
             type,
             message: resolvedMessage,
             onClose

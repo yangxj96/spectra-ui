@@ -16,8 +16,6 @@ declare global {
         username: string;
         // 认证token
         access_token: string;
-        // 刷新token
-        refresh_token?: string;
         // Permission Catalog 权限编码；不包含角色名称
         permissions: string[];
         // 是否必须先修改当前密码

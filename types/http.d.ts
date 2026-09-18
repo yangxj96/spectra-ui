@@ -34,6 +34,18 @@ declare global {
          */
         retry?: number;
 
+        /** 是否附带当前 Access Token；Refresh 和预签名请求使用 skip。 */
+        auth?: "required" | "skip";
+
+        /** 是否允许在一次 401 后刷新并重试原请求。 */
+        retryOnAuth?: boolean;
+
+        /** 响应体为空时使用的错误提示；后端返回消息时优先使用后端消息。 */
+        errorFallback?: string;
+
+        /** 请求超时时间（毫秒）。 */
+        timeout?: number;
+
         /**
          * 是否启用缓存
          */
@@ -63,21 +75,6 @@ declare global {
          * 路径参数
          */
         pathParams?: PathParams<T>;
-
-        /**
-         * 内部字段：token 刷新标记
-         */
-        _retry?: boolean;
-
-        /**
-         * 不附带 Access Token；用于 Refresh 请求本身。
-         */
-        skipAuth?: boolean;
-
-        /**
-         * 内部字段：Refresh 请求失败时禁止再次触发刷新。
-         */
-        _skipRefresh?: boolean;
 
         /**
          * 接口成功时不解析响应体；适用于 HTTP 200/204 的空响应。

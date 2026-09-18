@@ -1,8 +1,12 @@
 ﻿import { AuthApi } from "@/api/auth/auth-api";
 import { useUserStore } from "@/plugin/store/modules/use-user-store";
 
-/** 当前进行中的刷新请求；所有并发调用共享同一个 Promise。 */
+import { cancelAllRequests } from "./request-lifecycle";
+
+/** 当前进行中的刷新请求；所有并发调用共享同一个 Promise，避免并发刷新覆盖 Token。 */
 let refreshPromise: Promise<Token | null> | null = null;
+/** 防止 Fetch 和 XHR 在同一次会话失效时重复提示和重复跳转。 */
+let sessionExpirationClaimed = false;
 
 const CSRF_COOKIE_NAME = "XSRF-TOKEN";
 
@@ -24,7 +28,7 @@ function hasCsrfCookie(): boolean {
  * 获取当前 access_token
  * @returns token 字符串，未登录时返回 null
  */
-export function getToken(): string | null {
+export function getAccessToken(): string | null {
     const token = useUserStore().token.access_token;
     return token || null;
 }
@@ -35,9 +39,11 @@ export function getToken(): string | null {
  * 其余请求排入队列等待刷新完成后共享新 Token
  * @returns 新 Token，刷新失败返回 null
  */
-export async function refreshToken(): Promise<Token | null> {
+export async function refreshAccessToken(): Promise<Token | null> {
     const store = useUserStore();
     if (!hasCsrfCookie()) {
+        // 缺少 CSRF Cookie 时刷新必然失败，先清理本地会话，避免无效请求反复重试。
+        useUserStore().clearSession();
         return null;
     }
 
@@ -50,9 +56,12 @@ export async function refreshToken(): Promise<Token | null> {
         try {
             // Web Refresh Token 位于 HttpOnly Cookie，不能从 JS 读取或写入 localStorage。
             const newToken = await AuthApi.refresh();
-            store.token = newToken;
+            store.setToken(newToken);
+            sessionExpirationClaimed = false;
             return newToken;
         } catch {
+            // 刷新失败不能保留旧 access_token，否则后续请求会持续发送已失效凭据。
+            store.clearSession();
             return null;
         } finally {
             refreshPromise = null;
@@ -62,13 +71,32 @@ export async function refreshToken(): Promise<Token | null> {
     return refreshPromise;
 }
 
+/** 幂等清理会话；认证模块不依赖 Router，导航由调用方负责。 */
+export async function expireSession(): Promise<void> {
+    // 先清理内存认证状态，再取消请求；取消动作可能触发请求方的 finally 清理逻辑。
+    useUserStore().clearSession();
+    cancelAllRequests();
+}
+
+/** 让 Fetch 与 XHR 共享一次会话失效提示和跳转。 */
+export function claimSessionExpiration(): boolean {
+    if (sessionExpirationClaimed) return false;
+    sessionExpirationClaimed = true;
+    return true;
+}
+
+/** 登录成功后允许下一次独立会话再次触发失效处理。 */
+export function resetSessionExpiration(): void {
+    sessionExpirationClaimed = false;
+}
+
 /**
  * 验证当前 Token 是否有效
  * 通过尝试刷新 Token 来判断会话是否仍然可用
  * @returns true 表示 Token 有效
  */
 export async function validateToken(): Promise<boolean> {
-    const newToken = await refreshToken();
+    const newToken = await refreshAccessToken();
 
     return newToken !== null;
 }

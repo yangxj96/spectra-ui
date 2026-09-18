@@ -5,7 +5,7 @@ import { computed, onMounted, ref } from "vue";
 import { AuthApi } from "@/api/auth/auth-api";
 import { SecurityPolicyApi } from "@/api/auth/security-policy-api.ts";
 import { UserApi } from "@/api/user/user-api";
-import { cancelAllRequests } from "@/plugin/request/http.ts";
+import { cancelAllRequests } from "@/plugin/request/request-lifecycle.ts";
 import { GlobalUtils } from "@/utils/global-utils";
 import { MessageUtils } from "@/utils/message-utils";
 

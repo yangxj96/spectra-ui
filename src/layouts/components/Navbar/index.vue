@@ -7,7 +7,7 @@ import { AuthApi } from "@/api/auth/auth-api.ts";
 import avatar from "@/assets/images/avatar.png";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import NotificationBell from "@/components/NotificationBell/index.vue";
-import { cancelAllRequests } from "@/plugin/request/http.ts";
+import { cancelAllRequests } from "@/plugin/request/request-lifecycle.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { GlobalUtils } from "@/utils/global-utils.ts";

@@ -1,5 +1,5 @@
 import { FileApi } from "@/api/system/file-api";
-import { uploadBinary } from "@/plugin/request/upload";
+import { requestBinary } from "@/plugin/request/xhr-client";
 
 import { FileUploadStore, type UploadResumeRecord } from "./file-upload-store";
 
@@ -332,11 +332,11 @@ export class FileUploadClient {
                     part_size: blob.size,
                     part_sha256: partSha256
                 });
-                const response = await uploadBinary(target.url, blob, {
-                    transport: session.transport_mode === "PRESIGNED" ? "PRESIGNED" : "LOCAL_PROXY",
+                const response = await requestBinary(target.url, blob, {
+                    external: session.transport_mode === "PRESIGNED",
                     headers: target.headers,
                     signal: this.abortController?.signal,
-                    onProgress: loaded => {
+                    onUploadProgress: loaded => {
                         this.inFlightProgress.set(partNumber, loaded);
                         this.updateProgress(session, confirmed);
                     }

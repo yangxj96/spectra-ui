@@ -7,6 +7,7 @@ import { AuthApi } from "@/api/auth/auth-api.ts";
 import { fetchClientPrivateKey } from "@/api/system/crypto-api";
 import { SystemInitializationApi } from "@/api/system/initialization-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
+import { resetSessionExpiration } from "@/plugin/request/auth.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -38,8 +39,8 @@ const refreshKaptcha = () => {
 };
 
 const finishLogin = async (token: Token) => {
-    useUserStore().token = token;
-    useUserStore().isLoggedIn = true;
+    useUserStore().setToken(token);
+    resetSessionExpiration();
     await fetchClientPrivateKey();
     const requiresPasswordChange = token.password_change_required === true;
     MessageUtils[requiresPasswordChange ? "warning" : "success"](

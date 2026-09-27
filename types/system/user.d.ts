@@ -32,6 +32,7 @@ declare global {
         username: string;
         phone: string;
         email: string;
+        associated_department_codes: string;
     };
 
     /** 批量导入本次任务固定使用的配置。 */
@@ -126,12 +127,18 @@ declare global {
         timezone: string;
         // 角色列表
         roles: RolePageVO[];
-        // 部门ID
-        department_id: string;
-        // 部门名称
-        department_name: string;
+        // 主部门
+        primary_department_id: string;
+        primary_department_name: string;
+        // 关联部门
+        associated_departments: UserDepartmentSummaryVO[];
         // 创建时间
         created_at: string;
+    };
+
+    type UserDepartmentSummaryVO = {
+        id: string;
+        name: string;
     };
 
     /** 用户资料与角色授权一次性提交响应。 */
@@ -156,8 +163,10 @@ declare global {
         language: string;
         // 时区
         timezone: string;
-        // 部门ID
-        department_id: string;
+        // 主部门 ID
+        primary_department_id: string;
+        // 关联部门 ID
+        associated_department_ids: string[];
     };
 
     // 用户表单提交内容
@@ -176,8 +185,10 @@ declare global {
         language: string;
         // 时区
         timezone: string;
-        // 部门ID
-        department_id: string;
+        // 主部门 ID
+        primary_department_id: string;
+        // 关联部门 ID
+        associated_department_ids: string[];
     };
 
     /** 用户资料与多角色授权的一次性提交请求。 */
@@ -204,10 +215,12 @@ declare global {
         language: string;
         /** 时区 */
         timezone: string;
-        /** 部门ID */
-        department_id: string;
-        /** 部门名称 */
-        department_name: string;
+        /** 主部门 ID */
+        primary_department_id: string;
+        /** 主部门名称 */
+        primary_department_name: string;
+        /** 关联部门摘要 */
+        associated_departments: UserDepartmentSummaryVO[];
         /** 角色列表 */
         roles: RoleInfo[];
     };

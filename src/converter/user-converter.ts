@@ -16,7 +16,8 @@ export const userConverter = {
             status: undefined,
             language: defaults.language ?? "",
             timezone: defaults.timezone ?? "",
-            department_id: ""
+            primary_department_id: "",
+            associated_department_ids: []
         };
     },
     /** 列表数据转表单回显 */
@@ -30,7 +31,8 @@ export const userConverter = {
             status: datum.status ?? undefined,
             language: datum.language ?? "",
             timezone: datum.timezone ?? "",
-            department_id: datum.department_id ?? ""
+            primary_department_id: datum.primary_department_id ?? "",
+            associated_department_ids: datum.associated_departments?.map(department => department.id) ?? []
         };
     },
     /** 表单数据转接口请求参数 */
@@ -43,7 +45,8 @@ export const userConverter = {
             status: form.status ?? undefined,
             language: form.language,
             timezone: form.timezone,
-            department_id: form.department_id
+            primary_department_id: form.primary_department_id,
+            associated_department_ids: form.associated_department_ids
         };
     }
 };

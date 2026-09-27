@@ -236,8 +236,20 @@ onMounted(async () => {
                     align="center"
                     width="150"
                     show-overflow-tooltip
-                    label="所属组织"
-                    prop="department_name" />
+                    label="主部门"
+                    prop="primary_department_name" />
+                <el-table-column align="center" min-width="180" label="关联部门">
+                    <template #default="scope">
+                        <el-tag
+                            v-for="department in scope.row.associated_departments"
+                            :key="department.id"
+                            size="small"
+                            style="margin: 2px">
+                            {{ department.name }}
+                        </el-tag>
+                        <span v-if="!scope.row.associated_departments?.length">—</span>
+                    </template>
+                </el-table-column>
                 <el-table-column align="center" width="150" show-overflow-tooltip label="角色" prop="roles">
                     <template #default="scope">
                         <el-tag

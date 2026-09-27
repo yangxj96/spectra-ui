@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
-import { computed, onMounted, reactive, ref, useTemplateRef } from "vue";
+import { computed, onMounted, reactive, ref, useTemplateRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { DepartmentApi } from "@/api/user/department-api.ts";
@@ -69,6 +69,10 @@ const form = reactive<UserForm>(
     })
 );
 const departmentTree = ref<DepartmentTreeVO[]>([]);
+const associatedDepartmentTreeProps = computed(() => ({
+    ...treeDefaultProps,
+    disabled: (department: DepartmentTreeVO) => department.id === form.primary_department_id
+}));
 const loading = ref(false);
 const submitting = ref(false);
 const roleSteps = ref<RoleAssignmentStep[]>([]);
@@ -87,8 +91,15 @@ const rules: FormRules<UserForm> = {
     status: [{ required: true, message: "请选择状态", trigger: "change" }],
     language: [{ required: true, message: "请选择语言", trigger: "change" }],
     timezone: [{ required: true, message: "请选择时区", trigger: "change" }],
-    department_id: [{ required: true, message: "请选择所属组织", trigger: "change" }]
+    primary_department_id: [{ required: true, message: "请选择主部门", trigger: "change" }]
 };
+
+watch(
+    () => form.primary_department_id,
+    primaryDepartmentId => {
+        form.associated_department_ids = form.associated_department_ids.filter(id => id !== primaryDepartmentId);
+    }
+);
 
 async function load(): Promise<void> {
     loading.value = true;
@@ -177,6 +188,14 @@ async function handleSubmit(): Promise<void> {
     if (!roleAssignmentEditor.value) return;
     if (formRef.value && !(await validateBasicForm())) return;
     if (!roleAssignmentEditor.value.validate()) return;
+    const associatedDepartments = form.associated_department_ids;
+    if (
+        new Set(associatedDepartments).size !== associatedDepartments.length ||
+        associatedDepartments.includes(form.primary_department_id)
+    ) {
+        MessageUtils.warning("关联部门不能重复，也不能与主部门相同");
+        return;
+    }
     submitting.value = true;
     try {
         const params: UserOnboardingDTO = {
@@ -278,16 +297,33 @@ onMounted(load);
                                     </el-form-item>
                                 </el-col>
                                 <el-col :span="12">
-                                    <el-form-item label="所属组织" prop="department_id">
+                                    <el-form-item label="主部门" prop="primary_department_id">
                                         <el-tree-select
-                                            v-model="form.department_id"
+                                            v-model="form.primary_department_id"
                                             :data="departmentTree"
                                             node-key="id"
                                             clearable
                                             check-strictly
                                             default-expand-all
                                             :props="treeDefaultProps"
-                                            placeholder="请选择所属组织" />
+                                            placeholder="请选择主部门" />
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="关联部门">
+                                        <el-tree-select
+                                            v-model="form.associated_department_ids"
+                                            :data="departmentTree"
+                                            :props="associatedDepartmentTreeProps"
+                                            node-key="id"
+                                            multiple
+                                            collapse-tags
+                                            collapse-tags-tooltip
+                                            clearable
+                                            show-checkbox
+                                            check-strictly
+                                            default-expand-all
+                                            placeholder="可选择多个关联部门" />
                                     </el-form-item>
                                 </el-col>
                                 <el-col :span="12">

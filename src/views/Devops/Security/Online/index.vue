@@ -29,6 +29,15 @@ function buildQuery(): OnlineUserPageParams {
     };
 }
 
+function displayDepartments(user: OnlineUserPageVO): string {
+    return (
+        [user.primary_department_name, ...(user.associated_departments ?? []).map(department => department.name)]
+            .filter((name): name is string => Boolean(name?.trim()))
+            .map(name => name.trim())
+            .join("、") || "-"
+    );
+}
+
 async function loadUsers(): Promise<void> {
     loading.value = true;
     try {
@@ -215,7 +224,7 @@ onMounted(() => {
                     <template #default="scope">{{ scope.row.real_name || "-" }}</template>
                 </el-table-column>
                 <el-table-column label="部门" min-width="180" align="center" show-overflow-tooltip>
-                    <template #default="scope">{{ scope.row.department_name || "-" }}</template>
+                    <template #default="scope">{{ displayDepartments(scope.row) }}</template>
                 </el-table-column>
                 <el-table-column prop="session_count" label="会话数" width="100" align="center" />
                 <el-table-column label="最近登录" min-width="190" align="center">

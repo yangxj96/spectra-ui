@@ -34,7 +34,19 @@ const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination
                 <template #default="scope">{{ scope.row.real_name }}</template>
             </el-table-column>
             <el-table-column label="工号" prop="employee_no" min-width="140" />
-            <el-table-column label="部门" prop="department_name" min-width="220" show-overflow-tooltip />
+            <el-table-column label="主部门" prop="primary_department_name" min-width="160" show-overflow-tooltip />
+            <el-table-column label="关联部门" min-width="220">
+                <template #default="scope">
+                    <el-tag
+                        v-for="department in scope.row.associated_departments"
+                        :key="department.id"
+                        size="small"
+                        style="margin: 2px">
+                        {{ department.name }}
+                    </el-tag>
+                    <span v-if="!scope.row.associated_departments?.length">—</span>
+                </template>
+            </el-table-column>
             <el-table-column label="手机号" prop="phone" min-width="140" />
             <el-table-column label="邮箱" prop="email" min-width="220" show-overflow-tooltip />
         </el-table>

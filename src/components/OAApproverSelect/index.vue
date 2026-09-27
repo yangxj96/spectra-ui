@@ -41,7 +41,16 @@ onMounted(() => load());
             :value="item.username">
             <span>{{ item.real_name }}</span>
             <span class="employee-no">{{ item.employee_no || item.username }}</span>
-            <span class="department">{{ item.department_name }}</span>
+            <span class="department">
+                {{
+                    [
+                        item.primary_department_name,
+                        ...(item.associated_departments?.map(department => department.name) ?? [])
+                    ]
+                        .filter(Boolean)
+                        .join("、")
+                }}
+            </span>
         </el-option>
     </el-select>
 </template>

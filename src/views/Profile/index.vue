@@ -31,8 +31,9 @@ const userInfo = ref<UserProfileVO>({
     status: "ACTIVE",
     language: "",
     timezone: "",
-    department_id: "",
-    department_name: "",
+    primary_department_id: "",
+    primary_department_name: "",
+    associated_departments: [],
     roles: []
 });
 
@@ -74,7 +75,16 @@ onMounted(() => {
                         <span class="display-name__label">姓名</span>
                         <span class="display-name__value">{{ userInfo.real_name }}</span>
                     </div>
-                    <p class="department">{{ userInfo.department_name }}</p>
+                    <p class="department">主部门：{{ userInfo.primary_department_name }}</p>
+                    <div v-if="userInfo.associated_departments.length" class="department-tags">
+                        <el-tag
+                            v-for="department in userInfo.associated_departments"
+                            :key="department.id"
+                            size="small"
+                            style="margin: 2px">
+                            {{ department.name }}
+                        </el-tag>
+                    </div>
                     <div class="role-tags">
                         <el-tag v-for="role in userInfo.roles" :key="role.id" size="small" type="info">
                             {{ role.name }}

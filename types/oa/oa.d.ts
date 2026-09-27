@@ -504,8 +504,9 @@ declare global {
         avatar?: string;
         phone?: string;
         email?: string;
-        department_id?: string;
-        department_name?: string;
+        primary_department_id?: string;
+        primary_department_name?: string;
+        associated_departments?: UserDepartmentSummaryVO[];
     };
 
     type ContactPageParams = BasePageParams & {

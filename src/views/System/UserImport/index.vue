@@ -15,6 +15,7 @@ import {
     createUserImportIdempotencyKey,
     MAX_USER_IMPORT_FILE_SIZE,
     localizeUserImportError,
+    parseAssociatedDepartmentCodes,
     parseUserImportFile,
     serializeUserImportRows,
     sha256Text,
@@ -128,7 +129,8 @@ function emptyRow(): UserImportRow {
         real_name: "",
         username: "",
         phone: "",
-        email: ""
+        email: "",
+        associated_department_codes: ""
     };
 }
 
@@ -202,6 +204,11 @@ function formatReferenceOption(code: string, name?: string): string {
     return displayName ? `${displayName}｜${code}` : code;
 }
 
+function associatedDepartmentCodesLabel(source: string): string {
+    const { codes } = parseAssociatedDepartmentCodes(source, importSettings.value.department_code);
+    return codes.join("、") || "—";
+}
+
 async function loadImportOptions(): Promise<void> {
     referenceLoading.value = true;
     try {
@@ -220,7 +227,7 @@ async function downloadTemplate(): Promise<void> {
     try {
         const { utils, write } = await import("xlsx");
         const sheet = utils.aoa_to_sheet([[...USER_IMPORT_TEMPLATE_HEADERS]]);
-        sheet["!cols"] = [{ wch: 18 }, { wch: 18 }, { wch: 28 }];
+        sheet["!cols"] = [{ wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 28 }, { wch: 38 }];
         const workbook = utils.book_new();
         utils.book_append_sheet(workbook, sheet, "用户导入");
         const buffer = write(workbook, { bookType: "xlsx", type: "array" });
@@ -278,6 +285,16 @@ async function handlePreview(): Promise<void> {
     loading.value = true;
     parseError.value = "";
     try {
+        const associationErrors = rows.value.flatMap((row, index) =>
+            parseAssociatedDepartmentCodes(
+                row.associated_department_codes,
+                importSettings.value.department_code
+            ).errors.map(message => `第 ${index + 2} 行：${message}`)
+        );
+        if (associationErrors.length) {
+            parseError.value = associationErrors.join("；");
+            return;
+        }
         const previewRows: UserImportPreviewRow[] = rows.value.map(row => ({
             ...row,
             ...importSettings.value
@@ -545,7 +562,11 @@ onMounted(() => void loadImportOptions());
                                         <el-input
                                             v-model="scope.row[header]"
                                             size="small"
-                                            :placeholder="headerLabel(header)" />
+                                            :placeholder="
+                                                header === 'associated_department_codes'
+                                                    ? '多个编码用分号分隔'
+                                                    : headerLabel(header)
+                                            " />
                                     </template>
                                 </el-table-column>
                                 <el-table-column label="操作" width="80" fixed="right">
@@ -591,6 +612,19 @@ onMounted(() => void loadImportOptions());
                                 <span>已存在用户：{{ task.skip_existing ? "跳过" : "报错" }}</span>
                                 <span>校验有效期：{{ formatDateTime(task.preview_expires_at) }}</span>
                             </div>
+
+                            <el-table :data="rows" border max-height="240" class="import-table">
+                                <el-table-column prop="real_name" label="姓名" min-width="120" />
+                                <el-table-column prop="username" label="登录用户名" min-width="150" />
+                                <el-table-column label="主部门" min-width="140">
+                                    <template #default>{{ importSettings.department_code }}</template>
+                                </el-table-column>
+                                <el-table-column label="关联部门" min-width="180">
+                                    <template #default="scope">
+                                        {{ associatedDepartmentCodesLabel(scope.row.associated_department_codes) }}
+                                    </template>
+                                </el-table-column>
+                            </el-table>
 
                             <div v-if="errorRows.length" class="error-section">
                                 <div class="subsection-title">
@@ -715,7 +749,7 @@ onMounted(() => void loadImportOptions());
                                 <p>支持固定 Excel 模板；默认读取第一个工作表。</p>
                                 <p>
                                     Excel
-                                    只填写姓名、登录用户名、手机号码和邮箱，工号由系统自动生成，部门、语言、时区和授权方案在数据预览上方统一选择。
+                                    填写姓名、登录用户名、手机号码和邮箱，关联部门编码为可选项（多个编码用分号分隔）；工号由系统自动生成，主部门、语言、时区和授权方案在数据预览上方统一选择。
                                 </p>
                                 <p>固定配置会应用到本次导入的全部用户，提交前请确认选择内容正确。</p>
                                 <p>

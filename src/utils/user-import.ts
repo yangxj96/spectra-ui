@@ -1,5 +1,7 @@
-/** 用户批量导入 Excel 模板字段；工号由后端生成，组织和授权配置在页面上统一选择。 */
-export const USER_IMPORT_HEADERS = ["real_name", "username", "phone", "email"] as const;
+/** 用户批量导入页面字段；关联部门可选，工号自动生成，主部门由页面配置。 */
+export const USER_IMPORT_HEADERS = ["real_name", "username", "phone", "email", "associated_department_codes"] as const;
+
+const REQUIRED_USER_IMPORT_HEADERS = USER_IMPORT_HEADERS.slice(0, 4);
 
 export type UserImportHeader = (typeof USER_IMPORT_HEADERS)[number];
 
@@ -8,21 +10,31 @@ export const USER_IMPORT_HEADER_LABELS: Record<UserImportHeader, string> = {
     real_name: "姓名",
     username: "登录用户名",
     phone: "手机号码",
-    email: "邮箱"
+    email: "邮箱",
+    associated_department_codes: "关联部门编码（可选，分号分隔）"
 };
 
 /** 用户批量导入模板对外展示的中文表头。 */
-export const USER_IMPORT_TEMPLATE_HEADERS = ["姓名", "登录用户名", "手机号码", "邮箱"] as const;
+export const USER_IMPORT_TEMPLATE_HEADERS = [
+    "姓名",
+    "登录用户名",
+    "手机号码",
+    "邮箱",
+    "关联部门编码（可选，分号分隔）"
+] as const;
 
 const USER_IMPORT_HEADER_ALIASES: Record<string, UserImportHeader> = {
     real_name: "real_name",
     username: "username",
     phone: "phone",
     email: "email",
+    associated_department_codes: "associated_department_codes",
     姓名: "real_name",
     登录用户名: "username",
     手机号码: "phone",
-    邮箱: "email"
+    邮箱: "email",
+    关联部门编码: "associated_department_codes",
+    "关联部门编码（可选，分号分隔）": "associated_department_codes"
 };
 
 /** 批量导入错误分类。 */
@@ -108,7 +120,7 @@ export async function parseUserImportFile(file: File): Promise<UserImportRow[]> 
     return parseUserImportRecords(records);
 }
 
-function parseUserImportRecords(records: string[][]): UserImportRow[] {
+export function parseUserImportRecords(records: string[][]): UserImportRow[] {
     if (!records.length) throw new Error("Excel 文件不能为空");
     const headerRow = records[0];
     if (!headerRow) throw new Error("Excel 文件没有表头");
@@ -117,16 +129,18 @@ function parseUserImportRecords(records: string[][]): UserImportRow[] {
         const header = value.trim();
         return USER_IMPORT_HEADER_ALIASES[header] ?? USER_IMPORT_HEADER_ALIASES[header.toLowerCase()];
     });
+    const hasOptionalAssociationColumn =
+        headers.length === USER_IMPORT_HEADERS.length && headers.at(-1) === "associated_department_codes";
     if (
-        headers.length !== USER_IMPORT_HEADERS.length ||
-        headers.some((value, index) => value !== USER_IMPORT_HEADERS[index])
+        (headers.length !== REQUIRED_USER_IMPORT_HEADERS.length && !hasOptionalAssociationColumn) ||
+        REQUIRED_USER_IMPORT_HEADERS.some((value, index) => headers[index] !== value)
     ) {
         throw new Error(`表头必须按模板顺序填写：${USER_IMPORT_TEMPLATE_HEADERS.join(",")}`);
     }
 
     const rows = records.slice(1).flatMap((record, index) => {
         if (!record.some(value => value.trim())) return [];
-        if (record.length !== USER_IMPORT_HEADERS.length) {
+        if (record.length !== headers.length) {
             throw new Error(`第 ${index + 2} 行字段数量不正确`);
         }
         return [
@@ -141,6 +155,33 @@ function parseUserImportRecords(records: string[][]): UserImportRow[] {
 
     if (!rows.length) throw new Error("Excel 文件至少需要一行用户数据");
     return rows;
+}
+
+/** 解析导入行中的关联部门编码，并报告可在提交前定位到该行的格式错误。 */
+export function parseAssociatedDepartmentCodes(
+    source: string | null | undefined,
+    primaryDepartmentCode?: string
+): { codes: string[]; errors: string[] } {
+    if (!source?.trim()) return { codes: [], errors: [] };
+
+    const codes: string[] = [];
+    const errors = new Set<string>();
+    const seen = new Set<string>();
+    for (const segment of source.split(";")) {
+        const code = segment.trim();
+        if (!code) {
+            errors.add("关联部门编码不能包含空项");
+            continue;
+        }
+        if (seen.has(code)) {
+            errors.add("关联部门编码不能重复");
+            continue;
+        }
+        seen.add(code);
+        codes.push(code);
+        if (code === primaryDepartmentCode) errors.add("主部门不能重复作为关联部门");
+    }
+    return { codes, errors: [...errors] };
 }
 
 /** 将当前编辑后的行序列化为稳定摘要输入。 */

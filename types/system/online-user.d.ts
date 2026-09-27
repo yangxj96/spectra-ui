@@ -18,8 +18,9 @@ declare global {
         user_id: string;
         username: string;
         real_name?: string | null;
-        department_id?: string | null;
-        department_name?: string | null;
+        primary_department_id?: string | null;
+        primary_department_name?: string | null;
+        associated_departments: UserDepartmentSummaryVO[];
         session_count: number;
         latest_login_time?: string | null;
         sessions: OnlineSessionVO[];

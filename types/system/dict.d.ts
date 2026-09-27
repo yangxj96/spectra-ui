@@ -42,4 +42,15 @@ declare global {
         // 备注
         remark?: string;
     };
+
+    // 字典项创建和编辑请求不允许写入默认标记，默认状态通过独立操作维护。
+    type DictItemSave = Pick<DictItem, "gid" | "label" | "value" | "sort" | "state" | "remark"> & {
+        id?: string;
+    };
+
+    type DictItemCreate = Omit<DictItemSave, "id">;
+
+    type DictItemUpdate = DictItemSave & {
+        id: string;
+    };
 }

@@ -41,22 +41,27 @@ export const DictApi = {
      * 创建字典项
      * @param params 字典项入参
      */
-    createData(params: DictItem): Promise<void> {
+    createData(params: DictItemCreate): Promise<void> {
         return post<void>("/api/dict/data", params);
-    },
-    /**
-     * 删除字典项
-     * @param id 字典项ID
-     */
-    deleteDataById(id: string): Promise<void> {
-        return del<void>(`/api/dict/data/${id}`);
     },
     /**
      * 修改字典项
      * @param params 字典项入参
      */
-    updateData(params: DictItem): Promise<void> {
+    updateData(params: DictItemUpdate): Promise<void> {
         return put<void>("/api/dict/data", params);
+    },
+    /** 启用字典项。 */
+    enableData(id: string): Promise<void> {
+        return post<void>(`/api/dict/data/${id}/enable`);
+    },
+    /** 禁用字典项并保留历史引用。 */
+    disableData(id: string): Promise<void> {
+        return post<void>(`/api/dict/data/${id}/disable`);
+    },
+    /** 设置或取消字典项默认状态。 */
+    setDataDefault(id: string, defaultFlag: boolean): Promise<void> {
+        return put<void>(`/api/dict/data/${id}/default`, { default_flag: defaultFlag });
     },
     /**
      * 根据字典组CODE获取字典项列表

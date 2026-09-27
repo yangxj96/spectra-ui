@@ -35,6 +35,14 @@ export const useDictStore = defineStore("dict", {
             });
         },
         /**
+         * 重新获取字典项并替换缓存，供字典维护操作后刷新选择器状态。
+         * @param key 字典组KEY
+         */
+        async refreshDictData(key: string): Promise<DictItem[]> {
+            delete this.dicts[key];
+            return (await this.getDictData(key)) ?? [];
+        },
+        /**
          * 根据字典组 key 和字典项 value 返回字典项对象 <br/>
          * 会自动尝试加载字典 <br/>
          * @param key 字典组的KEY

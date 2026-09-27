@@ -4,6 +4,7 @@ import { reactive, ref, watch } from "vue";
 import { DictApi } from "@/api/system/dict-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictTag from "@/components/DictTag/index.vue";
+import { useDictStore } from "@/plugin/store/modules/use-dict-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 import DictDataEdit from "./components/DictDataEdit/index.vue";
@@ -33,6 +34,8 @@ const dictDataTableData = ref<DictItem[]>([]);
 // 当前选中的字典组
 const currentGroup = ref<DictTypeTree>();
 
+const dictStore = useDictStore();
+
 // 监听当前字典组的变化
 watch(
     () => currentGroup.value,
@@ -55,8 +58,8 @@ const initData = async () => {
 };
 
 const handleGetDictData = async () => {
-    // 如果当前字典组有值，获取对应的字典数据
-    dictDataTableData.value = await DictApi.getDataByTypeCode(currentGroup.value!.code);
+    if (!currentGroup.value) return;
+    dictDataTableData.value = await dictStore.refreshDictData(currentGroup.value.code);
 };
 
 // 字典组编辑打开
@@ -92,16 +95,40 @@ const handleDictDataClose = () => {
     }
 };
 
-// 字典数据删除
-const handleDictDataDelete = (row: DictItem) => {
-    MessageUtils.box.confirm(`是否要删除[${row.label}]`, "提示").then(async () => {
+// 启用或禁用字典项；禁用保留历史值和标签。
+const handleDictDataStateChange = async (row: DictItem) => {
+    const enabling = row.state !== 0;
+    if (!enabling) {
         try {
-            await DictApi.deleteDataById(row.id);
-            MessageUtils.success("删除成功");
-        } finally {
-            await handleGetDictData();
+            await MessageUtils.box.confirm(
+                `禁用后将保留历史引用，但新数据不能再选择[${row.label}]。确认禁用吗？`,
+                "禁用字典项"
+            );
+        } catch {
+            return;
         }
-    });
+    }
+
+    try {
+        if (enabling) {
+            await DictApi.enableData(row.id);
+        } else {
+            await DictApi.disableData(row.id);
+        }
+        MessageUtils.success(enabling ? "启用成功" : "禁用成功");
+    } finally {
+        await handleGetDictData();
+    }
+};
+
+// 字典组内只允许一个启用项作为默认项。
+const handleDictDataDefaultChange = async (row: DictItem, defaultFlag: boolean) => {
+    try {
+        await DictApi.setDataDefault(row.id, defaultFlag);
+        MessageUtils.success(defaultFlag ? "已设为默认项" : "已取消默认项");
+    } finally {
+        await handleGetDictData();
+    }
 };
 
 initData();
@@ -191,11 +218,36 @@ initData();
                             编辑
                         </el-button>
                         <el-button
+                            v-if="scope.row.state === 0"
                             v-permission="'dictionary:disable'"
                             link
+                            type="warning"
+                            @click="handleDictDataStateChange(scope.row)">
+                            禁用
+                        </el-button>
+                        <el-button
+                            v-else
+                            v-permission="'dictionary:update'"
+                            link
+                            type="success"
+                            @click="handleDictDataStateChange(scope.row)">
+                            启用
+                        </el-button>
+                        <el-button
+                            v-if="!scope.row.default_flag && scope.row.state === 0"
+                            v-permission="'dictionary:update'"
+                            link
                             type="primary"
-                            @click="handleDictDataDelete(scope.row)">
-                            删除
+                            @click="handleDictDataDefaultChange(scope.row, true)">
+                            设为默认
+                        </el-button>
+                        <el-button
+                            v-else-if="scope.row.default_flag"
+                            v-permission="'dictionary:update'"
+                            link
+                            type="primary"
+                            @click="handleDictDataDefaultChange(scope.row, false)">
+                            取消默认
                         </el-button>
                     </template>
                 </el-table-column>

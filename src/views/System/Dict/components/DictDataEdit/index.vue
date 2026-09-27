@@ -25,7 +25,7 @@ const editForm = useTemplateRef<FormInstance>("editForm");
 const treeProps = { children: "children", label: "name", value: "id" };
 
 // 字典组列表
-const gropus = ref<DictGroup[]>([]);
+const gropus = ref<DictTypeTree[]>([]);
 
 // 编辑标识,是否为编辑数据
 const has_edit = computed(() => !!row.value?.id && row.value.id !== "");
@@ -54,15 +54,22 @@ onMounted(() => {
     edit.form = has_edit.value
         ? JSON.parse(JSON.stringify(row.value || edit.form))
         : ({ state: 0, sort: 999 } as DictItem);
-    if (!has_edit.value && group.value) {
+    if (!has_edit.value && group.value && !group.value.builtin) {
         edit.form.gid = group.value.id;
     }
 });
 
 // 初始化数据
 const handleInitData = async () => {
-    gropus.value = (await DictApi.getTypesGroupTree()) || [];
+    gropus.value = filterEditableGroups((await DictApi.getTypesGroupTree()) || []);
 };
+
+// 内置字典组只读；自定义子组仍可独立维护。
+const filterEditableGroups = (groups: DictTypeTree[]): DictTypeTree[] =>
+    groups.flatMap(item => {
+        const children = filterEditableGroups(item.children || []);
+        return item.builtin ? children : [{ ...item, children }];
+    });
 
 // 处理关闭
 const handleClose = () => {
@@ -78,10 +85,18 @@ const handleSaveDictGroup = () => {
             MessageUtils.error("请检查必填内容");
             return;
         }
+        const params: DictItemCreate = {
+            gid: edit.form.gid,
+            label: edit.form.label,
+            value: edit.form.value,
+            sort: edit.form.sort,
+            state: edit.form.state,
+            remark: edit.form.remark
+        };
         if (has_edit.value) {
-            await DictApi.updateData(edit.form);
+            await DictApi.updateData({ ...params, id: edit.form.id });
         } else {
-            await DictApi.createData(edit.form);
+            await DictApi.createData(params);
         }
         MessageUtils.success("保存成功", () => {
             emits("close");
@@ -108,6 +123,7 @@ const handleSaveDictGroup = () => {
                         v-model="edit.form.gid"
                         default-expand-all
                         check-strictly
+                        :disabled="has_edit"
                         :data="gropus"
                         node-key="id"
                         :props="treeProps" />
@@ -116,7 +132,7 @@ const handleSaveDictGroup = () => {
                     <el-input v-model="edit.form.label" placeholder="请输入字典标签" />
                 </el-form-item>
                 <el-form-item label="字典值" prop="value">
-                    <el-input v-model="edit.form.value" placeholder="请输入字典值" />
+                    <el-input v-model="edit.form.value" :disabled="has_edit" placeholder="请输入字典值" />
                 </el-form-item>
                 <el-form-item label="排序" prop="sort">
                     <el-input-number

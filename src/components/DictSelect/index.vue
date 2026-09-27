@@ -38,6 +38,15 @@ const localComputed = computed({
     }
 });
 
+watch(
+    () => dictStore.dicts[dict_code.value?.trim() ?? ""],
+    dictItems => {
+        if (dictItems) {
+            options.value = dictItems;
+        }
+    }
+);
+
 // 挂载的时候读取字典
 onMounted(async () => {
     const dictCode = dict_code.value?.trim();
@@ -50,7 +59,7 @@ onMounted(async () => {
         options.value = (await dictStore.getDictData(dictCode)) || [];
         // 如果外部 model 未传值，使用 default_flag 的值
         if (model.value === undefined || model.value === null) {
-            const defaultItem = options.value.find(item => item.default_flag);
+            const defaultItem = options.value.find(item => item.default_flag && item.state === 0);
             if (defaultItem) {
                 localValue.value = defaultItem.value;
                 model.value = toOuter(defaultItem.value);
@@ -93,6 +102,11 @@ function toOuter(val: string | undefined): ModelType {
 
 <template>
     <el-select v-model="localComputed" v-bind="{ clearable: true, ...$attrs }">
-        <el-option v-for="item in options" :key="item.id" :label="item.label" :value="item.value" />
+        <el-option
+            v-for="item in options"
+            :key="item.id"
+            :label="item.label"
+            :value="item.value"
+            :disabled="item.state !== 0" />
     </el-select>
 </template>

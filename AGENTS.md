@@ -3,7 +3,6 @@
 ## 项目边界
 
 - Vue 3、TypeScript、Vite、Element Plus、Pinia、Vue Router Web 管理后台。
-- 修改 Web 代码时使用 `$spectra-ui-spec`。
 - 后端 API 契约由 `spectra-admin` 定义；修改端点、字段或响应时同步更新 `src/api/` 和相关测试。
 
 ## 实现约束
@@ -16,6 +15,5 @@
 
 ## 验证
 
-- 开发中优先执行目标测试或 `pnpm run type-check`。
-- 交付前按需执行 `pnpm run format:check`、`pnpm run lint`、`pnpm run type-check`、`pnpm run build`。
-- 完整命令和环境说明见 `docs/开发指南/01-常见命令.md` 与 `docs/前端/01-前端管理后台.md`。
+- 开发中优先执行目标测试和类型检查；交付前按常见命令文档执行完整门禁。
+- 前端环境与项目说明见 `docs/前端/01-前端管理后台.md`。

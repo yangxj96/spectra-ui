@@ -157,12 +157,10 @@ async function save(): Promise<void> {
         direction="rtl"
         size="620px"
         destroy-on-close
-            @update:model-value="emit('update:modelValue', $event)">
+        @update:model-value="emit('update:modelValue', $event)">
         <el-form class="task-edit-form" label-width="110px">
             <el-form-item label="任务类型" required>
-                <el-tag>
-                    {{ selectedType?.display_name ?? job.type_key }}（{{ job.type_key }}）
-                </el-tag>
+                <el-tag>{{ selectedType?.display_name ?? job.type_key }}（{{ job.type_key }}）</el-tag>
             </el-form-item>
             <el-form-item label="任务名称" required>
                 <el-input v-model="form.display_name" maxlength="120" />

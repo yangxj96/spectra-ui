@@ -23,11 +23,6 @@ export const QuartzSchedulerApi = {
         return get<QuartzJobVO>(`${QUARTZ_API}/jobs/${resourceKey(jobKey)}`);
     },
 
-    /** 创建由服务端生成 JobKey 的普通 Job。 */
-    createJob(params: QuartzJobCreateParams): Promise<QuartzJobVO> {
-        return post<QuartzJobVO>(`${QUARTZ_API}/jobs`, params);
-    },
-
     /** 更新 Job 的展示信息、参数和唯一 Trigger。 */
     updateJob(jobKey: string, params: QuartzJobUpdateParams): Promise<QuartzJobVO> {
         return put<QuartzJobVO>(`${QUARTZ_API}/jobs/${resourceKey(jobKey)}`, params);

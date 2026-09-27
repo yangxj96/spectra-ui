@@ -8,7 +8,7 @@ import { MessageUtils } from "@/utils/message-utils.ts";
 const props = defineProps<{
     modelValue: boolean;
     catalog: QuartzJobTypeVO[];
-    job?: QuartzJobVO;
+    job: QuartzJobVO;
 }>();
 
 const emit = defineEmits<{
@@ -18,8 +18,6 @@ const emit = defineEmits<{
 
 interface QuartzJobForm {
     display_name: string;
-    type_key: string;
-    parameters_json: string;
     trigger: QuartzTriggerParams;
 }
 
@@ -27,12 +25,10 @@ const saving = ref(false);
 const parameterValue = ref<JsonValue>({});
 const form = reactive<QuartzJobForm>({
     display_name: "",
-    type_key: "",
-    parameters_json: "",
     trigger: defaultTrigger("CRON")
 });
 
-const selectedType = computed(() => props.catalog.find(item => item.type_key === form.type_key));
+const selectedType = computed(() => props.catalog.find(item => item.type_key === props.job.type_key));
 const parameterFields = computed(() => Object.entries(selectedType.value?.parameter_fields ?? {}));
 
 watch(
@@ -40,7 +36,7 @@ watch(
     ([visible]) => {
         if (visible) resetForm();
     },
-    { deep: false }
+    { deep: false, immediate: true }
 );
 
 function defaultTrigger(type: QuartzTriggerType): QuartzTriggerParams {
@@ -71,42 +67,23 @@ function defaultParameters(type: QuartzJobTypeVO | undefined): JsonObject {
 
 function resetForm(): void {
     const job = props.job;
-    if (job) {
-        form.display_name = job.display_name;
-        form.type_key = job.type_key;
-        form.parameters_json = job.parameters_json;
-        form.trigger = job.trigger
-            ? {
-                  trigger_type: job.trigger.trigger_type,
-                  cron_expression: job.trigger.cron_expression,
-                  time_zone: job.trigger.time_zone,
-                  start_at: job.trigger.start_at,
-                  interval_ms: job.trigger.interval_ms,
-                  one_shot: job.trigger.one_shot,
-                  misfire_instruction: job.trigger.misfire_instruction
-              }
-            : defaultTrigger("CRON");
-        try {
-            parameterValue.value = JSON.parse(job.parameters_json) as JsonValue;
-        } catch {
-            parameterValue.value = defaultParameters(selectedType.value);
-        }
-        return;
+    form.display_name = job.display_name;
+    form.trigger = job.trigger
+        ? {
+              trigger_type: job.trigger.trigger_type,
+              cron_expression: job.trigger.cron_expression,
+              time_zone: job.trigger.time_zone,
+              start_at: job.trigger.start_at,
+              interval_ms: job.trigger.interval_ms,
+              one_shot: job.trigger.one_shot,
+              misfire_instruction: job.trigger.misfire_instruction
+          }
+        : defaultTrigger("CRON");
+    try {
+        parameterValue.value = JSON.parse(job.parameters_json) as JsonValue;
+    } catch {
+        parameterValue.value = defaultParameters(selectedType.value);
     }
-
-    const type = props.catalog[0];
-    form.display_name = type?.display_name ?? "";
-    form.type_key = type?.type_key ?? "";
-    form.parameters_json = JSON.stringify(defaultParameters(type));
-    form.trigger = defaultTrigger(type?.supported_trigger_types[0] ?? "CRON");
-    parameterValue.value = defaultParameters(type);
-}
-
-function onTypeChange(): void {
-    const type = selectedType.value;
-    if (!type || props.job) return;
-    parameterValue.value = defaultParameters(type);
-    form.trigger = defaultTrigger(type.supported_trigger_types[0] ?? "CRON");
 }
 
 function onTriggerTypeChange(): void {
@@ -118,7 +95,7 @@ function isJsonObject(value: JsonValue): value is JsonObject {
 }
 
 function parameterHint(): string {
-    if (!selectedType.value) return "请先选择代码白名单中的任务类型";
+    if (!selectedType.value) return "任务类型信息尚未加载";
     if (!parameterFields.value.length) return `当前类型只需要 version=${selectedType.value.parameter_version}`;
     return parameterFields.value
         .map(([name, definition]) => `${name}${definition.required ? "（必填）" : ""}`)
@@ -139,8 +116,9 @@ function buildTrigger(): QuartzTriggerParams {
 }
 
 async function save(): Promise<void> {
-    if (!form.display_name.trim() || !form.type_key || !selectedType.value) {
-        MessageUtils.error("请选择代码白名单中的任务类型并填写名称");
+    const job = props.job;
+    if (!form.display_name.trim() || !selectedType.value) {
+        MessageUtils.error("任务名称不能为空，且任务类型信息必须已加载");
         return;
     }
     if (!isJsonObject(parameterValue.value)) {
@@ -156,20 +134,11 @@ async function save(): Promise<void> {
     saving.value = true;
     try {
         const trigger = buildTrigger();
-        if (props.job) {
-            await QuartzSchedulerApi.updateJob(props.job.job_key, {
-                display_name: form.display_name.trim(),
-                parameters_json: parametersJson,
-                trigger
-            });
-        } else {
-            await QuartzSchedulerApi.createJob({
-                display_name: form.display_name.trim(),
-                type_key: form.type_key,
-                parameters_json: parametersJson,
-                trigger
-            });
-        }
+        await QuartzSchedulerApi.updateJob(job.job_key, {
+            display_name: form.display_name.trim(),
+            parameters_json: parametersJson,
+            trigger
+        });
         MessageUtils.success("定时任务已保存");
         emit("update:modelValue", false);
         emit("saved");
@@ -184,32 +153,25 @@ async function save(): Promise<void> {
 <template>
     <el-drawer
         :model-value="modelValue"
-        :title="job ? '修改定时任务' : '新增定时任务'"
+        title="修改定时任务"
         direction="rtl"
         size="620px"
         destroy-on-close
-        @update:model-value="emit('update:modelValue', $event)">
+            @update:model-value="emit('update:modelValue', $event)">
         <el-form class="task-edit-form" label-width="110px">
             <el-form-item label="任务类型" required>
-                <el-select
-                    v-model="form.type_key"
-                    filterable
-                    :disabled="Boolean(job)"
-                    style="width: 100%"
-                    @change="onTypeChange">
-                    <el-option
-                        v-for="item in catalog"
-                        :key="item.type_key"
-                        :label="`${item.display_name}（${item.type_key}）`"
-                        :value="item.type_key" />
-                </el-select>
+                <el-tag>
+                    {{ selectedType?.display_name ?? job.type_key }}（{{ job.type_key }}）
+                </el-tag>
             </el-form-item>
             <el-form-item label="任务名称" required>
                 <el-input v-model="form.display_name" maxlength="120" />
             </el-form-item>
             <el-form-item label="参数版本">
-                <el-tag>{{ selectedType?.parameter_version ?? "—" }}</el-tag>
-                <span class="hint">必须与 JSON 根节点 version 一致</span>
+                <div class="parameter-version-field">
+                    <el-tag>{{ selectedType?.parameter_version ?? "—" }}</el-tag>
+                    <span class="hint">必须与 JSON 根节点 version 一致</span>
+                </div>
             </el-form-item>
             <el-form-item label="参数 JSON">
                 <div class="json-editor-field">
@@ -230,7 +192,7 @@ async function save(): Promise<void> {
             <el-form-item v-if="form.trigger.trigger_type === 'CRON'" label="Cron 表达式" required>
                 <el-input v-model="form.trigger.cron_expression" placeholder="Quartz 六字段，例如 0 0 1 * * ?" />
             </el-form-item>
-            <el-form-item v-if="form.trigger.trigger_type === 'CRON'" label="IANA 时区" required>
+            <el-form-item v-if="form.trigger.trigger_type === 'CRON'" label="任务执行时区" required>
                 <el-input v-model="form.trigger.time_zone" placeholder="例如 Asia/Shanghai；默认 UTC" />
             </el-form-item>
             <el-form-item v-if="form.trigger.trigger_type === 'SIMPLE'" label="执行方式" required>
@@ -283,6 +245,13 @@ async function save(): Promise<void> {
     color: var(--el-text-color-secondary);
     font-size: 12px;
     line-height: 1.4;
+}
+
+.parameter-version-field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
 }
 
 :deep(.form-control) {

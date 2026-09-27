@@ -82,13 +82,6 @@ declare global {
         misfire_instruction?: QuartzMisfireInstruction | null;
     }
 
-    interface QuartzJobCreateParams {
-        display_name: string;
-        type_key: string;
-        parameters_json: string;
-        trigger: QuartzTriggerParams;
-    }
-
     interface QuartzJobUpdateParams {
         display_name: string;
         parameters_json: string;

@@ -77,11 +77,6 @@ function changePageSize(value: number): void {
     void loadJobs();
 }
 
-function openCreate(): void {
-    editingJob.value = undefined;
-    editVisible.value = true;
-}
-
 function openEdit(job: QuartzJobVO): void {
     editingJob.value = job;
     editVisible.value = true;
@@ -187,7 +182,6 @@ onMounted(() => {
                 </el-form-item>
                 <el-form-item>
                     <el-button @click="resetFilter">重置</el-button>
-                    <el-button type="primary" @click="openCreate">新增任务</el-button>
                     <el-button @click="void loadJobs()">刷新</el-button>
                 </el-form-item>
             </el-form>
@@ -257,7 +251,12 @@ onMounted(() => {
                 @size-change="changePageSize" />
         </el-row>
 
-        <TaskEdit v-model="editVisible" :catalog="jobTypes" :job="editingJob" @saved="loadJobs" />
+        <TaskEdit
+            v-if="editVisible && editingJob"
+            v-model="editVisible"
+            :catalog="jobTypes"
+            :job="editingJob"
+            @saved="loadJobs" />
     </div>
 </template>
 

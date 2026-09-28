@@ -60,6 +60,7 @@ export default [
                     title: "编辑通知模板",
                     requiresAuth: true,
                     requiredMenu: "DevopsNotificationTemplate",
+                    requiredPermissions: ["notification:template:write"],
                     activeMenu: "DevopsNotificationTemplate"
                 }
             },

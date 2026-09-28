@@ -1,3 +1,5 @@
+import type { RouteRecordRaw } from "vue-router";
+
 /** 收集授权树中所有可点击菜单的路由名称 */
 export function collectAuthorizedRouteNames(menus: Menu[]): Set<string> {
     const result = new Set<string>();
@@ -12,6 +14,40 @@ export function collectAuthorizedRouteNames(menus: Menu[]): Set<string> {
         }
     }
     return result;
+}
+
+/** Keep dashboard shortcuts aligned with the current user's authorized menu routes. */
+export function filterAuthorizedShortcuts<T extends { routeName: string }>(
+    shortcuts: T[],
+    authorizedRouteNames: ReadonlySet<string>
+): T[] {
+    return shortcuts.filter(shortcut => authorizedRouteNames.has(shortcut.routeName));
+}
+
+/** 收集前端实际注册的命名路由，供服务端菜单树与当前页面能力对齐。 */
+export function collectRegisteredRouteNames(routes: readonly RouteRecordRaw[]): Set<string> {
+    const result = new Set<string>();
+    for (const route of routes) {
+        if (typeof route.name === "string") result.add(route.name);
+        if (route.children?.length) {
+            for (const routeName of collectRegisteredRouteNames(route.children)) {
+                result.add(routeName);
+            }
+        }
+    }
+    return result;
+}
+
+/** 仅保留能解析到已注册页面的菜单，并递归清理没有有效页面的目录。 */
+export function filterMenusByRegisteredRoutes(menus: Menu[], registeredRouteNames: ReadonlySet<string>): Menu[] {
+    return menus.flatMap(menu => {
+        if (menu.menuType === "MENU") {
+            return menu.routeName && registeredRouteNames.has(menu.routeName) ? [menu] : [];
+        }
+
+        const children = filterMenusByRegisteredRoutes(menu.children ?? [], registeredRouteNames);
+        return children.length ? [{ ...menu, children }] : [];
+    });
 }
 
 /** 按路由名称递归查找菜单 */

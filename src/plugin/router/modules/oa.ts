@@ -19,6 +19,7 @@ export default [
                     title: "新建资产",
                     requiresAuth: true,
                     requiredMenu: "OAAsset",
+                    requiredPermissions: ["oa:asset:create"],
                     activeMenu: "OAAsset"
                 }
             },
@@ -30,6 +31,7 @@ export default [
                     title: "采购收货转资产",
                     requiresAuth: true,
                     requiredMenu: "OAAsset",
+                    requiredPermissions: ["oa:asset:create", "oa:purchase:receive"],
                     activeMenu: "OAAsset"
                 }
             },
@@ -47,6 +49,7 @@ export default [
                     title: "新建办公用品",
                     requiresAuth: true,
                     requiredMenu: "OASupply",
+                    requiredPermissions: ["oa:purchase:create"],
                     activeMenu: "OASupply"
                 }
             },
@@ -64,6 +67,7 @@ export default [
                     title: "请假申请",
                     requiresAuth: true,
                     requiredMenu: "OALeave",
+                    requiredAnyPermissions: ["oa:leave:create", "oa:leave:update"],
                     activeMenu: "OALeave"
                 }
             },
@@ -81,6 +85,7 @@ export default [
                     title: "申请类型",
                     requiresAuth: true,
                     requiredMenu: "OAApplicationTypes",
+                    requiredAnyPermissions: ["oa:application-type:create", "oa:application-type:update"],
                     activeMenu: "OAApplicationTypes"
                 }
             },
@@ -137,6 +142,7 @@ export default [
                     title: "费用报销",
                     requiresAuth: true,
                     requiredMenu: "OAReimbursement",
+                    requiredAnyPermissions: ["oa:reimbursement:create", "oa:reimbursement:update"],
                     activeMenu: "OAReimbursement"
                 }
             },
@@ -154,6 +160,7 @@ export default [
                     title: "采购申请",
                     requiresAuth: true,
                     requiredMenu: "OAPurchase",
+                    requiredAnyPermissions: ["oa:purchase:create", "oa:purchase:update"],
                     activeMenu: "OAPurchase"
                 }
             },
@@ -171,6 +178,7 @@ export default [
                     title: "新建日程",
                     requiresAuth: true,
                     requiredMenu: "OACalendar",
+                    requiredPermissions: ["oa:calendar:create"],
                     activeMenu: "OACalendar"
                 }
             },
@@ -194,6 +202,7 @@ export default [
                     title: "合同管理",
                     requiresAuth: true,
                     requiredMenu: "OAContract",
+                    requiredAnyPermissions: ["oa:contract:create", "oa:contract:update"],
                     activeMenu: "OAContract"
                 }
             },
@@ -205,6 +214,7 @@ export default [
                     title: "新增履约节点",
                     requiresAuth: true,
                     requiredMenu: "OAContract",
+                    requiredPermissions: ["oa:contract:update"],
                     activeMenu: "OAContract"
                 }
             },
@@ -222,6 +232,7 @@ export default [
                     title: "文档管理",
                     requiresAuth: true,
                     requiredMenu: "OADocument",
+                    requiredAnyPermissions: ["oa:document:create", "oa:document:update"],
                     activeMenu: "OADocument"
                 }
             },
@@ -233,6 +244,7 @@ export default [
                     title: "新建文档目录",
                     requiresAuth: true,
                     requiredMenu: "OADocument",
+                    requiredPermissions: ["oa:document:create"],
                     activeMenu: "OADocument"
                 }
             },
@@ -250,6 +262,7 @@ export default [
                     title: "新建会议",
                     requiresAuth: true,
                     requiredMenu: "OAMeeting",
+                    requiredPermissions: ["oa:meeting:create"],
                     activeMenu: "OAMeeting"
                 }
             },
@@ -267,6 +280,7 @@ export default [
                     title: "发布公告",
                     requiresAuth: true,
                     requiredMenu: "OANotice",
+                    requiredPermissions: ["oa:notice:create"],
                     activeMenu: "OANotice"
                 }
             },

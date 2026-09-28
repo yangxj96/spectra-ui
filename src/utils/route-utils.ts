@@ -1,16 +1,35 @@
 import { SecurityContextApi } from "@/api/auth/security-context-api.ts";
 import { MenuApi } from "@/api/system/menu-api.ts";
 import { hideLoading } from "@/plugin/element/loading.ts";
+import routes from "@/plugin/router/routes.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
-import { collectAuthorizedRouteNames, filterMenusByRouteNames } from "@/utils/menu-utils.ts";
+import {
+    collectAuthorizedRouteNames,
+    collectRegisteredRouteNames,
+    filterMenusByRegisteredRoutes
+} from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
-const hiddenMenuRouteNames = new Set(["DevopsNotificationDeliveryRecord", "DevopsNotificationDeliveryTask"]);
-
 /** 判断命名路由是否具备菜单权限 */
-export function resolveRouteAccess(requiredMenu: string | undefined, authorizedRouteNames: Set<string>) {
+export function resolveRouteAccess(
+    requiredMenu: string | undefined,
+    authorizedRouteNames: Set<string>,
+    policy: {
+        requiredPermissions?: string[];
+        requiredAnyPermissions?: string[];
+        hasPermission?: (permission: string) => boolean;
+    } = {}
+) {
     if (requiredMenu && !authorizedRouteNames.has(requiredMenu)) return "/401";
+    const canAccessPermission = policy.hasPermission ?? (() => false);
+    if (policy.requiredPermissions?.some(permission => !canAccessPermission(permission))) return "/401";
+    if (
+        policy.requiredAnyPermissions?.length &&
+        !policy.requiredAnyPermissions.some(permission => canAccessPermission(permission))
+    ) {
+        return "/401";
+    }
     return undefined;
 }
 
@@ -18,6 +37,11 @@ export function resolveRouteAccess(requiredMenu: string | undefined, authorizedR
 export function resolvePasswordChangeRedirect(path: string, tab: unknown, required: boolean) {
     if (!required || (path === "/profile" && tab === "password")) return undefined;
     return { path: "/profile", query: { tab: "password" }, replace: true } as const;
+}
+
+/** The restricted initial-password session must enter its one allowed page without normal app bootstrap. */
+export function shouldBypassAuthenticatedBootstrap(path: string, tab: unknown, required: boolean): boolean {
+    return required && path === "/profile" && tab === "password";
 }
 
 /** 加载当前登录用户的授权菜单 */
@@ -29,7 +53,8 @@ export async function loadMenu(): Promise<boolean> {
     appStore.isFetchingMenus = true;
     try {
         const [loadedMenus, context] = await Promise.all([MenuApi.current(), SecurityContextApi.current()]);
-        const menus = filterMenusByRouteNames(loadedMenus, hiddenMenuRouteNames);
+        const registeredRouteNames = collectRegisteredRouteNames(routes);
+        const menus = filterMenusByRegisteredRoutes(loadedMenus, registeredRouteNames);
         useUserStore().token.permissions = context.permissions;
         appStore.menus = menus;
         appStore.authorizedRouteNames = collectAuthorizedRouteNames(menus);

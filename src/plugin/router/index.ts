@@ -9,7 +9,13 @@ import routes from "@/plugin/router/routes";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
-import { getRouteTitle, loadMenu, resolvePasswordChangeRedirect, resolveRouteAccess } from "@/utils/route-utils.ts";
+import {
+    getRouteTitle,
+    loadMenu,
+    resolvePasswordChangeRedirect,
+    resolveRouteAccess,
+    shouldBypassAuthenticatedBootstrap
+} from "@/utils/route-utils.ts";
 
 /**
  * 路由实例
@@ -61,12 +67,11 @@ router.beforeEach(async (to, _, next) => {
     }
 
     // 首次登录或管理员重置后的默认密码会限制为仅修改密码和退出。
-    const passwordChangeRedirect = resolvePasswordChangeRedirect(
-        to.path,
-        to.query.tab,
-        userStore.token.password_change_required === true
-    );
+    const passwordChangeRequired = userStore.token.password_change_required === true;
+    const passwordChangeRedirect = resolvePasswordChangeRedirect(to.path, to.query.tab, passwordChangeRequired);
     if (passwordChangeRedirect) return next(passwordChangeRedirect);
+    // This restricted session can only call password APIs; avoid guide/menu requests that would expire it.
+    if (shouldBypassAuthenticatedBootstrap(to.path, to.query.tab, passwordChangeRequired)) return next();
 
     // 3. 有 token 但访问登录页：重定向到主页
     if (to.path === "/login") {
@@ -123,7 +128,12 @@ router.beforeEach(async (to, _, next) => {
     // 6. 校验静态路由声明的菜单权限
     const accessTarget = resolveRouteAccess(
         typeof to.meta.requiredMenu === "string" ? to.meta.requiredMenu : undefined,
-        appStore.authorizedRouteNames
+        appStore.authorizedRouteNames,
+        {
+            requiredPermissions: to.meta.requiredPermissions,
+            requiredAnyPermissions: to.meta.requiredAnyPermissions,
+            hasPermission: useUserStore().hasPermission
+        }
     );
     if (accessTarget) return next({ path: accessTarget, replace: true });
 

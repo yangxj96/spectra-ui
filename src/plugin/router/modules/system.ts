@@ -19,6 +19,7 @@ export default [
                     title: "新增用户",
                     requiresAuth: true,
                     requiredMenu: "SystemUser",
+                    requiredPermissions: ["user:create"],
                     activeMenu: "SystemUser"
                 }
             },
@@ -30,6 +31,7 @@ export default [
                     title: "编辑用户",
                     requiresAuth: true,
                     requiredMenu: "SystemUser",
+                    requiredPermissions: ["user:update"],
                     activeMenu: "SystemUser"
                 }
             },
@@ -41,6 +43,7 @@ export default [
                     title: "批量导入用户",
                     requiresAuth: true,
                     requiredMenu: "SystemUser",
+                    requiredPermissions: ["user:create"],
                     activeMenu: "SystemUser"
                 }
             },
@@ -58,6 +61,7 @@ export default [
                     title: "新增角色",
                     requiresAuth: true,
                     requiredMenu: "SystemRoleManagement",
+                    requiredPermissions: ["role:create"],
                     activeMenu: "SystemRoleManagement"
                 }
             },
@@ -69,6 +73,7 @@ export default [
                     title: "编辑角色",
                     requiresAuth: true,
                     requiredMenu: "SystemRoleManagement",
+                    requiredPermissions: ["role:update"],
                     activeMenu: "SystemRoleManagement"
                 }
             },
@@ -92,6 +97,7 @@ export default [
                     title: "新建授权方案",
                     requiresAuth: true,
                     requiredMenu: "SystemAuthorizationProfiles",
+                    requiredPermissions: ["role:grant"],
                     activeMenu: "SystemAuthorizationProfiles"
                 }
             },
@@ -104,6 +110,7 @@ export default [
                     title: "编辑授权方案",
                     requiresAuth: true,
                     requiredMenu: "SystemAuthorizationProfiles",
+                    requiredPermissions: ["role:grant"],
                     activeMenu: "SystemAuthorizationProfiles"
                 }
             },
@@ -121,6 +128,7 @@ export default [
                     title: "合并到新部门",
                     requiresAuth: true,
                     requiredMenu: "SystemDept",
+                    requiredPermissions: ["department:create", "department:update"],
                     activeMenu: "SystemDept"
                 }
             },
@@ -132,6 +140,7 @@ export default [
                     title: "拆分直属成员",
                     requiresAuth: true,
                     requiredMenu: "SystemDept",
+                    requiredPermissions: ["department:create", "department:update", "user:read"],
                     activeMenu: "SystemDept"
                 }
             },
@@ -167,6 +176,7 @@ export default [
                     title: "流程编辑",
                     requiresAuth: true,
                     requiredMenu: "SystemWorkflow",
+                    requiredPermissions: ["workflow:process:update"],
                     activeMenu: "SystemWorkflow"
                 }
             }

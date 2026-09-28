@@ -5,8 +5,11 @@ import { useRouter } from "vue-router";
 
 import { WorkbenchApi } from "@/api/oa/workbench-api.ts";
 import { toLocalDateString } from "@/utils/date-utils.ts";
+import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
+import { filterAuthorizedShortcuts } from "@/utils/menu-utils.ts";
 
 const router = useRouter();
+const appStore = useAppStore();
 
 // ===== 问候 =====
 const greet = ref("");
@@ -25,20 +28,22 @@ const initTime = () => {
 };
 
 // ===== 快捷入口 =====
-const shortcuts = [
-    { name: "审批中心", path: "/oa/approval" },
-    { name: "请假申请", path: "/oa/leave" },
-    { name: "费用报销", path: "/oa/reimbursement" },
-    { name: "采购申请", path: "/oa/purchase" },
-    { name: "公告中心", path: "/oa/notice" },
-    { name: "我的日程", path: "/oa/calendar" },
-    { name: "会议管理", path: "/oa/meeting" },
-    { name: "通讯录", path: "/oa/contact" },
-    { name: "资产管理", path: "/oa/asset" },
-    { name: "办公用品", path: "/oa/supply" },
-    { name: "用户管理", path: "/system/user" },
-    { name: "流程管理", path: "/system/workflow" }
+const shortcutDefinitions = [
+    { name: "审批中心", path: "/oa/approval", routeName: "OAApproval" },
+    { name: "请假申请", path: "/oa/leave", routeName: "OALeave" },
+    { name: "费用报销", path: "/oa/reimbursement", routeName: "OAReimbursement" },
+    { name: "采购申请", path: "/oa/purchase", routeName: "OAPurchase" },
+    { name: "公告中心", path: "/oa/notice", routeName: "OANotice" },
+    { name: "我的日程", path: "/oa/calendar", routeName: "OACalendar" },
+    { name: "会议管理", path: "/oa/meeting", routeName: "OAMeeting" },
+    { name: "通讯录", path: "/oa/contact", routeName: "OAContact" },
+    { name: "资产管理", path: "/oa/asset", routeName: "OAAsset" },
+    { name: "办公用品", path: "/oa/supply", routeName: "OASupply" },
+    { name: "用户管理", path: "/system/user", routeName: "SystemUser" },
+    { name: "流程管理", path: "/system/workflow", routeName: "SystemWorkflow" }
 ];
+
+const shortcuts = computed(() => filterAuthorizedShortcuts(shortcutDefinitions, appStore.authorizedRouteNames));
 
 const go = (path: string) => router.push(path);
 

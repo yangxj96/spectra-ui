@@ -27,6 +27,10 @@ declare module "vue-router" {
         title?: string | (() => string);
         approvalProcessKey?: string;
         requiresAuth?: boolean;
+        requiredMenu?: string;
+        requiredPermissions?: string[];
+        requiredAnyPermissions?: string[];
+        activeMenu?: string;
     }
 }
 

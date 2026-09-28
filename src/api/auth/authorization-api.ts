@@ -96,6 +96,38 @@ export const AuthorizationApi = {
         );
     },
 
+    previewDepartmentMerge(params: DepartmentMergePreviewRequest): Promise<DepartmentRestructurePreview> {
+        return post<DepartmentRestructurePreview>(
+            "/api/security/authorization/departments/merge/impact-preview",
+            params,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
+    applyDepartmentMerge(params: DepartmentMergeApplyRequest): Promise<DepartmentRestructureApply> {
+        return post<DepartmentRestructureApply>(
+            "/api/security/authorization/departments/merge/impact-apply",
+            params,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
+    previewDepartmentSplit(params: DepartmentSplitPreviewRequest): Promise<DepartmentRestructurePreview> {
+        return post<DepartmentRestructurePreview>(
+            "/api/security/authorization/departments/split/impact-preview",
+            params,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
+    applyDepartmentSplit(params: DepartmentSplitApplyRequest): Promise<DepartmentRestructureApply> {
+        return post<DepartmentRestructureApply>(
+            "/api/security/authorization/departments/split/impact-apply",
+            params,
+            AUTHORIZATION_API_OPTIONS
+        );
+    },
+
     previewAssignment(userId: string, params: AuthorizationAssignmentChange): Promise<AuthorizationAssignmentPreview> {
         return post<AuthorizationAssignmentPreview>(
             `/api/security/authorization/users/${userId}/assignments/preview`,

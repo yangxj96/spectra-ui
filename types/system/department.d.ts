@@ -75,4 +75,40 @@ declare global {
 
     // 部门新增请求类型（主键和组织机构编码均由后端生成）
     type DepartmentCreateDTO = Omit<DepartmentDTO, "id" | "code">;
+
+    /** 分页查询部门直属成员的筛选条件。 */
+    type DepartmentMemberPage = {
+        departmentId: string;
+        keyword?: string;
+        pageNum: number;
+        pageSize: number;
+    };
+
+    /** 部门拆分时显示的最少直属成员信息。 */
+    type DepartmentMemberCandidate = {
+        id: string;
+        username: string;
+        real_name: string;
+        status: string;
+        primary_member: boolean;
+        associated_member: boolean;
+    };
+
+    /** 后端分页结果。 */
+    type PageResult<T> = {
+        records: T[];
+        total: number;
+        size: number;
+        current: number;
+        pages: number;
+    };
+
+    /** 合并或拆分时创建的新部门资料。 */
+    type DepartmentRestructureDepartment = {
+        name: string;
+        type: number;
+        region_id: string;
+        sort?: number;
+        remark?: string;
+    };
 }

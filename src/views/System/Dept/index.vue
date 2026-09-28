@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import DictTag from "@/components/DictTag/index.vue";
@@ -8,6 +9,7 @@ import { deptConverter } from "@/converter/dept-converter.ts";
 import DeptEdit from "./components/DeptEdit/index.vue";
 
 const table_data = ref<DepartmentTreeVO[]>();
+const router = useRouter();
 
 // 新增或编辑
 const edit = reactive({
@@ -53,6 +55,14 @@ const handleDialogClose = () => {
     }
     handleCriteriaQuery();
 };
+
+const handleMergeOpen = () => {
+    void router.push({ name: "SystemDeptMerge" });
+};
+
+const handleSplitOpen = () => {
+    void router.push({ name: "SystemDeptSplit" });
+};
 </script>
 
 <template>
@@ -66,6 +76,12 @@ const handleDialogClose = () => {
                 <el-button type="primary" @click="handleCriteriaQuery">查询</el-button>
                 <el-button>重置</el-button>
                 <el-button v-permission="'department:create'" @click="handleDepartmentAdd()">新增</el-button>
+                <el-button v-permission="['department:create', 'department:update']" @click="handleMergeOpen">
+                    部门合并
+                </el-button>
+                <el-button v-permission="['department:create', 'department:update']" @click="handleSplitOpen">
+                    部门拆分
+                </el-button>
             </el-form-item>
         </el-form>
     </el-row>

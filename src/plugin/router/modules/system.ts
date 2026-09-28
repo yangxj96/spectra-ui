@@ -114,6 +114,28 @@ export default [
                 meta: { title: "部门管理", requiresAuth: true, requiredMenu: "SystemDept" }
             },
             {
+                path: "dept/merge",
+                name: "SystemDeptMerge",
+                component: () => import("@/views/System/Dept/DeptMerge/index.vue"),
+                meta: {
+                    title: "合并到新部门",
+                    requiresAuth: true,
+                    requiredMenu: "SystemDept",
+                    activeMenu: "SystemDept"
+                }
+            },
+            {
+                path: "dept/split",
+                name: "SystemDeptSplit",
+                component: () => import("@/views/System/Dept/DeptSplit/index.vue"),
+                meta: {
+                    title: "拆分直属成员",
+                    requiresAuth: true,
+                    requiredMenu: "SystemDept",
+                    activeMenu: "SystemDept"
+                }
+            },
+            {
                 path: "dict",
                 name: "SystemDict",
                 component: () => import("@/views/System/Dict/index.vue"),

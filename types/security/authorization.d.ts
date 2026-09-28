@@ -116,6 +116,74 @@ declare global {
     /** 新部门 Apply 请求。部门主键由后端 MyBatis-Plus 插入时生成。 */
     type OrganizationCreateApply = OrganizationChangeApply;
 
+    /** 部门合并预览请求。 */
+    type DepartmentMergePreviewRequest = {
+        source_department_ids: string[];
+        department: DepartmentRestructureDepartment;
+        expected_organization_version: number;
+    };
+
+    /** 部门合并 Apply 请求。 */
+    type DepartmentMergeApplyRequest = DepartmentMergePreviewRequest & {
+        preview_token: string;
+    };
+
+    /** 部门部分拆分预览请求。 */
+    type DepartmentSplitPreviewRequest = {
+        source_department_id: string;
+        user_ids: string[];
+        department: DepartmentRestructureDepartment;
+        expected_organization_version: number;
+    };
+
+    /** 部门部分拆分 Apply 请求。 */
+    type DepartmentSplitApplyRequest = DepartmentSplitPreviewRequest & {
+        preview_token: string;
+    };
+
+    /** 合并或拆分的影响预览。 */
+    type DepartmentRestructurePreview = {
+        operation: "MERGE" | "SPLIT";
+        new_department_name: string;
+        new_department_type: number;
+        new_department_parent_id?: string;
+        new_department_region_id: string;
+        source_department_count: number;
+        moved_department_count: number;
+        affected_user_count: number;
+        primary_department_count: number;
+        associated_department_count: number;
+        deduplicated_associated_count: number;
+        affected_assignment_count: number;
+        affected_profile_count: number;
+        access_rule_count: number;
+        grant_rule_count: number;
+        profile_access_scope_count: number;
+        profile_grant_scope_count: number;
+        authorization_boundaries_changed: boolean;
+        expands_effective_authority: boolean;
+        effective_scope_change_summary: string;
+        historical_data_summary: string;
+        expected_organization_version: number;
+        after_organization_version: number;
+        expires_at: string;
+        preview_token: string;
+    };
+
+    /** 部门合并或拆分 Apply 结果。 */
+    type DepartmentRestructureApply = {
+        operation: "MERGE" | "SPLIT";
+        department_id: string;
+        organization_version: number;
+        moved_department_count: number;
+        affected_user_count: number;
+        primary_department_count: number;
+        associated_department_count: number;
+        deduplicated_associated_count: number;
+        affected_assignment_count: number;
+        affected_profile_count: number;
+    };
+
     /** 可复用授权方案中的 Scope 配置。部门使用稳定业务编码。 */
     type AuthorizationProfileScope = {
         mode: "NONE" | "ALL" | "SELF" | "RULES";

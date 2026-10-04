@@ -120,8 +120,10 @@ const eslintConfig: ReturnType<typeof defineConfigWithVueTs> = defineConfigWithV
 
             // 函数最大行数限制（防止函数过长）
             "max-lines-per-function": ["warn", 200],
-            // 函数最大参数数量限制
-            "max-params": ["warn", 4],
+            // 普通函数超过 15 圈复杂度、3 层嵌套或 5 个显式参数时报告
+            complexity: ["error", { max: 15, variant: "classic" }],
+            "max-depth": ["error", 3],
+            "max-params": ["error", { max: 5 }],
             // 禁止嵌套三元表达式（可读性差）
             "no-nested-ternary": "warn"
         }

@@ -1,0 +1,74 @@
+function cyclo15(value: number): number {
+    let result = 0;
+    if (value > 0) result++;
+    if (value > 1) result++;
+    if (value > 2) result++;
+    if (value > 3) result++;
+    if (value > 4) result++;
+    if (value > 5) result++;
+    if (value > 6) result++;
+    if (value > 7) result++;
+    if (value > 8) result++;
+    if (value > 9) result++;
+    if (value > 10) result++;
+    if (value > 11) result++;
+    if (value > 12) result++;
+    if (value > 13) result++;
+    return result;
+}
+
+function cyclo16(value: number): number {
+    let result = 0;
+    if (value > 0) result++;
+    if (value > 1) result++;
+    if (value > 2) result++;
+    if (value > 3) result++;
+    if (value > 4) result++;
+    if (value > 5) result++;
+    if (value > 6) result++;
+    if (value > 7) result++;
+    if (value > 8) result++;
+    if (value > 9) result++;
+    if (value > 10) result++;
+    if (value > 11) result++;
+    if (value > 12) result++;
+    if (value > 13) result++;
+    if (value > 14) result++;
+    return result;
+}
+
+function nested3(value: number): number {
+    if (value > 0) {
+        while (value < 10) {
+            switch (value) {
+                case 1: value++; break;
+                default: value += 2;
+            }
+        }
+    }
+    return value;
+}
+
+function nested4(value: number): number {
+    if (value > 0) {
+        while (value < 10) {
+            switch (value) {
+                case 1:
+                    if (value < 5) value++;
+                    break;
+                default: value += 2;
+            }
+        }
+    }
+    return value;
+}
+
+function params5(a: number, b: number, c: number, d: number, e?: number): number {
+    return a + b + c + d + (e ?? 0);
+}
+
+function params6(a: number, b: number, c: number, d: number, e?: number, ...rest: number[]): number {
+    return a + b + c + d + (e ?? 0) + rest.length;
+}
+
+void [cyclo15, cyclo16, nested3, nested4, params5, params6];

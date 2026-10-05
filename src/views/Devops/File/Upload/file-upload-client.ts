@@ -263,6 +263,35 @@ export class FileUploadClient {
         });
     }
 
+    private prepareUploadParts(session: UploadSession): { confirmed: Set<number>; partNumbers: number[] } {
+        const confirmed = new Set(session.completed_parts ?? []);
+        const partNumbers = Array.from({ length: session.total_parts ?? 0 }, (_, index) => index + 1).filter(
+            partNumber => !confirmed.has(partNumber)
+        );
+        return { confirmed, partNumbers };
+    }
+
+    private async finalizeUpload(session: UploadSession): Promise<void> {
+        const completed = await FileApi.complete(session.upload_id as string);
+        this.session = completed;
+        this.applySession(completed);
+        if (completed.status === "READY" && completed.file_asset_id) {
+            await this.store.remove(FileUploadStore.key(this.file?.size ?? 0, this.snapshotValue.content_sha256 ?? ""));
+            this.change({
+                state: "READY",
+                file_asset_id: completed.file_asset_id,
+                upload_progress: 100,
+                verification_progress: 100
+            });
+            return;
+        }
+        if (completed.status === "VERIFYING") {
+            await this.pollVerification(completed.upload_id);
+            return;
+        }
+        this.fail(completed.error_code ?? "FILE_UPLOAD_CONFLICT", "服务端未进入最终复核");
+    }
+
     private async runUpload(session: UploadSession): Promise<void> {
         if (!session.upload_id || !session.chunk_size || !session.total_parts) {
             this.fail("FILE_UPLOAD_CONFLICT", "服务端没有返回可上传的会话参数");
@@ -272,10 +301,7 @@ export class FileUploadClient {
             this.change({ state: "EXPIRED", error_code: session.error_code });
             return;
         }
-        const confirmed = new Set(session.completed_parts ?? []);
-        const partNumbers = Array.from({ length: session.total_parts }, (_, index) => index + 1).filter(
-            partNumber => !confirmed.has(partNumber)
-        );
+        const { confirmed, partNumbers } = this.prepareUploadParts(session);
         this.change({ state: "UPLOADING", total_parts: session.total_parts });
         const next = { value: 0 };
         this.abortController = new AbortController();
@@ -299,24 +325,7 @@ export class FileUploadClient {
             return;
         }
         if (this.paused || this.canceled) return;
-        const completed = await FileApi.complete(session.upload_id);
-        this.session = completed;
-        this.applySession(completed);
-        if (completed.status === "READY" && completed.file_asset_id) {
-            await this.store.remove(FileUploadStore.key(this.file?.size ?? 0, this.snapshotValue.content_sha256 ?? ""));
-            this.change({
-                state: "READY",
-                file_asset_id: completed.file_asset_id,
-                upload_progress: 100,
-                verification_progress: 100
-            });
-            return;
-        }
-        if (completed.status !== "VERIFYING") {
-            this.fail(completed.error_code ?? "FILE_UPLOAD_CONFLICT", "服务端未进入最终复核");
-            return;
-        }
-        await this.pollVerification(completed.upload_id);
+        await this.finalizeUpload(session);
     }
 
     private async uploadPart(session: UploadSession, partNumber: number, confirmed: Set<number>): Promise<void> {

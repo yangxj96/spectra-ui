@@ -161,35 +161,51 @@ export async function requestBinary(
     const controller = new AbortController();
     // 注册到统一请求生命周期，登录失效时可以取消正在进行的本地上传。
     registerRequest(key, controller);
-    if (options.signal) {
-        if (options.signal.aborted) controller.abort();
-        else options.signal.addEventListener("abort", () => controller.abort(), { once: true });
-    }
+    bindAbortSignal(options.signal, controller);
     try {
-        let token = auth === "required" ? getAccessToken() : null;
-        let retried = false;
-        while (true) {
-            try {
-                return await send(url, body, { ...options, auth }, { token, controller });
-            } catch (error) {
-                if (
-                    // 仅本地认证请求允许刷新；预签名地址和显式关闭重试的调用直接抛出原错误。
-                    error instanceof BinaryRequestError &&
-                    error.status === 401 &&
-                    auth === "required" &&
-                    options.retryOnAuth !== false &&
-                    !retried
-                ) {
-                    retried = true;
-                    const newToken = await refreshAccessToken();
-                    if (!newToken) return expireAndReject();
-                    token = newToken.access_token;
-                    continue;
-                }
-                throw error;
-            }
-        }
+        return await sendWithAuthRetry(url, body, options, auth, controller);
     } finally {
         unregisterRequest(key);
     }
+}
+
+function bindAbortSignal(signal: AbortSignal | undefined, controller: AbortController): void {
+    if (!signal) return;
+    if (signal.aborted) {
+        controller.abort();
+        return;
+    }
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
+}
+
+async function sendWithAuthRetry(
+    url: string,
+    body: Blob | ArrayBuffer | ArrayBufferView,
+    options: XhrRequestOptions,
+    auth: "required" | "skip",
+    controller: AbortController
+): Promise<BinaryResponse> {
+    let token = auth === "required" ? getAccessToken() : null;
+    let retried = false;
+    while (true) {
+        try {
+            return await send(url, body, { ...options, auth }, { token, controller });
+        } catch (error) {
+            if (!canRefresh(error, auth, options, retried)) throw error;
+            retried = true;
+            const newToken = await refreshAccessToken();
+            if (!newToken) return expireAndReject();
+            token = newToken.access_token;
+        }
+    }
+}
+
+function canRefresh(error: unknown, auth: "required" | "skip", options: XhrRequestOptions, retried: boolean): boolean {
+    return (
+        error instanceof BinaryRequestError &&
+        error.status === 401 &&
+        auth === "required" &&
+        options.retryOnAuth !== false &&
+        !retried
+    );
 }

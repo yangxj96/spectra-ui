@@ -230,6 +230,17 @@ function validateParameterValues(): boolean {
     return true;
 }
 
+function parseStructuredParameter(field: TemplateParameterField, value: string): unknown {
+    const parsed = JSON.parse(value) as unknown;
+    if (field.type === "array" && !Array.isArray(parsed)) {
+        throw new Error("模板参数必须是 JSON 数组");
+    }
+    if (field.type === "object" && !isRecord(parsed)) {
+        throw new Error("模板参数必须是 JSON 对象");
+    }
+    return parsed;
+}
+
 function prepareParameters(): Record<string, unknown> | undefined {
     if (!validateParameterValues()) return undefined;
     const parameters: Record<string, unknown> = {};
@@ -237,14 +248,7 @@ function prepareParameters(): Record<string, unknown> | undefined {
         const value = form.parameters[field.name];
         if ((field.type === "array" || field.type === "object") && typeof value === "string" && value.trim()) {
             try {
-                const parsed = JSON.parse(value) as unknown;
-                if (field.type === "array" && !Array.isArray(parsed)) {
-                    throw new Error("模板参数必须是 JSON 数组");
-                }
-                if (field.type === "object" && !isRecord(parsed)) {
-                    throw new Error("模板参数必须是 JSON 对象");
-                }
-                parameters[field.name] = parsed;
+                parameters[field.name] = parseStructuredParameter(field, value);
             } catch {
                 validationMessage.value = `模板参数“${field.label}”格式不正确`;
                 MessageUtils.error(validationMessage.value);

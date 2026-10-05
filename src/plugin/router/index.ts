@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHashHistory, type NavigationGuardNext, type RouteLocationNormalized } from "vue-router";
 
 import { fetchClientPrivateKey } from "@/api/system/crypto-api.ts";
 import { SystemGuideApi } from "@/api/system/system-guide-api.ts";
@@ -34,6 +34,65 @@ const router = createRouter({
 
 /** 无需登录即可访问的路径白名单 */
 const whiteList = new Set(["/login", "/initialization"]);
+
+async function resolveGuideAccess(
+    to: RouteLocationNormalized,
+    appStore: ReturnType<typeof useAppStore>,
+    next: NavigationGuardNext
+): Promise<boolean> {
+    const isSystemGuide = to.path === "/system-guide";
+    let guideStatus = appStore.system_guide;
+    if (!appStore.system_guide_loaded) {
+        try {
+            guideStatus = await SystemGuideApi.status();
+            appStore.setSystemGuideStatus(guideStatus);
+        } catch (error) {
+            console.error("[守卫] 查询系统设置引导状态失败", error);
+            hideLoading();
+            if (isSystemGuide) next();
+            else next(false);
+            return true;
+        }
+    }
+    if (guideStatus.required && !isSystemGuide) {
+        next({ path: "/system-guide", query: { redirect: to.fullPath }, replace: true });
+        return true;
+    }
+    if (!guideStatus.required && isSystemGuide) {
+        const redirect = typeof to.query.redirect === "string" && to.query.redirect.startsWith("/") ? to.query.redirect : "/";
+        next({ path: redirect, replace: true });
+        return true;
+    }
+    if (isSystemGuide) {
+        showLoading();
+        next();
+        return true;
+    }
+    return false;
+}
+
+async function resolveMenuAccess(
+    to: RouteLocationNormalized,
+    next: NavigationGuardNext,
+    appStore: ReturnType<typeof useAppStore>,
+    token: ReturnType<typeof useUserStore>["token"],
+    tokenValidated: boolean
+): Promise<boolean> {
+    if (appStore.menusLoaded && !sessionStorage.getItem("reloaded")) return false;
+    const valid = tokenValidated || Boolean(token.access_token) || (await validateToken());
+    if (!valid) {
+        hideLoading();
+        next({ path: "/login" });
+        return true;
+    }
+    if (useCryptoStore().enabled && !useCryptoStore().client_private_key) await fetchClientPrivateKey();
+    if (!(await loadMenu())) {
+        next(false);
+        return true;
+    }
+    next({ ...to, replace: true });
+    return true;
+}
 
 // 路由前置守卫
 router.beforeEach(async (to, _, next) => {
@@ -80,50 +139,10 @@ router.beforeEach(async (to, _, next) => {
     }
 
     // 4. DEV_OPS 首次登录必须完成系统设置引导；其他用户直接视为不需要引导。
-    const isSystemGuide = to.path === "/system-guide";
-    let guideStatus = appStore.system_guide;
-    if (!appStore.system_guide_loaded) {
-        try {
-            guideStatus = await SystemGuideApi.status();
-            appStore.setSystemGuideStatus(guideStatus);
-        } catch (error) {
-            console.error("[守卫] 查询系统设置引导状态失败", error);
-            hideLoading();
-            return isSystemGuide ? next() : next(false);
-        }
-    }
-    if (guideStatus.required && !isSystemGuide) {
-        console.debug("[守卫] 系统设置引导未完成，跳转引导页");
-        return next({ path: "/system-guide", query: { redirect: to.fullPath }, replace: true });
-    }
-    if (!guideStatus.required && isSystemGuide) {
-        const redirect =
-            typeof to.query.redirect === "string" && to.query.redirect.startsWith("/") ? to.query.redirect : "/";
-        return next({ path: redirect, replace: true });
-    }
-    if (isSystemGuide) {
-        showLoading();
-        return next();
-    }
+    if (await resolveGuideAccess(to, appStore, next)) return;
 
     // 5. 需要加载菜单（首次进入或刷新）
-    if (!appStore.menusLoaded || sessionStorage.getItem("reloaded")) {
-        console.debug("[守卫] 需要验证token并加载菜单");
-        // 登录刚完成时已有新签发的 Access Token，直接使用它加载菜单。
-        // 只有刷新页面、内存中没有 Access Token 时，才需要通过 Refresh Cookie 恢复会话。
-        const valid = tokenValidated || Boolean(token.access_token) || (await validateToken());
-        if (!valid) {
-            console.debug("[守卫] token验证失败，跳转登录页");
-            hideLoading();
-            return next({ path: "/login" });
-        }
-        // 获取客户端私钥（用于解密后续响应）
-        if (useCryptoStore().enabled && !useCryptoStore().client_private_key) {
-            await fetchClientPrivateKey();
-        }
-        if (!(await loadMenu())) return next(false);
-        return next({ ...to, replace: true });
-    }
+    if (await resolveMenuAccess(to, next, appStore, token, tokenValidated)) return;
 
     // 6. 校验静态路由声明的菜单权限
     const accessTarget = resolveRouteAccess(

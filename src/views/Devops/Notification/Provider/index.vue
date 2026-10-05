@@ -165,31 +165,34 @@ function reasonLabel(reason: string | null | undefined): string {
     return reasonLabels[reason] ?? reason;
 }
 
+function providerEditorFieldsDiffer(provider: NotificationProviderVO, form: ProviderEditor): boolean {
+    const fields: Array<[unknown, unknown]> = [
+        [form.provider_type, provider.provider_type ?? "MOCK"],
+        [form.enabled, provider.enabled],
+        [form.endpoint, provider.endpoint ?? ""],
+        [form.port, provider.port],
+        [form.region, provider.region ?? ""],
+        [form.credential_id, provider.credential_id ?? ""],
+        [form.app_id, provider.app_id ?? ""],
+        [form.sign_name, provider.sign_name ?? ""],
+        [form.sender_address, provider.sender_address ?? ""],
+        [form.sender_name, provider.sender_name ?? ""],
+        [form.ssl_enabled, provider.ssl_enabled],
+        [form.starttls_enabled, provider.starttls_enabled],
+        [form.timeout_ms, provider.timeout_ms],
+        [form.rate_limit_per_second, provider.rate_limit_per_second],
+        [form.max_attempts, provider.max_attempts],
+        [form.template_code, provider.template_code ?? ""],
+        [form.template_parameter_order, provider.template_parameter_order ?? ""]
+    ];
+    return fields.some(([current, saved]) => current !== saved);
+}
+
 function providerEditorDirty(provider: NotificationProviderVO): boolean {
     if (provider.channel === "IN_APP") return false;
     const form = editor(provider.channel);
     if (provider.state === "NOT_CONFIGURED") return true;
-    return (
-        form.provider_type !== (provider.provider_type ?? "MOCK") ||
-        form.enabled !== provider.enabled ||
-        form.endpoint !== (provider.endpoint ?? "") ||
-        form.port !== provider.port ||
-        form.region !== (provider.region ?? "") ||
-        form.credential_id !== (provider.credential_id ?? "") ||
-        form.app_id !== (provider.app_id ?? "") ||
-        form.sign_name !== (provider.sign_name ?? "") ||
-        form.sender_address !== (provider.sender_address ?? "") ||
-        form.sender_name !== (provider.sender_name ?? "") ||
-        form.ssl_enabled !== provider.ssl_enabled ||
-        form.starttls_enabled !== provider.starttls_enabled ||
-        form.timeout_ms !== provider.timeout_ms ||
-        form.rate_limit_per_second !== provider.rate_limit_per_second ||
-        form.max_attempts !== provider.max_attempts ||
-        form.template_code !== (provider.template_code ?? "") ||
-        form.template_parameter_order !== (provider.template_parameter_order ?? "") ||
-        form.secret.trim() !== "" ||
-        form.clear_secret
-    );
+    return providerEditorFieldsDiffer(provider, form) || form.secret.trim() !== "" || form.clear_secret;
 }
 
 function displayedProviderType(provider: NotificationProviderVO): string | null | undefined {
@@ -282,20 +285,32 @@ function providerTypeChanged(channel: ExternalChannel): void {
     form.clear_secret = false;
 }
 
+function providerEditorDefaults(provider: NotificationProviderVO): Pick<ProviderEditor, "port" | "timeout_ms" | "rate_limit_per_second" | "max_attempts"> {
+    const isMock = provider.provider_type === "MOCK";
+    const defaultNumber = (value: number, fallback: number): number => value || fallback;
+    return {
+        port: defaultNumber(provider.port, provider.provider_type === "SMTP" ? 587 : 0),
+        timeout_ms: isMock ? 0 : defaultNumber(provider.timeout_ms, 5000),
+        rate_limit_per_second: isMock ? 0 : defaultNumber(provider.rate_limit_per_second, 10),
+        max_attempts: isMock ? 1 : defaultNumber(provider.max_attempts, 3)
+    };
+}
+
 function overviewChannel(channel: NotificationAdminChannel): NotificationOverviewChannelSummary | undefined {
     return overview.value?.channels.find(item => item.availability.channel === channel);
 }
 
 function syncEditor(provider: NotificationProviderVO): void {
     if (provider.channel === "IN_APP") return;
-    const isMockProviderType = provider.provider_type === "MOCK";
+    const providerType = providerOptions(provider.channel).includes(provider.provider_type as never)
+        ? (provider.provider_type as ProviderEditor["provider_type"])
+        : "MOCK";
+    const defaults = providerEditorDefaults(provider);
     editors[provider.channel] = {
-        provider_type: providerOptions(provider.channel).includes(provider.provider_type as never)
-            ? (provider.provider_type as ProviderEditor["provider_type"])
-            : "MOCK",
+        provider_type: providerType,
         enabled: provider.enabled,
         endpoint: provider.endpoint ?? "",
-        port: provider.port || (provider.provider_type === "SMTP" ? 587 : 0),
+        port: defaults.port,
         region: provider.region ?? "",
         credential_id: provider.credential_id ?? "",
         app_id: provider.app_id ?? "",
@@ -304,9 +319,9 @@ function syncEditor(provider: NotificationProviderVO): void {
         sender_name: provider.sender_name ?? "",
         ssl_enabled: provider.ssl_enabled ?? false,
         starttls_enabled: provider.starttls_enabled ?? false,
-        timeout_ms: isMockProviderType ? 0 : provider.timeout_ms || 5000,
-        rate_limit_per_second: isMockProviderType ? 0 : provider.rate_limit_per_second || 10,
-        max_attempts: isMockProviderType ? 1 : provider.max_attempts || 3,
+        timeout_ms: defaults.timeout_ms,
+        rate_limit_per_second: defaults.rate_limit_per_second,
+        max_attempts: defaults.max_attempts,
         template_code: provider.template_code ?? "",
         template_parameter_order: provider.template_parameter_order ?? "",
         secret: "",
@@ -343,35 +358,27 @@ async function loadData(): Promise<void> {
 }
 
 function validateEditor(channel: ExternalChannel, form: ProviderEditor): boolean {
-    if (isHttpProvider(form) && !form.endpoint.trim()) {
-        MessageUtils.error(`${channelLabel(channel)} 的 HTTP 端点不能为空。`);
-        return false;
-    }
-    if (isSmsProvider(form) && !form.credential_id.trim()) {
-        MessageUtils.error(`${providerTypeLabel(form.provider_type)}必须填写凭据标识。`);
-        return false;
-    }
-    if (form.provider_type === "ALIYUN_SMS" && (!form.sign_name.trim() || !form.template_code.trim())) {
-        MessageUtils.error("阿里云短信必须填写已审核的短信签名和 TemplateCode。 ");
-        return false;
-    }
-    if (
-        form.provider_type === "TENCENT_SMS" &&
-        (!form.app_id.trim() || !form.sign_name.trim() || !form.template_code.trim())
-    ) {
-        MessageUtils.error("腾讯云短信必须填写 SmsSdkAppId、已审核签名和 TemplateId。 ");
-        return false;
-    }
-    if (isSmtpProvider(form) && (!form.endpoint.trim() || !form.credential_id.trim() || !form.sender_address.trim())) {
-        MessageUtils.error("SMTP 必须填写主机、用户名和发件地址。 ");
-        return false;
-    }
-    if (isSmtpProvider(form) && form.ssl_enabled && form.starttls_enabled) {
-        MessageUtils.error("SMTP 不能同时启用隐式 SSL 和 STARTTLS。 ");
-        return false;
-    }
-    if (form.clear_secret && form.secret.trim()) {
-        MessageUtils.error("清除密钥时不能同时填写新的密钥。");
+    const checks: Array<[boolean, string]> = [
+        [isHttpProvider(form) && !form.endpoint.trim(), `${channelLabel(channel)} 的 HTTP 端点不能为空。`],
+        [isSmsProvider(form) && !form.credential_id.trim(), `${providerTypeLabel(form.provider_type)}必须填写凭据标识。`],
+        [
+            form.provider_type === "ALIYUN_SMS" && (!form.sign_name.trim() || !form.template_code.trim()),
+            "阿里云短信必须填写已审核的短信签名和 TemplateCode。 "
+        ],
+        [
+            form.provider_type === "TENCENT_SMS" && (!form.app_id.trim() || !form.sign_name.trim() || !form.template_code.trim()),
+            "腾讯云短信必须填写 SmsSdkAppId、已审核签名和 TemplateId。 "
+        ],
+        [
+            isSmtpProvider(form) && (!form.endpoint.trim() || !form.credential_id.trim() || !form.sender_address.trim()),
+            "SMTP 必须填写主机、用户名和发件地址。 "
+        ],
+        [isSmtpProvider(form) && form.ssl_enabled && form.starttls_enabled, "SMTP 不能同时启用隐式 SSL 和 STARTTLS。 "],
+        [form.clear_secret && form.secret.trim() !== "", "清除密钥时不能同时填写新的密钥。"]
+    ];
+    const failure = checks.find(([invalid]) => invalid);
+    if (failure) {
+        MessageUtils.error(failure[1]);
         return false;
     }
     return true;

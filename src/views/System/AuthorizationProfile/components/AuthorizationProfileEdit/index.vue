@@ -435,6 +435,69 @@ function validateScope(scope: ProfileScopeDraft, permission: string, label: stri
     return true;
 }
 
+function validateAssignmentBoundaries(
+    assignment: ProfileAssignmentDraft,
+    rolePermissionCodes: Set<string>,
+    grantableCodes: Set<string>
+): boolean {
+    const permissionCodes = new Set<string>();
+    for (const boundary of assignment.boundaries) {
+        if (!permissionCodes.add(boundary.permission)) {
+            MessageUtils.warning(`权限不能重复配置：${boundary.permission}`);
+            return false;
+        }
+        if (!rolePermissionCodes.has(boundary.permission)) {
+            MessageUtils.warning(`${assignment.role_code} 未声明权限：${boundary.permission}`);
+            return false;
+        }
+        if (!validateScope(boundary.access, boundary.permission, "访问范围")) return false;
+        if (boundary.grant) {
+            if (!grantableCodes.has(boundary.permission)) {
+                MessageUtils.warning(`${assignment.role_code} 未声明可授权权限：${boundary.permission}`);
+                return false;
+            }
+            if (!validateScope(boundary.grant, boundary.permission, "授权范围")) return false;
+        }
+    }
+    return true;
+}
+
+function validateAssignment(assignment: ProfileAssignmentDraft, roleCodes: Set<string>): boolean {
+    if (!assignment.role_code) {
+        MessageUtils.warning("请选择角色");
+        return false;
+    }
+    if (!roleCodes.add(assignment.role_code)) {
+        MessageUtils.warning("同一个授权方案不能重复配置角色");
+        return false;
+    }
+    const role = roles.value.find(item => item.code === assignment.role_code);
+    const authorization = roleAuthorization(assignment.role_code);
+    if (!role || !authorization) {
+        MessageUtils.warning(`无法读取角色授权信息：${assignment.role_code}`);
+        return false;
+    }
+    if (role.role_kind === "DEV_OPS") {
+        MessageUtils.warning("DEV_OPS 角色不能通过普通授权方案配置");
+        return false;
+    }
+    if (assignment.role_version !== authorization.version) {
+        MessageUtils.warning(`${assignment.role_code} 的角色版本已变化，请重新选择角色`);
+        return false;
+    }
+    const rolePermissionCodes = new Set(authorization.permission_codes);
+    const grantableCodes = new Set(authorization.grantable_permission_codes);
+    if (!assignment.boundaries.length) {
+        if (rolePermissionCodes.size > 0) {
+            MessageUtils.warning(`角色「${roleName(assignment.role_code)}」至少需要一个权限访问范围`);
+            return false;
+        }
+        return true;
+    }
+    if (!validateAssignmentBoundaries(assignment, rolePermissionCodes, grantableCodes)) return false;
+    return true;
+}
+
 function validateAssignments(): boolean {
     if (!form.assignments.length) {
         MessageUtils.warning("至少配置一个角色");
@@ -442,56 +505,7 @@ function validateAssignments(): boolean {
     }
     const roleCodes = new Set<string>();
     for (const assignment of form.assignments) {
-        if (!assignment.role_code) {
-            MessageUtils.warning("请选择角色");
-            return false;
-        }
-        if (!roleCodes.add(assignment.role_code)) {
-            MessageUtils.warning("同一个授权方案不能重复配置角色");
-            return false;
-        }
-        const role = roles.value.find(item => item.code === assignment.role_code);
-        const authorization = roleAuthorization(assignment.role_code);
-        if (!role || !authorization) {
-            MessageUtils.warning(`无法读取角色授权信息：${assignment.role_code}`);
-            return false;
-        }
-        if (role.role_kind === "DEV_OPS") {
-            MessageUtils.warning("DEV_OPS 角色不能通过普通授权方案配置");
-            return false;
-        }
-        if (assignment.role_version !== authorization.version) {
-            MessageUtils.warning(`${assignment.role_code} 的角色版本已变化，请重新选择角色`);
-            return false;
-        }
-        const permissionCodes = new Set<string>();
-        const rolePermissionCodes = new Set(authorization.permission_codes);
-        const grantableCodes = new Set(authorization.grantable_permission_codes);
-        if (!assignment.boundaries.length) {
-            if (rolePermissionCodes.size > 0) {
-                MessageUtils.warning(`角色「${roleName(assignment.role_code)}」至少需要一个权限访问范围`);
-                return false;
-            }
-            continue;
-        }
-        for (const boundary of assignment.boundaries) {
-            if (!permissionCodes.add(boundary.permission)) {
-                MessageUtils.warning(`权限不能重复配置：${boundary.permission}`);
-                return false;
-            }
-            if (!rolePermissionCodes.has(boundary.permission)) {
-                MessageUtils.warning(`${assignment.role_code} 未声明权限：${boundary.permission}`);
-                return false;
-            }
-            if (!validateScope(boundary.access, boundary.permission, "访问范围")) return false;
-            if (boundary.grant) {
-                if (!grantableCodes.has(boundary.permission)) {
-                    MessageUtils.warning(`${assignment.role_code} 未声明可授权权限：${boundary.permission}`);
-                    return false;
-                }
-                if (!validateScope(boundary.grant, boundary.permission, "授权范围")) return false;
-            }
-        }
+        if (!validateAssignment(assignment, roleCodes)) return false;
     }
     return true;
 }

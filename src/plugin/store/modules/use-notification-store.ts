@@ -17,6 +17,29 @@ const notificationPurposeConfigs: NotificationPurposeConfig[] = [
     { purpose: "RESET_PASSWORD_CODE", label: "密码重置验证", color: "#909399", icon: "icon-lock" }
 ];
 
+function buildNotificationQuery(params?: NotificationQueryParams): NotificationQueryParams {
+    const queryParams: NotificationQueryParams = {
+        page_num: params?.page_num ?? 1,
+        page_size: params?.page_size ?? 20
+    };
+    const optionalKeys: Array<keyof NotificationQueryParams> = [
+        "is_read",
+        "keyword",
+        "start_time",
+        "end_time"
+    ];
+    if (params?.purpose && params.purpose !== "all") {
+        queryParams.purpose = params.purpose;
+    }
+    optionalKeys.forEach(key => {
+        const value = params?.[key];
+        if (value !== undefined && value !== "") {
+            queryParams[key] = value as never;
+        }
+    });
+    return queryParams;
+}
+
 /** 通知 Store 状态 */
 interface NotificationState {
     /** 当前页消息列表 */
@@ -80,26 +103,7 @@ export const useNotificationStore = defineStore("notification", {
         async fetchNotifications(params?: NotificationQueryParams): Promise<void> {
             this.loading = true;
             try {
-                const queryParams: NotificationQueryParams = {
-                    page_num: params?.page_num ?? 1,
-                    page_size: params?.page_size ?? 20
-                };
-                if (params?.purpose && params.purpose !== "all") {
-                    queryParams.purpose = params.purpose;
-                }
-                if (params?.is_read !== undefined) {
-                    queryParams.is_read = params.is_read;
-                }
-                if (params?.keyword) {
-                    queryParams.keyword = params.keyword;
-                }
-                if (params?.start_time) {
-                    queryParams.start_time = params.start_time;
-                }
-                if (params?.end_time) {
-                    queryParams.end_time = params.end_time;
-                }
-                const result = await NotificationApi.list(queryParams);
+                const result = await NotificationApi.list(buildNotificationQuery(params));
                 this.notifications = result.records ?? [];
                 this.total = result.total ?? 0;
             } catch (error) {

@@ -275,6 +275,38 @@ function removeBoundary(draft: RoleAssignmentDraft, permission: string): void {
     draft.boundaries = draft.boundaries.filter(boundary => boundary.permission !== permission);
 }
 
+function warnInvalidBoundary(draft: RoleAssignmentDraft, boundary: RoleAssignmentDraft["boundaries"][number], rolePermissionCodes: Set<string>): boolean {
+    if (!rolePermissionCodes.has(boundary.permission)) {
+        MessageUtils.warning(`角色“${roleLabel(draft)}”未声明权限：${boundary.permission}`);
+        return false;
+    }
+    if (!scopeModesFor(boundary.permission).includes(boundary.access.mode)) {
+        MessageUtils.warning(`权限 ${boundary.permission} 不允许访问范围模式：${boundary.access.mode}`);
+        return false;
+    }
+    if (boundary.access.mode === "RULES" && !boundary.access.department_ids.length) {
+        MessageUtils.warning(`角色“${roleLabel(draft)}”的权限 ${boundary.permission} 必须选择访问组织`);
+        return false;
+    }
+    return true;
+}
+
+function warnInvalidGrant(draft: RoleAssignmentDraft, boundary: RoleAssignmentDraft["boundaries"][number]): boolean {
+    if (!grantablePermissionCodes(draft).has(boundary.permission)) {
+        MessageUtils.warning(`角色“${roleLabel(draft)}”未声明可授予权限：${boundary.permission}`);
+        return false;
+    }
+    if (!scopeModesFor(boundary.permission).includes(boundary.grant.mode)) {
+        MessageUtils.warning(`权限 ${boundary.permission} 不允许授权范围模式：${boundary.grant.mode}`);
+        return false;
+    }
+    if (boundary.grant.mode === "RULES" && !boundary.grant.department_ids.length) {
+        MessageUtils.warning(`角色“${roleLabel(draft)}”的权限 ${boundary.permission} 必须选择授权组织`);
+        return false;
+    }
+    return true;
+}
+
 function validateDraft(draft: RoleAssignmentDraft): boolean {
     if (!isRoleEditable(draft)) {
         MessageUtils.warning(`角色“${roleLabel(draft)}”不可编辑，请移除该角色后再提交`);
@@ -289,32 +321,8 @@ function validateDraft(draft: RoleAssignmentDraft): boolean {
         return true;
     }
     for (const boundary of draft.boundaries) {
-        if (!rolePermissionCodes.has(boundary.permission)) {
-            MessageUtils.warning(`角色“${roleLabel(draft)}”未声明权限：${boundary.permission}`);
-            return false;
-        }
-        if (!scopeModesFor(boundary.permission).includes(boundary.access.mode)) {
-            MessageUtils.warning(`权限 ${boundary.permission} 不允许访问范围模式：${boundary.access.mode}`);
-            return false;
-        }
-        if (boundary.access.mode === "RULES" && !boundary.access.department_ids.length) {
-            MessageUtils.warning(`角色“${roleLabel(draft)}”的权限 ${boundary.permission} 必须选择访问组织`);
-            return false;
-        }
-        if (boundary.grantEnabled) {
-            if (!grantablePermissionCodes(draft).has(boundary.permission)) {
-                MessageUtils.warning(`角色“${roleLabel(draft)}”未声明可授予权限：${boundary.permission}`);
-                return false;
-            }
-            if (!scopeModesFor(boundary.permission).includes(boundary.grant.mode)) {
-                MessageUtils.warning(`权限 ${boundary.permission} 不允许授权范围模式：${boundary.grant.mode}`);
-                return false;
-            }
-            if (boundary.grant.mode === "RULES" && !boundary.grant.department_ids.length) {
-                MessageUtils.warning(`角色“${roleLabel(draft)}”的权限 ${boundary.permission} 必须选择授权组织`);
-                return false;
-            }
-        }
+        if (!warnInvalidBoundary(draft, boundary, rolePermissionCodes)) return false;
+        if (boundary.grantEnabled && !warnInvalidGrant(draft, boundary)) return false;
     }
     return true;
 }

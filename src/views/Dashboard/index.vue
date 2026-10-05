@@ -4,8 +4,8 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { WorkbenchApi } from "@/api/oa/workbench-api.ts";
-import { toLocalDateString } from "@/utils/date-utils.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
+import { toLocalDateString } from "@/utils/date-utils.ts";
 import { filterAuthorizedShortcuts } from "@/utils/menu-utils.ts";
 
 const router = useRouter();

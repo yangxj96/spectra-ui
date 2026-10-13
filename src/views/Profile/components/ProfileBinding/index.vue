@@ -4,6 +4,8 @@ import { ElMessageBox } from "element-plus";
 import { computed, onMounted, ref, type Component } from "vue";
 
 import { AuthenticationIdentityApi } from "@/api/authentication/identity-api";
+import { expireSession } from "@/plugin/request/auth.ts";
+import { GlobalUtils } from "@/utils/global-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 defineOptions({
@@ -209,14 +211,17 @@ async function handleUnbind(identityId: string) {
         });
 
         await AuthenticationIdentityApi.unbind(identityId);
-        MessageUtils.success("解绑成功");
-        loadBindings();
     } catch (err: unknown) {
         if (err !== "cancel") {
             const message = err instanceof Error ? err.message : "解绑失败";
             MessageUtils.error(message);
         }
+        return;
     }
+
+    await expireSession();
+    MessageUtils.success("解绑成功，请重新登录");
+    GlobalUtils.toLogin();
 }
 
 onMounted(() => {

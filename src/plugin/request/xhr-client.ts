@@ -56,14 +56,18 @@ function responseHeaders(xhr: XMLHttpRequest): Headers {
 function parseXhrError(xhr: XMLHttpRequest, headers: Headers): BinaryRequestError {
     // 上传接口可能返回统一 JSON，也可能只返回文本或响应头错误码，按优先级保留可展示消息。
     const raw = xhr.responseText;
-    let payload: { code?: number | string; msg?: string } | undefined;
+    let payload: { code?: number | string; msg?: string; error_code?: string } | undefined;
     try {
-        payload = raw ? (JSON.parse(raw) as { code?: number | string; msg?: string }) : undefined;
+        payload = raw ? (JSON.parse(raw) as { code?: number | string; msg?: string; error_code?: string }) : undefined;
     } catch {
         payload = undefined;
     }
     const message = payload?.msg || (raw && raw.trim()) || xhr.statusText || "二进制请求失败";
-    return new BinaryRequestError(xhr.status, message, payload?.code ?? headers.get("x-error-code") ?? undefined);
+    return new BinaryRequestError(
+        xhr.status,
+        message,
+        payload?.error_code ?? headers.get("x-error-code") ?? payload?.code ?? undefined
+    );
 }
 
 type XhrContext = {

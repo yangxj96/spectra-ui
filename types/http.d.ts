@@ -93,6 +93,8 @@ declare global {
         code: number;
         // 消息
         msg: string;
+        // 稳定业务错误码（失败响应）
+        error_code?: string;
         // 响应内容
         data?: T;
     };

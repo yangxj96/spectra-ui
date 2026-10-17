@@ -171,17 +171,15 @@ async function handleBlobDownload(res: Response, shouldDownload: boolean): Promi
     return blob;
 }
 
-function nestedFailure(data: unknown): { code: number; msg: string } | undefined {
+function nestedFailure(data: unknown): { code: number; msg: string; errorCode?: string } | undefined {
     // 部分后端代理会把失败响应嵌套在 data 中，避免只检查顶层 code 而吞掉真实消息。
     if (typeof data !== "object" || data === null) return undefined;
-    const candidate = data as { code?: unknown; msg?: unknown };
-    return typeof candidate.code === "number" && candidate.code >= 400 && typeof candidate.msg === "string"
-        ? { code: candidate.code, msg: candidate.msg }
-        : undefined;
-}
-
-function extractErrorCode(message: string | undefined): string | undefined {
-    return message ? /^([A-Z][A-Z0-9_]*):/.exec(message)?.[1] : undefined;
+    const candidate = data as { code?: unknown; msg?: unknown; error_code?: unknown };
+    if (typeof candidate.code !== "number" || candidate.code < 400 || typeof candidate.msg !== "string") {
+        return undefined;
+    }
+    const errorCode = typeof candidate.error_code === "string" ? candidate.error_code : undefined;
+    return { code: candidate.code, msg: candidate.msg, errorCode };
 }
 
 async function failSession(): Promise<never> {
@@ -253,7 +251,8 @@ async function fetchWithAuth(
             credentials: "include",
             signal: context.controller.signal
         });
-        if (response.status !== 401 || context.auth !== "required" || !context.retryOnAuth || authRetried) return response;
+        if (response.status !== 401 || context.auth !== "required" || !context.retryOnAuth || authRetried)
+            return response;
         authRetried = true;
         const newToken = await refreshAccessToken();
         if (!newToken) return failSession();
@@ -277,10 +276,10 @@ async function parseSuccessfulResponse<T>(
     }
     result.data = await decryptResult<T>(result.data);
     const nested = nestedFailure(result.data);
-    if (nested) throw new HttpRequestError(nested.msg, extractErrorCode(nested.msg), nested.code);
+    if (nested) throw new HttpRequestError(nested.msg, nested.errorCode ?? nested.code, nested.code);
     if (result.code !== 200) {
         MessageUtils.error(result.msg || "请求失败");
-        throw new HttpRequestError(result.msg || "请求失败", extractErrorCode(result.msg), result.code);
+        throw new HttpRequestError(result.msg || "请求失败", result.error_code, result.code);
     }
     if (options.cache) setCache(options.key, result.data);
     return result.data as T;
@@ -319,12 +318,16 @@ async function executeRequest<T>(context: {
         const parsed = await parseResponseError(response, context.errorFallback);
         if (parsed.status === 401 && context.auth === "required") return failSession();
         if (!isRequestCancelled(parsed)) MessageUtils.error(parsed.message);
-        throw new HttpRequestError(parsed.message, parsed.code ?? extractErrorCode(parsed.message), parsed.status);
+        throw new HttpRequestError(parsed.message, parsed.code, parsed.status);
     }
     return parseSuccessfulResponse<T>(response, context);
 }
 
-function requestMeta<U extends string>(url: U, options: RequestOptions<U>, rest: RequestInit): {
+function requestMeta<U extends string>(
+    url: U,
+    options: RequestOptions<U>,
+    rest: RequestInit
+): {
     finalUrl: string;
     method: string;
     key: string;
@@ -336,7 +339,11 @@ function requestMeta<U extends string>(url: U, options: RequestOptions<U>, rest:
         if (query) finalUrl += `?${query}`;
     }
     const method = (rest.method || "GET").toUpperCase();
-    return { finalUrl, method, key: createKey(finalUrl, method, rest.body, { params: options.params, pathParams: options.pathParams }) };
+    return {
+        finalUrl,
+        method,
+        key: createKey(finalUrl, method, rest.body, { params: options.params, pathParams: options.pathParams })
+    };
 }
 
 function reusableRequest<T>(key: string, cache: boolean, dedupe: boolean): T | Promise<T> | undefined {
@@ -400,15 +407,18 @@ function normalizeRequestOptions<U extends string>(options: RequestOptions<U>) {
     };
 }
 
-async function runWithLifecycle<T>(context: {
-    loading: boolean;
-    retry: number;
-    url: string;
-    options: RequestOptions<string>;
-    priority: RequestPriority;
-    timeoutId: ReturnType<typeof setTimeout>;
-    key: string;
-}, execute: () => Promise<T>): Promise<T> {
+async function runWithLifecycle<T>(
+    context: {
+        loading: boolean;
+        retry: number;
+        url: string;
+        options: RequestOptions<string>;
+        priority: RequestPriority;
+        timeoutId: ReturnType<typeof setTimeout>;
+        key: string;
+    },
+    execute: () => Promise<T>
+): Promise<T> {
     if (context.loading) acquireLoading();
     try {
         return await execute();
@@ -466,36 +476,39 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
     registerRequest(key, controller, persistent);
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const requestPromise = runWithLifecycle<T>({
-        loading,
-        retry,
-        url,
-        options: options as RequestOptions<string>,
-        priority,
-        timeoutId,
-        key
-    }, async () => {
-        const body = await prepareBody(rest.body, method);
-        await waitPriority(priority);
-        return executeRequest<T>({
-            finalUrl,
-            method,
-            rest,
-            body,
+    const requestPromise = runWithLifecycle<T>(
+        {
+            loading,
+            retry,
+            url,
+            options: options as RequestOptions<string>,
             priority,
-            fetchPriority,
-            auth,
-            retryOnAuth,
-            headers,
-            controller,
-            responseType,
-            download,
-            noBody,
-            cache,
-            key,
-            errorFallback
-        });
-    });
+            timeoutId,
+            key
+        },
+        async () => {
+            const body = await prepareBody(rest.body, method);
+            await waitPriority(priority);
+            return executeRequest<T>({
+                finalUrl,
+                method,
+                rest,
+                body,
+                priority,
+                fetchPriority,
+                auth,
+                retryOnAuth,
+                headers,
+                controller,
+                responseType,
+                download,
+                noBody,
+                cache,
+                key,
+                errorFallback
+            });
+        }
+    );
     if (dedupe) setInflightRequest(key, requestPromise);
     return requestPromise;
 }

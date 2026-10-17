@@ -82,8 +82,10 @@ function resolvePayload(payload: unknown): { message?: string; code?: number | s
     }
 
     const message = nonBlank(candidate.msg) ? candidate.msg.trim() : undefined;
-    const code = typeof candidate.code === "number" || typeof candidate.code === "string" ? candidate.code : undefined;
-    return { message, code };
+    const errorCode = nonBlank(candidate.error_code) ? candidate.error_code : undefined;
+    const legacyCode =
+        typeof candidate.code === "number" || typeof candidate.code === "string" ? candidate.code : undefined;
+    return { message, code: errorCode ?? legacyCode };
 }
 
 /**

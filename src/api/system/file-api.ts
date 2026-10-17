@@ -2,23 +2,36 @@ import { del, download as downloadBlob, get, post, put } from "@/plugin/request/
 
 /** 文件上传、资产和业务引用统一接口。 */
 export const FileApi = {
-    createUpload(params: CreateUploadParams): Promise<UploadSession> {
-        return post<UploadSession>("/api/file/uploads", params);
+    createUpload(params: CreateUploadParams, options?: RequestOptions<string>): Promise<UploadSession> {
+        return post<UploadSession>("/api/file/uploads", params, options);
     },
-    status(uploadId: string): Promise<UploadSession> {
-        return get<UploadSession>(`/api/file/uploads/${uploadId}`);
+    status(uploadId: string, options?: RequestOptions<string>): Promise<UploadSession> {
+        return get<UploadSession>(`/api/file/uploads/${uploadId}`, undefined, options);
     },
-    target(uploadId: string, partNumber: number, params: PartTargetParams): Promise<PartTarget> {
-        return post<PartTarget>(`/api/file/uploads/${uploadId}/parts/${partNumber}/target`, params);
+    target(
+        uploadId: string,
+        partNumber: number,
+        params: PartTargetParams,
+        options?: RequestOptions<string>
+    ): Promise<PartTarget> {
+        return post<PartTarget>(`/api/file/uploads/${uploadId}/parts/${partNumber}/target`, params, options);
     },
-    confirm(uploadId: string, partNumber: number, params: ConfirmPartParams): Promise<void> {
-        return post<void>(`/api/file/uploads/${uploadId}/parts/${partNumber}/confirm`, params, { noBody: true });
+    confirm(
+        uploadId: string,
+        partNumber: number,
+        params: ConfirmPartParams,
+        options?: RequestOptions<string>
+    ): Promise<void> {
+        return post<void>(`/api/file/uploads/${uploadId}/parts/${partNumber}/confirm`, params, {
+            noBody: true,
+            ...options
+        });
     },
-    complete(uploadId: string): Promise<UploadSession> {
-        return post<UploadSession>(`/api/file/uploads/${uploadId}/complete`);
+    complete(uploadId: string, options?: RequestOptions<string>): Promise<UploadSession> {
+        return post<UploadSession>(`/api/file/uploads/${uploadId}/complete`, undefined, options);
     },
-    cancel(uploadId: string): Promise<void> {
-        return del<void>(`/api/file/uploads/${uploadId}`, undefined, { noBody: true });
+    cancel(uploadId: string, options?: RequestOptions<string>): Promise<void> {
+        return del<void>(`/api/file/uploads/${uploadId}`, undefined, { noBody: true, ...options });
     },
     assetsPage(params?: FileAssetPageParams): Promise<Page<FileAsset>> {
         return get<Page<FileAsset>>("/api/file/assets/page", params);

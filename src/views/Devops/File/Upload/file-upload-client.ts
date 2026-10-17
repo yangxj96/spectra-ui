@@ -1,6 +1,7 @@
 import { FileApi } from "@/api/system/file-api";
 import { requestBinary } from "@/plugin/request/xhr-client";
 
+import { isRetryable } from "./file-upload-retry";
 import { FileUploadStore, type UploadResumeRecord } from "./file-upload-store";
 
 export type FileUploadState =
@@ -36,6 +37,8 @@ export type FileUploadClientOptions = {
     concurrency?: number;
     analysis_chunk_size?: number;
     max_part_retries?: number;
+    max_verification_wait_ms?: number;
+    part_retry_budget_ms?: number;
     onChange?: (snapshot: FileUploadSnapshot) => void;
 };
 
@@ -54,7 +57,14 @@ const EMPTY_SNAPSHOT: FileUploadSnapshot = {
  */
 export class FileUploadClient {
     private readonly options: Required<
-        Pick<FileUploadClientOptions, "concurrency" | "analysis_chunk_size" | "max_part_retries">
+        Pick<
+            FileUploadClientOptions,
+            | "concurrency"
+            | "analysis_chunk_size"
+            | "max_part_retries"
+            | "max_verification_wait_ms"
+            | "part_retry_budget_ms"
+        >
     > &
         FileUploadClientOptions;
     private readonly store: FileUploadStore;
@@ -68,6 +78,8 @@ export class FileUploadClient {
     private runPromise?: Promise<void>;
     private workflowPromise?: Promise<FileUploadSnapshot>;
     private paused = false;
+    private disposed = false;
+    private stopped = false;
     private canceled = false;
     private resumeRequested = false;
     private activeFileTypeCode?: string;
@@ -78,7 +90,9 @@ export class FileUploadClient {
             ...options,
             concurrency: options.concurrency ?? 3,
             analysis_chunk_size: options.analysis_chunk_size ?? 4 * 1024 * 1024,
-            max_part_retries: options.max_part_retries ?? 3
+            max_part_retries: options.max_part_retries ?? 3,
+            max_verification_wait_ms: options.max_verification_wait_ms ?? 10 * 60 * 1000,
+            part_retry_budget_ms: options.part_retry_budget_ms ?? 30 * 1000
         };
         this.store = options.store ?? new FileUploadStore();
     }
@@ -93,7 +107,20 @@ export class FileUploadClient {
         return () => this.listeners.delete(listener);
     }
 
+    /** 页面卸载时停止分析、传输和轮询；不在释放后继续向旧视图推送状态。 */
+    dispose(): void {
+        this.disposed = true;
+        this.canceled = true;
+        this.paused = false;
+        this.stopped = true;
+        this.abortController?.abort();
+        this.analysisWorker?.terminate();
+        this.analysisWorker = undefined;
+        this.listeners.clear();
+    }
+
     async start(file: File): Promise<FileUploadSnapshot> {
+        if (this.disposed) throw new Error("上传客户端已释放");
         if (this.workflowPromise) throw new Error("当前上传任务正在执行");
         this.workflowPromise = this.startWorkflow(file).finally(() => {
             this.workflowPromise = undefined;
@@ -102,6 +129,7 @@ export class FileUploadClient {
     }
 
     async resume(file: File, record: UploadResumeRecord): Promise<FileUploadSnapshot> {
+        if (this.disposed) throw new Error("上传客户端已释放");
         if (this.workflowPromise) throw new Error("当前上传任务正在执行");
         this.workflowPromise = this.resumeWorkflow(file, record).finally(() => {
             this.workflowPromise = undefined;
@@ -114,7 +142,7 @@ export class FileUploadClient {
         try {
             const sha256 = await this.analyze(file);
             if (this.canceled) return this.snapshot;
-            return this.createAndUpload(file, sha256);
+            return await this.createAndUpload(file, sha256);
         } catch (error) {
             if (this.canceled) return this.snapshot;
             this.fail(errorCode(error), error instanceof Error ? error.message : "文件分析失败");
@@ -127,7 +155,7 @@ export class FileUploadClient {
         try {
             const sha256 = await this.analyze(file);
             if (this.canceled) return this.snapshot;
-            const key = FileUploadStore.key(file.size, sha256);
+            const key = this.resumeKey(file.size, sha256);
             if (
                 key !== record.key ||
                 record.size !== file.size ||
@@ -141,7 +169,7 @@ export class FileUploadClient {
                 });
                 return this.snapshot;
             }
-            return this.createAndUpload(file, sha256, record.file_type_code);
+            return await this.createAndUpload(file, sha256, record.file_type_code);
         } catch (error) {
             if (this.canceled) return this.snapshot;
             this.fail(errorCode(error), error instanceof Error ? error.message : "恢复上传失败");
@@ -156,13 +184,16 @@ export class FileUploadClient {
     ): Promise<FileUploadSnapshot> {
         this.activeFileTypeCode = fileTypeCode;
         this.change({ content_sha256: sha256, analysis_progress: 100, state: "CREATING" });
-        const session = await FileApi.createUpload({
-            original_name: file.name,
-            content_type: file.type || "application/octet-stream",
-            size: file.size,
-            content_sha256: sha256,
-            file_type_code: fileTypeCode
-        });
+        const session = await FileApi.createUpload(
+            {
+                original_name: file.name,
+                content_type: file.type || "application/octet-stream",
+                size: file.size,
+                content_sha256: sha256,
+                file_type_code: fileTypeCode
+            },
+            this.controlOptions()
+        );
         if (this.canceled) {
             if (session.upload_id) {
                 try {
@@ -176,7 +207,7 @@ export class FileUploadClient {
         this.session = session;
         this.applySession(session);
         if (session.result === "DEDUPLICATED" || session.status === "READY") {
-            await this.store.remove(FileUploadStore.key(file.size, sha256));
+            await this.store.remove(this.resumeKey(file.size, sha256));
             return this.snapshot;
         }
         await this.persistResumeRecord(file, sha256, session, fileTypeCode);
@@ -193,6 +224,8 @@ export class FileUploadClient {
         this.resumeRequested = false;
         this.activeFileTypeCode = undefined;
         this.inFlightProgress.clear();
+        this.stopped = false;
+        this.abortController = new AbortController();
         this.change({
             state: "ANALYZING",
             analysis_progress: 0,
@@ -222,6 +255,7 @@ export class FileUploadClient {
         if (this.runPromise) return;
         this.paused = false;
         this.resumeRequested = false;
+        this.abortController = new AbortController();
         this.startUploadRun(this.session);
     }
 
@@ -247,7 +281,7 @@ export class FileUploadClient {
             }
         }
         if (this.file && this.snapshotValue.content_sha256) {
-            await this.store.remove(FileUploadStore.key(this.file.size, this.snapshotValue.content_sha256));
+            await this.store.remove(this.resumeKey(this.file.size, this.snapshotValue.content_sha256));
         }
         this.change({ state: "CANCELED" });
     }
@@ -272,11 +306,11 @@ export class FileUploadClient {
     }
 
     private async finalizeUpload(session: UploadSession): Promise<void> {
-        const completed = await FileApi.complete(session.upload_id as string);
+        const completed = await FileApi.complete(session.upload_id as string, this.controlOptions());
         this.session = completed;
         this.applySession(completed);
         if (completed.status === "READY" && completed.file_asset_id) {
-            await this.store.remove(FileUploadStore.key(this.file?.size ?? 0, this.snapshotValue.content_sha256 ?? ""));
+            await this.store.remove(this.resumeKey(this.file?.size ?? 0, this.snapshotValue.content_sha256 ?? ""));
             this.change({
                 state: "READY",
                 file_asset_id: completed.file_asset_id,
@@ -293,39 +327,60 @@ export class FileUploadClient {
     }
 
     private async runUpload(session: UploadSession): Promise<void> {
+        if (!this.validateUploadSession(session)) return;
+        const { confirmed, partNumbers } = this.prepareUploadParts(session);
+        this.change({ state: "UPLOADING", total_parts: session.total_parts });
+        this.abortController ??= new AbortController();
+        try {
+            await Promise.all(this.createWorkers(session, confirmed, partNumbers));
+        } catch (error) {
+            this.failPartUpload(error);
+            return;
+        }
+        if (this.isInterrupted()) return;
+        try {
+            await this.finalizeUpload(session);
+        } catch (error) {
+            if (!this.paused && !this.canceled && !this.disposed) {
+                this.fail(errorCode(error), error instanceof Error ? error.message : "提交最终复核失败");
+            }
+        }
+    }
+
+    private validateUploadSession(session: UploadSession): boolean {
         if (!session.upload_id || !session.chunk_size || !session.total_parts) {
             this.fail("FILE_UPLOAD_CONFLICT", "服务端没有返回可上传的会话参数");
-            return;
+            return false;
         }
         if (session.status === "EXPIRED") {
             this.change({ state: "EXPIRED", error_code: session.error_code });
-            return;
+            return false;
         }
-        const { confirmed, partNumbers } = this.prepareUploadParts(session);
-        this.change({ state: "UPLOADING", total_parts: session.total_parts });
+        return true;
+    }
+
+    private createWorkers(session: UploadSession, confirmed: Set<number>, partNumbers: number[]): Promise<void>[] {
         const next = { value: 0 };
-        this.abortController = new AbortController();
-        const workers = Array.from(
-            { length: Math.min(this.options.concurrency, Math.max(1, partNumbers.length)) },
-            async () => {
-                while (next.value < partNumbers.length) {
-                    if (this.paused || this.canceled) return;
-                    const partNumber = partNumbers[next.value];
-                    next.value += 1;
-                    if (partNumber === undefined) return;
-                    await this.uploadPart(session, partNumber, confirmed);
-                }
+        return Array.from({ length: Math.min(this.options.concurrency, Math.max(1, partNumbers.length)) }, async () => {
+            while (next.value < partNumbers.length) {
+                if (this.isInterrupted()) return;
+                const partNumber = partNumbers[next.value];
+                next.value += 1;
+                if (partNumber === undefined) return;
+                await this.uploadPart(session, partNumber, confirmed);
             }
-        );
-        try {
-            await Promise.all(workers);
-        } catch (error) {
-            if (this.paused || this.canceled) return;
-            this.fail(errorCode(error), error instanceof Error ? error.message : "分片上传失败");
-            return;
-        }
-        if (this.paused || this.canceled) return;
-        await this.finalizeUpload(session);
+        });
+    }
+
+    private isInterrupted(): boolean {
+        return this.paused || this.canceled || this.stopped;
+    }
+
+    private failPartUpload(error: unknown): void {
+        if (this.paused || this.canceled || this.disposed) return;
+        this.stopped = true;
+        this.abortController?.abort();
+        this.fail(errorCode(error), error instanceof Error ? error.message : "分片上传失败");
     }
 
     private async uploadPart(session: UploadSession, partNumber: number, confirmed: Set<number>): Promise<void> {
@@ -334,63 +389,94 @@ export class FileUploadClient {
         const start = (partNumber - 1) * session.chunk_size;
         const blob = file.slice(start, Math.min(file.size, start + session.chunk_size));
         const partSha256 = await digestBlob(blob);
+        const retryDeadline = Date.now() + this.options.part_retry_budget_ms;
         let lastError: unknown;
         for (let attempt = 1; attempt <= this.options.max_part_retries; attempt++) {
             try {
-                const target = await FileApi.target(session.upload_id, partNumber, {
-                    part_size: blob.size,
-                    part_sha256: partSha256
-                });
-                const response = await requestBinary(target.url, blob, {
-                    external: session.transport_mode === "PRESIGNED",
-                    headers: target.headers,
-                    signal: this.abortController?.signal,
-                    onUploadProgress: loaded => {
-                        this.inFlightProgress.set(partNumber, loaded);
-                        this.updateProgress(session, confirmed);
-                    }
-                });
-                const providerEtag = response.headers.get("etag") ?? undefined;
-                await FileApi.confirm(session.upload_id, partNumber, {
-                    part_size: blob.size,
-                    part_sha256: partSha256,
-                    provider_etag: providerEtag,
-                    attempt: target.attempt
-                });
-                confirmed.add(partNumber);
-                this.inFlightProgress.delete(partNumber);
-                this.updateProgress(session, confirmed);
-                await this.persistResumeRecord(
-                    file,
-                    this.snapshotValue.content_sha256 ?? partSha256,
-                    {
-                        ...session,
-                        completed_parts: [...confirmed]
-                    },
-                    this.activeFileTypeCode ?? this.fileTypeCode()
-                );
+                await this.uploadPartAttempt(session, partNumber, blob, partSha256, confirmed);
                 return;
             } catch (error) {
                 lastError = error;
-                if (this.paused || this.canceled) throw error;
-                if (attempt < this.options.max_part_retries) await wait(250 * attempt);
+                if (!this.shouldRetryPart(error, retryDeadline, attempt)) break;
+                await wait(250 * attempt);
             }
         }
         throw lastError ?? new Error("分片上传失败");
     }
 
+    private shouldRetryPart(error: unknown, retryDeadline: number, attempt: number): boolean {
+        if (this.paused || this.canceled || this.stopped || this.disposed) return false;
+        return isRetryable(error) && Date.now() < retryDeadline && attempt < this.options.max_part_retries;
+    }
+
+    private async uploadPartAttempt(
+        session: UploadSession,
+        partNumber: number,
+        blob: Blob,
+        partSha256: string,
+        confirmed: Set<number>
+    ): Promise<void> {
+        const file = this.file;
+        if (!file || !session.upload_id) throw new Error("上传文件不存在");
+        const target = await FileApi.target(
+            session.upload_id,
+            partNumber,
+            {
+                part_size: blob.size,
+                part_sha256: partSha256
+            },
+            this.controlOptions()
+        );
+        const response = await requestBinary(target.url, blob, {
+            external: session.transport_mode === "PRESIGNED",
+            headers: target.headers,
+            signal: this.abortController?.signal,
+            onUploadProgress: loaded => {
+                this.inFlightProgress.set(partNumber, loaded);
+                this.updateProgress(session, confirmed);
+            }
+        });
+        const providerEtag = response.headers.get("etag") ?? undefined;
+        await FileApi.confirm(
+            session.upload_id,
+            partNumber,
+            {
+                part_size: blob.size,
+                part_sha256: partSha256,
+                provider_etag: providerEtag,
+                attempt: target.attempt
+            },
+            this.controlOptions()
+        );
+        confirmed.add(partNumber);
+        this.inFlightProgress.delete(partNumber);
+        this.updateProgress(session, confirmed);
+        await this.persistResumeRecord(
+            file,
+            this.snapshotValue.content_sha256 ?? partSha256,
+            {
+                ...session,
+                completed_parts: [...confirmed]
+            },
+            this.activeFileTypeCode ?? this.fileTypeCode()
+        );
+    }
+
     private async pollVerification(uploadId: string | undefined): Promise<void> {
         if (!uploadId) throw new Error("上传任务 ID 缺失");
         this.change({ state: "VERIFYING" });
-        while (!this.paused && !this.canceled) {
+        const deadline = Date.now() + this.options.max_verification_wait_ms;
+        while (!this.paused && !this.canceled && !this.disposed) {
+            if (Date.now() >= deadline) {
+                this.fail("FILE_UPLOAD_VERIFY_TIMEOUT", "服务端最终复核超时");
+                return;
+            }
             await wait(1000);
-            const session = await FileApi.status(uploadId);
+            const session = await FileApi.status(uploadId, this.controlOptions());
             this.session = session;
             this.applySession(session);
             if (session.status === "READY" && session.file_asset_id) {
-                await this.store.remove(
-                    FileUploadStore.key(this.file?.size ?? 0, this.snapshotValue.content_sha256 ?? "")
-                );
+                await this.store.remove(this.resumeKey(this.file?.size ?? 0, this.snapshotValue.content_sha256 ?? ""));
                 this.change({
                     state: "READY",
                     file_asset_id: session.file_asset_id,
@@ -494,7 +580,7 @@ export class FileUploadClient {
     ): Promise<void> {
         if (!session.upload_id) return;
         await this.store.put({
-            key: FileUploadStore.key(file.size, sha256),
+            key: this.resumeKey(file.size, sha256),
             upload_id: session.upload_id,
             original_name: file.name,
             size: file.size,
@@ -505,6 +591,7 @@ export class FileUploadClient {
     }
 
     private change(update: Partial<FileUploadSnapshot>): void {
+        if (this.disposed) return;
         this.snapshotValue = { ...this.snapshotValue, ...update };
         for (const listener of this.listeners) listener(this.snapshot);
         this.options.onChange?.(this.snapshot);
@@ -512,6 +599,14 @@ export class FileUploadClient {
 
     private fail(code: string, message: string): void {
         this.change({ state: "FAILED", error_code: code, error_message: message });
+    }
+
+    private controlOptions(): RequestOptions<string> {
+        return { signal: this.abortController?.signal };
+    }
+
+    private resumeKey(size: number, contentSha256: string): string {
+        return FileUploadStore.key(this.store.scope, size, contentSha256);
     }
 
     private fileTypeCode(): string {

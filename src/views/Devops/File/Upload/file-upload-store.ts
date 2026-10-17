@@ -12,11 +12,13 @@ const STORE_NAME = "upload_sessions";
 
 /** 只保存可重新校验的上传元数据，不把 File 对象或本地分片状态当成事实源。 */
 export class FileUploadStore {
+    readonly scope: string;
     private readonly databaseName: string;
     private databasePromise?: Promise<IDBDatabase>;
 
-    constructor(databaseName = "spectra-file-upload") {
+    constructor(databaseName = "spectra-file-upload", scope = "anonymous") {
         this.databaseName = databaseName;
+        this.scope = scope;
     }
 
     async get(key: string): Promise<UploadResumeRecord | undefined> {
@@ -29,27 +31,39 @@ export class FileUploadStore {
         const records = await requestResult(
             database.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).getAll()
         );
-        const valid = records.filter(isValidRecord);
-        if (valid.length !== records.length) {
-            await Promise.all(records.filter(record => !isValidRecord(record)).map(record => this.remove(record?.key)));
+        const scoped = records.filter(record => this.inScope(record));
+        if (scoped.length !== records.length) {
+            await Promise.all(records.filter(record => !this.inScope(record)).map(record => this.remove(record?.key)));
+        }
+        const valid = scoped.filter(isValidRecord);
+        if (valid.length !== scoped.length) {
+            await Promise.all(scoped.filter(record => !isValidRecord(record)).map(record => this.remove(record?.key)));
         }
         return valid;
     }
 
     async put(record: UploadResumeRecord): Promise<void> {
-        if (!isValidRecord(record)) throw new Error("invalid upload resume record");
+        if (!this.inScope(record) || !isValidRecord(record)) throw new Error("invalid upload resume record");
         const database = await this.database();
         await requestResult(database.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).put(record));
     }
 
     async remove(key: string | undefined): Promise<void> {
-        if (!key) return;
+        if (!key || !key.startsWith(this.prefix())) return;
         const database = await this.database();
         await requestResult(database.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).delete(key));
     }
 
-    static key(size: number, contentSha256: string): string {
-        return `${size}:${contentSha256.toLowerCase()}`;
+    static key(scope: string, size: number, contentSha256: string): string {
+        return `${scope}:${size}:${contentSha256.toLowerCase()}`;
+    }
+
+    private prefix(): string {
+        return `${this.scope}:`;
+    }
+
+    private inScope(record: Partial<UploadResumeRecord> | undefined): boolean {
+        return typeof record?.key === "string" && record.key.startsWith(this.prefix());
     }
 
     private database(): Promise<IDBDatabase> {

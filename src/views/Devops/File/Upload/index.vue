@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
+import { useUserStore } from "@/plugin/store/modules/use-user-store";
 import { MessageUtils } from "@/utils/message-utils";
 
 import { FileUploadStore, type UploadResumeRecord } from "./file-upload-store";
 import { useFileUpload } from "./use-file-upload";
+
+const uploadStore = (): FileUploadStore =>
+    new FileUploadStore("spectra-file-upload", useUserStore().token.id || "anonymous");
 
 const fileInput = ref<HTMLInputElement>();
 const selectedFile = ref<File>();
@@ -12,13 +16,15 @@ const pendingResume = ref<UploadResumeRecord>();
 const resumeRecords = ref<UploadResumeRecord[]>([]);
 const fileTypeCode = ref("PDF");
 
+const store = uploadStore();
 const { snapshot, start, resume, pause, resumeUpload, cancel } = useFileUpload({
     file_type_code: fileTypeCode.value,
-    get_file_type_code: () => fileTypeCode.value
+    get_file_type_code: () => fileTypeCode.value,
+    store
 });
 
 onMounted(async () => {
-    resumeRecords.value = await new FileUploadStore().list();
+    resumeRecords.value = await store.list();
 });
 
 function chooseFile(record?: UploadResumeRecord): void {
@@ -66,7 +72,7 @@ async function cancelUpload(): Promise<void> {
 }
 
 async function refreshRecords(): Promise<void> {
-    resumeRecords.value = await new FileUploadStore().list();
+    resumeRecords.value = await store.list();
 }
 
 function formatFileSize(bytes: number): string {

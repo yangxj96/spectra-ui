@@ -1,10 +1,12 @@
 import { onBeforeUnmount, ref } from "vue";
 
+import { useUserStore } from "@/plugin/store/modules/use-user-store";
+
 import { FileUploadClient, type FileUploadClientOptions, type FileUploadSnapshot } from "./file-upload-client";
 import { FileUploadStore, type UploadResumeRecord } from "./file-upload-store";
 
 export function useFileUpload(options: FileUploadClientOptions) {
-    const store = options.store ?? new FileUploadStore();
+    const store = options.store ?? new FileUploadStore("spectra-file-upload", useUserStore().token.id || "anonymous");
     const snapshot = ref<FileUploadSnapshot>({
         state: "IDLE",
         analysis_progress: 0,
@@ -26,7 +28,10 @@ export function useFileUpload(options: FileUploadClientOptions) {
         snapshot.value = value;
     });
 
-    onBeforeUnmount(() => unsubscribe());
+    onBeforeUnmount(() => {
+        client.dispose();
+        unsubscribe();
+    });
 
     return {
         client,

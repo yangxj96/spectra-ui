@@ -15,9 +15,12 @@ export const useCryptoStore = defineStore("crypto", {
     }),
     actions: {
         /** 设置加密配置（登录后由接口返回） */
-        setConfig(payload: { enabled: boolean; server_public_key: string | null }) {
+        setConfig(payload: { enabled: boolean; server_public_key?: string | null }) {
+            if (payload.enabled && !payload.server_public_key) {
+                throw new Error("通信加密已启用，但服务端公钥缺失");
+            }
             this.enabled = payload.enabled;
-            this.server_public_key = payload.server_public_key;
+            this.server_public_key = payload.server_public_key ?? null;
         },
         /** 设置客户端私钥（密钥交换完成后调用） */
         setClientPrivateKey(key: string | null) {

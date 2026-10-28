@@ -14,7 +14,11 @@ export const DictApi = {
      * @param params 字典组入参
      */
     createGroup(params: DictGroup): Promise<void> {
-        return post<void>("/api/dict/group", params);
+        return post<void>("/api/dict/group", {
+            ...params,
+            pid: params.pid || null,
+            remark: params.remark?.trim() || null
+        });
     },
     /**
      * 删除字典组
@@ -28,7 +32,11 @@ export const DictApi = {
      * @param params 字典组入参
      */
     updateGroup(params: DictGroup): Promise<void> {
-        return put<void>("/api/dict/group", params);
+        return put<void>("/api/dict/group", {
+            ...params,
+            pid: params.pid || null,
+            remark: params.remark?.trim() || null
+        });
     },
     /**
      * 获取字典组Tree
@@ -42,14 +50,14 @@ export const DictApi = {
      * @param params 字典项入参
      */
     createData(params: DictItemCreate): Promise<void> {
-        return post<void>("/api/dict/data", params);
+        return post<void>("/api/dict/data", { ...params, remark: params.remark?.trim() || null });
     },
     /**
      * 修改字典项
      * @param params 字典项入参
      */
     updateData(params: DictItemUpdate): Promise<void> {
-        return put<void>("/api/dict/data", params);
+        return put<void>("/api/dict/data", { ...params, remark: params.remark?.trim() || null });
     },
     /** 启用字典项。 */
     enableData(id: string): Promise<void> {

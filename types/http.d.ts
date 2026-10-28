@@ -103,6 +103,8 @@ declare global {
     type BaseEntity = {
         // 主键ID
         id: string;
+        // 持久化行的读取版本（仅可编辑实体提供）
+        version?: number;
         // 创建人
         created_by?: string;
         // 创建时间

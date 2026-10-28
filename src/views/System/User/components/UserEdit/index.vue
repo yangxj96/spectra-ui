@@ -9,6 +9,7 @@ import DictSelect from "@/components/DictSelect/index.vue";
 import StepNavigation from "@/components/StepNavigation/index.vue";
 import type { StepNavigationItem } from "@/components/StepNavigation/types.ts";
 import { userConverter } from "@/converter/user-converter.ts";
+import { HttpRequestError } from "@/plugin/request/error.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
@@ -75,6 +76,7 @@ const associatedDepartmentTreeProps = computed(() => ({
 }));
 const loading = ref(false);
 const submitting = ref(false);
+const conflictUser = ref<UserPageVO>();
 const roleSteps = ref<RoleAssignmentStep[]>([]);
 const activeRoleStepKey = ref("");
 const activeRoleStepIndex = computed(() => roleSteps.value.findIndex(step => step.key === activeRoleStepKey.value));
@@ -109,6 +111,7 @@ async function load(): Promise<void> {
 
         if (isEditing.value) {
             Object.assign(form, userConverter.toForm(await UserApi.detail(userId.value)));
+            conflictUser.value = undefined;
             if (route.query.step === "authorization") activeStep.value = 1;
         }
     } catch (error: unknown) {
@@ -211,10 +214,23 @@ async function handleSubmit(): Promise<void> {
         }
         await router.replace({ name: "SystemUser" });
     } catch (error: unknown) {
+        if (isEditing.value && error instanceof HttpRequestError && error.status === 409) {
+            try {
+                conflictUser.value = await UserApi.detail(userId.value);
+            } catch (refreshError) {
+                MessageUtils.error(refreshError);
+            }
+        }
         MessageUtils.error(error);
     } finally {
         submitting.value = false;
     }
+}
+
+function useLatestUserVersion(): void {
+    if (!conflictUser.value) return;
+    form.version = conflictUser.value.version;
+    conflictUser.value = undefined;
 }
 
 onMounted(load);
@@ -222,6 +238,14 @@ onMounted(load);
 
 <template>
     <div v-loading="loading" class="user-edit-page">
+        <el-alert
+            v-if="conflictUser"
+            type="warning"
+            :closable="false"
+            show-icon
+            :title="`用户已更新，当前版本 ${conflictUser.version}；你的编辑内容仍保留。最新姓名：${conflictUser.real_name ?? '—'}。`">
+            <el-button type="warning" plain @click="useLatestUserVersion">核对后采用新版本</el-button>
+        </el-alert>
         <div class="user-edit-shell">
             <div class="user-edit-workspace">
                 <aside class="user-edit-side user-edit-side-left">

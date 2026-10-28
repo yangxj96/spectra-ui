@@ -1,3 +1,5 @@
+import type { components } from "@/api/generated/openapi.ts";
+
 export {};
 
 declare global {
@@ -9,7 +11,7 @@ declare global {
         type: string;
         required: boolean;
         sensitive: boolean;
-        description: string | null;
+        description?: string;
     }
 
     interface QuartzJobTypeVO {
@@ -23,31 +25,29 @@ declare global {
         supported_trigger_types: QuartzTriggerType[];
     }
 
-    interface QuartzTriggerVO {
-        trigger_key: string;
-        trigger_type: QuartzTriggerType;
-        state: string;
-        cron_expression: string | null;
-        interval_ms: number | null;
-        one_shot: boolean;
-        time_zone: string | null;
-        misfire_instruction: QuartzMisfireInstruction;
-        start_at: string | null;
-        previous_fire_at: string | null;
-        next_fire_at: string | null;
-    }
+    type QuartzTriggerVO = components["schemas"]["QuartzTriggerVO"] &
+        Required<
+            Pick<
+                components["schemas"]["QuartzTriggerVO"],
+                "trigger_key" | "trigger_type" | "state" | "one_shot" | "misfire_instruction"
+            >
+        >;
 
-    interface QuartzJobVO {
-        job_key: string;
-        group: string;
-        display_name: string;
-        type_key: string;
-        protected_job: boolean;
-        job_class_name: string;
-        parameter_version: string;
-        parameters_json: string;
-        trigger: QuartzTriggerVO | null;
-    }
+    type QuartzJobVO = components["schemas"]["QuartzJobVO"] &
+        Required<
+            Pick<
+                components["schemas"]["QuartzJobVO"],
+                | "job_key"
+                | "version"
+                | "group"
+                | "display_name"
+                | "type_key"
+                | "protected_job"
+                | "job_class_name"
+                | "parameter_version"
+                | "parameters_json"
+            >
+        > & { trigger?: QuartzTriggerVO };
 
     interface QuartzExecutionHistoryVO {
         id: string;
@@ -83,6 +83,7 @@ declare global {
     }
 
     interface QuartzJobUpdateParams {
+        version: number;
         display_name: string;
         parameters_json: string;
         trigger: QuartzTriggerParams;

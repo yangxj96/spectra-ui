@@ -18,8 +18,8 @@ export async function initBootstrap(): Promise<void> {
             `[Bootstrap] 初始化完成: system=${data.system.name}, initialized=${data.initialization.initialized}`
         );
     } catch (error) {
-        console.warn("[Bootstrap] 初始化失败，将由页面按需回退请求:", error);
-        useCryptoStore().setConfig({ enabled: false, server_public_key: null });
+        console.warn("[Bootstrap] 初始化失败:", error);
         useAppStore().markBootstrapUnavailable();
+        throw error;
     }
 }

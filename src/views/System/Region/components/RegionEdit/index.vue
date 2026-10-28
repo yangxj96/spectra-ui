@@ -1,10 +1,11 @@
 ﻿<script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
-import { computed, onMounted, reactive, useTemplateRef } from "vue";
+import { computed, onMounted, reactive, ref, useTemplateRef } from "vue";
 
 import { RegionApi } from "@/api/system/region-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
+import { HttpRequestError } from "@/plugin/request/error.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 const dialog = defineModel<boolean>("show", { required: true, default: false });
@@ -19,6 +20,7 @@ const emits = defineEmits<{
 }>();
 
 const editForm = useTemplateRef<FormInstance>("editForm");
+const conflictRegion = ref<Region>();
 
 const has_edit = computed(() => !!row.value?.id && row.value.id !== "");
 
@@ -50,19 +52,31 @@ const handleClose = () => {
 
 const handleSave = async () => {
     if (!editForm.value) return;
-    await editForm.value?.validate(async valid => {
-        if (!valid) {
-            MessageUtils.error("请检查必填内容");
-            return;
-        }
+    try {
+        await editForm.value.validate();
         if (has_edit.value) {
             await RegionApi.update(edit.form);
         } else {
             await RegionApi.create(edit.form);
         }
         MessageUtils.success("保存成功", handleClose);
-    });
+    } catch (error) {
+        if (has_edit.value && error instanceof HttpRequestError && error.status === 409) {
+            try {
+                conflictRegion.value = await RegionApi.detail(edit.form.id);
+            } catch (refreshError) {
+                MessageUtils.error(refreshError);
+            }
+        }
+        if (error instanceof HttpRequestError) MessageUtils.error(error);
+    }
 };
+
+function useLatestVersion(): void {
+    if (!conflictRegion.value) return;
+    edit.form.version = conflictRegion.value.version;
+    conflictRegion.value = undefined;
+}
 </script>
 
 <template>
@@ -74,6 +88,14 @@ const handleSave = async () => {
             </div>
         </template>
         <template #default>
+            <el-alert
+                v-if="conflictRegion"
+                type="warning"
+                :closable="false"
+                show-icon
+                :title="`区域已更新，当前版本 ${conflictRegion.version}；你的编辑内容仍保留。最新名称：${conflictRegion.name}。`">
+                <el-button type="warning" plain @click="useLatestVersion">核对后采用新版本</el-button>
+            </el-alert>
             <el-form ref="editForm" :model="edit.form" :rules="edit.rules" label-width="auto" @submit.prevent>
                 <el-form-item v-if="has_edit" label="主键ID">
                     <p>{{ edit.form.id }}</p>

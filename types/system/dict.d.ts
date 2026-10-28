@@ -3,6 +3,7 @@ export {};
 declare global {
     // 字典组
     type DictGroup = BaseEntity & {
+        version: number;
         //父级ID
         pid: string;
         //字典类型名称
@@ -27,6 +28,7 @@ declare global {
 
     // 字典数据
     type DictItem = BaseEntity & {
+        version: number;
         // 字典组ID
         gid: string;
         // 字典标签
@@ -52,5 +54,6 @@ declare global {
 
     type DictItemUpdate = DictItemSave & {
         id: string;
+        version: number;
     };
 }

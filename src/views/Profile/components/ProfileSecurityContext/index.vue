@@ -38,7 +38,7 @@ onMounted(() => void loadContext());
                 <el-descriptions-item label="可授予权限">
                     <el-space wrap>
                         <el-tag
-                            v-for="permission in context.grantable_permissions ?? context.grantablePermissions ?? []"
+                            v-for="permission in context.grantable_permissions ?? []"
                             :key="permission"
                             type="warning">
                             {{ permission }}

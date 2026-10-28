@@ -5,6 +5,7 @@ import { computed, onMounted, reactive, ref, useTemplateRef } from "vue";
 import { DictApi } from "@/api/system/dict-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import DictSelect from "@/components/DictSelect/index.vue";
+import { HttpRequestError } from "@/plugin/request/error.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 const dialog = defineModel<boolean>("show", { required: true, default: false });
@@ -20,6 +21,7 @@ const emits = defineEmits<{
 
 // 字典组表单数据
 const editForm = useTemplateRef<FormInstance>("editForm");
+const conflictGroup = ref<DictGroup>();
 
 // 树形props配置
 const treeProps = { children: "children", label: "name", value: "id" };
@@ -64,13 +66,25 @@ const handleClose = () => {
 };
 
 // 保存字典组
-const handleSaveDictGroup = () => {
+function findGroup(groups: DictTypeTree[], id: string): DictGroup | undefined {
+    for (const group of groups) {
+        if (group.id === id) return group;
+        const child = findGroup(group.children ?? [], id);
+        if (child) return child;
+    }
+    return undefined;
+}
+
+function useLatestVersion(): void {
+    if (!conflictGroup.value) return;
+    edit.form.version = conflictGroup.value.version;
+    conflictGroup.value = undefined;
+}
+
+const handleSaveDictGroup = async () => {
     if (!editForm.value) return;
-    editForm.value?.validate(async valid => {
-        if (!valid) {
-            MessageUtils.error("请检查必填内容");
-            return;
-        }
+    try {
+        await editForm.value.validate();
         if (has_edit.value) {
             await DictApi.updateGroup(edit.form);
         } else {
@@ -79,7 +93,16 @@ const handleSaveDictGroup = () => {
         MessageUtils.success("保存成功", () => {
             emits("close");
         });
-    });
+    } catch (error) {
+        if (has_edit.value && error instanceof HttpRequestError && error.status === 409) {
+            try {
+                conflictGroup.value = findGroup(await DictApi.getTypesGroupTree(), edit.form.id);
+            } catch (refreshError) {
+                MessageUtils.error(refreshError);
+            }
+        }
+        if (error instanceof HttpRequestError) MessageUtils.error(error);
+    }
 };
 </script>
 
@@ -92,6 +115,14 @@ const handleSaveDictGroup = () => {
             </div>
         </template>
         <template #default>
+            <el-alert
+                v-if="conflictGroup"
+                type="warning"
+                :closable="false"
+                show-icon
+                :title="`字典组已更新，当前版本 ${conflictGroup.version}；你的编辑内容仍保留。最新名称：${conflictGroup.name}。`">
+                <el-button type="warning" plain @click="useLatestVersion">核对后采用新版本</el-button>
+            </el-alert>
             <el-form ref="editForm" :model="edit.form" :rules="edit.rules" label-width="auto">
                 <el-form-item v-if="has_edit" label="主键ID">
                     <p>{{ edit.form.id }}</p>

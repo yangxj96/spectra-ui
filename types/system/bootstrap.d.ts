@@ -1,23 +1,15 @@
+import type { components } from "@/api/generated/openapi.ts";
+
 export {};
 
 declare global {
-    type SystemPublicConfig = {
-        name: string;
-        short_name: string;
-        logo: string;
+    type SystemPublicConfig = Required<components["schemas"]["SystemPublicConfigVO"]> & {
         default_locale: "zh-CN" | "en-US";
-        default_timezone: string;
-        copyright_enabled: boolean;
-        copyright_name: string;
-        copyright_url: string;
     };
 
     type SystemBootstrap = {
         system: SystemPublicConfig;
-        crypto: {
-            enabled: boolean;
-            server_public_key: string | null;
-        };
+        crypto: components["schemas"]["CryptoConfigVO"] & { enabled: boolean };
         initialization: SystemInitializationStatus;
     };
 }

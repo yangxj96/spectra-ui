@@ -11,7 +11,7 @@ import { useCryptoStore } from "@/plugin/store/modules/use-crypto-store.ts";
  */
 export async function initCrypto(): Promise<void> {
     try {
-        const data = await request<{ enabled: boolean; server_public_key: string | null }, "/api/system/crypto/config">(
+        const data = await request<{ enabled: boolean; server_public_key?: string }, "/api/system/crypto/config">(
             "/api/system/crypto/config",
             {
                 method: "GET",
@@ -24,8 +24,8 @@ export async function initCrypto(): Promise<void> {
         }
         console.log(`[Crypto] 初始化完成: enabled=${data.enabled}`);
     } catch (e) {
-        console.warn("[Crypto] 初始化失败，加解密已禁用:", e);
-        useCryptoStore().setConfig({ enabled: false, server_public_key: null });
+        console.warn("[Crypto] 初始化失败:", e);
+        throw e;
     }
 }
 
@@ -47,5 +47,6 @@ export async function fetchClientPrivateKey(): Promise<void> {
         console.log("[Crypto] 客户端私钥已获取");
     } catch (e) {
         console.warn("[Crypto] 获取客户端私钥失败:", e);
+        throw e;
     }
 }

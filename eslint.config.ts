@@ -18,7 +18,9 @@ const eslintConfig: ReturnType<typeof defineConfigWithVueTs> = defineConfigWithV
         "**/.output/**",
         "**/.vite/**",
         "**/public/**",
-        "**/*.d.ts"
+        "**/*.d.ts",
+        "**/.temp/**",
+        "src/api/generated/**"
     ]),
     // ts的recommended
     vueTsConfigs.recommended,

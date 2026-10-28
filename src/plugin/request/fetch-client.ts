@@ -101,7 +101,8 @@ type EncryptedResponseBody = {
 async function encryptRequestBody(body: BodyInit | null | undefined, isFormData: boolean, method: string) {
     const cryptoStore = useCryptoStore();
     // FormData、二进制和 GET 请求保持原始传输格式，只有普通业务 JSON 才进入请求加密流程。
-    if (!cryptoStore.enabled || !cryptoStore.server_public_key || isFormData || !body || method === "GET") return body;
+    if (!cryptoStore.enabled || isFormData || !body || method === "GET") return body;
+    if (!cryptoStore.server_public_key) throw new Error("通信加密公钥未就绪");
     const bodyText = typeof body === "string" ? body : JSON.stringify(body);
     const iv = generateIv();
     const timestamp = Math.floor(Date.now() / 1000);
@@ -171,17 +172,6 @@ async function handleBlobDownload(res: Response, shouldDownload: boolean): Promi
     return blob;
 }
 
-function nestedFailure(data: unknown): { code: number; msg: string; errorCode?: string } | undefined {
-    // 部分后端代理会把失败响应嵌套在 data 中，避免只检查顶层 code 而吞掉真实消息。
-    if (typeof data !== "object" || data === null) return undefined;
-    const candidate = data as { code?: unknown; msg?: unknown; error_code?: unknown };
-    if (typeof candidate.code !== "number" || candidate.code < 400 || typeof candidate.msg !== "string") {
-        return undefined;
-    }
-    const errorCode = typeof candidate.error_code === "string" ? candidate.error_code : undefined;
-    return { code: candidate.code, msg: candidate.msg, errorCode };
-}
-
 async function failSession(): Promise<never> {
     // Fetch 和 XHR 都会进入这里；会话清理可重复执行，但提示和跳转只允许一次。
     await expireSession();
@@ -189,7 +179,7 @@ async function failSession(): Promise<never> {
         MessageUtils.error("登录已过期");
         GlobalUtils.toLogin();
     }
-    throw new HttpRequestError("登录已过期", 401, 401);
+    throw new HttpRequestError("登录已过期", "UNAUTHENTICATED", 401);
 }
 
 function bindRequestSignal(signal: AbortSignal | null | undefined, controller: AbortController): void {
@@ -275,11 +265,9 @@ async function parseSuccessfulResponse<T>(
         throw new HttpRequestError("响应数据格式错误", undefined, response.status);
     }
     result.data = await decryptResult<T>(result.data);
-    const nested = nestedFailure(result.data);
-    if (nested) throw new HttpRequestError(nested.msg, nested.errorCode ?? nested.code, nested.code);
     if (result.code !== 200) {
         MessageUtils.error(result.msg || "请求失败");
-        throw new HttpRequestError(result.msg || "请求失败", result.error_code, result.code);
+        throw new HttpRequestError(result.msg || "请求失败", result.error_code, response.status);
     }
     if (options.cache) setCache(options.key, result.data);
     return result.data as T;
@@ -318,7 +306,7 @@ async function executeRequest<T>(context: {
         const parsed = await parseResponseError(response, context.errorFallback);
         if (parsed.status === 401 && context.auth === "required") return failSession();
         if (!isRequestCancelled(parsed)) MessageUtils.error(parsed.message);
-        throw new HttpRequestError(parsed.message, parsed.code, parsed.status);
+        throw new HttpRequestError(parsed.message, parsed.errorCode, parsed.status);
     }
     return parseSuccessfulResponse<T>(response, context);
 }

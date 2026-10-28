@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from "vue";
 
 import { QuartzSchedulerApi } from "@/api/system/scheduler-api.ts";
 import JsonEditor from "@/components/JsonEditor/index.vue";
+import { HttpRequestError } from "@/plugin/request/error.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 const props = defineProps<{
@@ -22,6 +23,8 @@ interface QuartzJobForm {
 }
 
 const saving = ref(false);
+const editVersion = ref(0);
+const conflictJob = ref<QuartzJobVO>();
 const parameterValue = ref<JsonValue>({});
 const form = reactive<QuartzJobForm>({
     display_name: "",
@@ -67,6 +70,8 @@ function defaultParameters(type: QuartzJobTypeVO | undefined): JsonObject {
 
 function resetForm(): void {
     const job = props.job;
+    editVersion.value = job.version;
+    conflictJob.value = undefined;
     form.display_name = job.display_name;
     form.trigger = job.trigger
         ? {
@@ -135,6 +140,7 @@ async function save(): Promise<void> {
     try {
         const trigger = buildTrigger();
         await QuartzSchedulerApi.updateJob(job.job_key, {
+            version: editVersion.value,
             display_name: form.display_name.trim(),
             parameters_json: parametersJson,
             trigger
@@ -143,10 +149,23 @@ async function save(): Promise<void> {
         emit("update:modelValue", false);
         emit("saved");
     } catch (error) {
+        if (error instanceof HttpRequestError && error.status === 409) {
+            try {
+                conflictJob.value = await QuartzSchedulerApi.job(job.job_key);
+            } catch (refreshError) {
+                MessageUtils.error(refreshError instanceof Error ? refreshError.message : "读取最新任务失败");
+            }
+        }
         MessageUtils.error(error instanceof Error ? error.message : "保存定时任务失败");
     } finally {
         saving.value = false;
     }
+}
+
+function useLatestVersion(): void {
+    if (!conflictJob.value) return;
+    editVersion.value = conflictJob.value.version;
+    conflictJob.value = undefined;
 }
 </script>
 
@@ -159,6 +178,14 @@ async function save(): Promise<void> {
         destroy-on-close
         @update:model-value="emit('update:modelValue', $event)">
         <el-form class="task-edit-form" label-width="110px">
+            <el-alert
+                v-if="conflictJob"
+                type="warning"
+                show-icon
+                :closable="false"
+                :title="`任务已更新，当前版本 ${conflictJob.version}；你的编辑内容仍保留。请核对最新名称「${conflictJob.display_name}」后决定是否覆盖。`">
+                <el-button type="warning" plain @click="useLatestVersion">采用最新版本并重试</el-button>
+            </el-alert>
             <el-form-item label="任务类型" required>
                 <el-tag>{{ selectedType?.display_name ?? job.type_key }}（{{ job.type_key }}）</el-tag>
             </el-form-item>
@@ -211,12 +238,10 @@ async function save(): Promise<void> {
                     controls-position="right" />
             </el-form-item>
             <el-form-item label="首次触发">
-                <el-date-picker
+                <el-input
                     v-model="form.trigger.start_at"
                     class="form-control"
-                    type="datetime"
-                    value-format="YYYY-MM-DDTHH:mm:ss.SSSZ"
-                    placeholder="留空则立即进入调度"
+                    placeholder="ISO 时间及偏移，例如 2026-10-28T09:00:00+08:00；留空则立即调度"
                     clearable />
             </el-form-item>
             <el-form-item label="错过执行策略">

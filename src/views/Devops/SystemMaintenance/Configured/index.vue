@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { ConfiguredApi } from "@/api/system/configured-api.ts";
 import DictSelect from "@/components/DictSelect/index.vue";
+import { HttpRequestError } from "@/plugin/request/error.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 const categories: Array<{ key: ConfiguredSettingsCategory; label: string; description: string }> = [
@@ -18,6 +19,7 @@ const settings = ref<ConfiguredSettingFormItem[]>([]);
 const activeCategory = ref<ConfiguredSettingsCategory>("SYSTEM");
 const loading = ref(false);
 const saving = ref(false);
+const latestSettings = ref<ConfiguredSettingVO[]>();
 
 const visibleCategories = computed(() =>
     categories.filter(category => settings.value.some(setting => setting.category === category.key))
@@ -37,6 +39,7 @@ const loadSettings = async (notifyOnFailure = true): Promise<boolean> => {
             ...setting,
             value: setting.value ?? ""
         }));
+        latestSettings.value = undefined;
         if (!visibleCategories.value.some(category => category.key === activeCategory.value)) {
             activeCategory.value = visibleCategories.value[0]?.key ?? "SYSTEM";
         }
@@ -63,8 +66,9 @@ const handleSave = async () => {
             category: activeCategory.value,
             items: editableSettings.value.map(setting => ({
                 id: setting.id,
+                version: setting.version,
                 value: setting.value ?? "",
-                remarks: setting.remarks
+                remarks: setting.remarks?.trim() || null
             }))
         });
 
@@ -77,6 +81,16 @@ const handleSave = async () => {
             "保存成功"
         );
     } catch (error) {
+        if (error instanceof HttpRequestError && error.status === 409) {
+            try {
+                latestSettings.value = await ConfiguredApi.settings();
+            } catch (refreshError) {
+                MessageUtils.notify.error(
+                    refreshError instanceof Error ? refreshError.message : "读取最新配置失败",
+                    "冲突恢复失败"
+                );
+            }
+        }
         MessageUtils.notify.error(
             error instanceof Error ? error.message : "保存系统配置失败，请稍后重试。",
             "保存失败"
@@ -86,6 +100,16 @@ const handleSave = async () => {
     }
 };
 
+function useLatestVersions(): void {
+    if (!latestSettings.value) return;
+    const versions = new Map(latestSettings.value.map(setting => [setting.id, setting.version]));
+    settings.value = settings.value.map(setting => ({
+        ...setting,
+        version: versions.get(setting.id) ?? setting.version
+    }));
+    latestSettings.value = undefined;
+}
+
 onMounted(() => {
     void loadSettings();
 });
@@ -93,6 +117,14 @@ onMounted(() => {
 
 <template>
     <section v-loading="loading" class="configured-page">
+        <el-alert
+            v-if="latestSettings"
+            type="warning"
+            :closable="false"
+            show-icon
+            title="配置已被更新；当前输入仍保留。请核对最新配置后再决定是否覆盖。">
+            <el-button type="warning" plain @click="useLatestVersions">核对后采用新版本</el-button>
+        </el-alert>
         <template v-if="visibleCategories.length > 0">
             <el-tabs v-model="activeCategory" class="configured-tabs">
                 <el-tab-pane v-for="category in visibleCategories" :key="category.key" :name="category.key">

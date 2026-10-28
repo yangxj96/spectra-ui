@@ -10,6 +10,7 @@ export const userConverter = {
     createForm(defaults: Partial<Pick<UserForm, "language" | "timezone">> = {}): UserForm {
         return {
             id: "",
+            version: undefined,
             employee_no: "",
             real_name: "",
             username: "",
@@ -25,6 +26,7 @@ export const userConverter = {
         return {
             // 基础字段
             id: datum.id ?? "",
+            version: datum.version,
             employee_no: datum.employee_no ?? "",
             real_name: datum.real_name ?? "",
             username: datum.username ?? "",
@@ -39,6 +41,7 @@ export const userConverter = {
     toDTO(form: UserForm): UserDTO {
         return {
             id: form.id || undefined,
+            version: form.version,
             employee_no: form.employee_no,
             real_name: form.real_name,
             username: form.username,

@@ -5,8 +5,7 @@ import { useRouter } from "vue-router";
 import { NotificationAdminApi } from "@/api/notification/notification-admin-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import useTable from "@/hooks/use-table.ts";
-
-import type { DateModelType } from "element-plus";
+import { toIsoDateTime } from "@/utils/date-utils.ts";
 
 const purposeOptions = [
     { label: "登录验证码", value: "LOGIN_CODE" },
@@ -33,7 +32,7 @@ const statusOptions = [
 ];
 
 const condition = ref<NotificationAdminRequestQuery>({ page_num: 1, page_size: 15 });
-const dateRange = ref<[DateModelType, DateModelType] | undefined>();
+const dateRange = ref<[string, string] | undefined>();
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable(
     NotificationAdminApi.pageRequests,
     condition.value
@@ -55,9 +54,9 @@ function statusTagType(status: string): "success" | "warning" | "danger" | "info
     return "info";
 }
 
-function toIso(value: DateModelType | undefined): string | undefined {
+function toIso(value: string | undefined): string | undefined {
     if (!value) return undefined;
-    return new Date(value).toISOString();
+    return toIsoDateTime(value);
 }
 
 function applyDateRange(): void {
@@ -146,6 +145,7 @@ function openDetail(row: NotificationRequestAdminVO): void {
                         <el-date-picker
                             v-model="dateRange"
                             type="datetimerange"
+                            value-format="YYYY-MM-DDTHH:mm:ss"
                             range-separator="至"
                             start-placeholder="开始时间"
                             end-placeholder="结束时间"

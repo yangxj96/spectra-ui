@@ -24,6 +24,7 @@ const profileLoading = ref(true);
 
 const userInfo = ref<UserProfileVO>({
     id: "",
+    version: 0,
     employee_no: "",
     username: "",
     real_name: "",
@@ -76,7 +77,7 @@ onMounted(() => {
                         <span class="display-name__value">{{ userInfo.real_name }}</span>
                     </div>
                     <p class="department">主部门：{{ userInfo.primary_department_name }}</p>
-                    <div v-if="userInfo.associated_departments.length" class="department-tags">
+                    <div v-if="userInfo.associated_departments?.length" class="department-tags">
                         <el-tag
                             v-for="department in userInfo.associated_departments"
                             :key="department.id"

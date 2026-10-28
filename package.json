@@ -18,6 +18,8 @@
         "lint": "eslint . --cache",
         "lint:fix": "eslint . --fix --cache",
         "type-check": "vue-tsc -p tsconfig.app.json --noEmit --composite false && tsc -p tsconfig.node.json --noEmit",
+        "contract:generate": "node scripts/contracts.mjs write",
+        "contract:check": "node scripts/contracts.mjs check",
         "prestart": "pnpm run format && pnpm run lint:fix && pnpm run type-check"
     },
     "dependencies": {
@@ -61,6 +63,7 @@
         "globals": "17.3.0",
         "jiti": "2.6.1",
         "npm-run-all2": "8.0.4",
+        "openapi-typescript": "7.13.0",
         "prettier": "3.8.1",
         "sass": "1.97.3",
         "typescript": "5.9.3",

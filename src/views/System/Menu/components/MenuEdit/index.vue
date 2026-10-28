@@ -1,11 +1,12 @@
 ﻿<script setup lang="ts">
 import { type FormInstance, type FormRules } from "element-plus";
-import { computed, onMounted, reactive, useTemplateRef, watch } from "vue";
+import { computed, onMounted, reactive, ref, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 
 import { MenuApi } from "@/api/system/menu-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import IconPicker from "@/components/IconPicker/index.vue";
+import { HttpRequestError } from "@/plugin/request/error.ts";
 import { filterDirectoryTree } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -21,6 +22,7 @@ const emits = defineEmits<{
 }>();
 
 const menuForm = useTemplateRef<FormInstance>("ruleFormRef");
+const conflictMenu = ref<Menu>();
 const router = useRouter();
 
 // 编辑标识,是否为编辑数据
@@ -55,6 +57,7 @@ onMounted(() => {
     if (has_edit.value && row.value) {
         edit.form = {
             id: row.value.id,
+            version: row.value.version,
             pid: row.value.pid,
             icon: row.value.icon,
             menuType: row.value.menuType,
@@ -79,18 +82,41 @@ const handleClose = () => {
 };
 
 // 保存菜单
+function findMenu(items: Menu[], id: string): Menu | undefined {
+    for (const item of items) {
+        if (item.id === id) return item;
+        const child = findMenu(item.children ?? [], id);
+        if (child) return child;
+    }
+    return undefined;
+}
+
+function useLatestMenuVersion(): void {
+    if (!conflictMenu.value) return;
+    edit.form.version = conflictMenu.value.version;
+    conflictMenu.value = undefined;
+}
+
 const handleMenuSave = async () => {
     if (!menuForm.value) return;
-    await menuForm.value?.validate(async valid => {
-        if (valid) {
-            if (has_edit.value) {
-                await MenuApi.update(edit.form);
-            } else {
-                await MenuApi.create(edit.form);
-            }
-            MessageUtils.success(has_edit.value ? "修改菜单成功" : "新增菜单成功", handleClose);
+    try {
+        await menuForm.value.validate();
+        if (has_edit.value) {
+            await MenuApi.update(edit.form);
+        } else {
+            await MenuApi.create(edit.form);
         }
-    });
+        MessageUtils.success(has_edit.value ? "修改菜单成功" : "新增菜单成功", handleClose);
+    } catch (error) {
+        if (has_edit.value && edit.form.id && error instanceof HttpRequestError && error.status === 409) {
+            try {
+                conflictMenu.value = findMenu(await MenuApi.tree(), edit.form.id);
+            } catch (refreshError) {
+                MessageUtils.error(refreshError);
+            }
+        }
+        if (error instanceof HttpRequestError) MessageUtils.error(error);
+    }
 };
 </script>
 
@@ -103,6 +129,14 @@ const handleMenuSave = async () => {
             </div>
         </template>
         <template #default>
+            <el-alert
+                v-if="conflictMenu"
+                type="warning"
+                :closable="false"
+                show-icon
+                :title="`菜单已更新，当前版本 ${conflictMenu.version}；你的编辑内容仍保留。最新名称：${conflictMenu.name}。`">
+                <el-button type="warning" plain @click="useLatestMenuVersion">核对后采用新版本</el-button>
+            </el-alert>
             <el-form
                 ref="ruleFormRef"
                 :rules="edit.rules"

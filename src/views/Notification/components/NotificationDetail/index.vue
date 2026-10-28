@@ -4,6 +4,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 import { useNotificationStore } from "@/plugin/store/modules/use-notification-store.ts";
+import { formatDateTime } from "@/utils/date-utils.ts";
 
 defineOptions({
     name: "NotificationDetail"
@@ -44,15 +45,7 @@ const visible = computed({
 
 /** 格式化时间 */
 function formatTime(time: string): string {
-    const date = new Date(time);
-    return date.toLocaleString("zh-CN", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-    });
+    return formatDateTime(time);
 }
 
 /** 获取用途标签 */

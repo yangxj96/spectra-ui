@@ -1,4 +1,4 @@
-export {};
+import type { components } from "@/api/generated/openapi.ts";
 
 declare global {
     type LoginForm = {
@@ -105,6 +105,7 @@ declare global {
     type UserPageVO = {
         // 主键
         id: string;
+        version: number;
         // 工号
         employee_no: string;
         // 头像
@@ -151,6 +152,7 @@ declare global {
     type UserForm = {
         // 主键
         id: string;
+        version?: number;
         // 工号
         employee_no: string;
         // 姓名
@@ -173,6 +175,7 @@ declare global {
     type UserDTO = {
         // 主键
         id?: string;
+        version?: number;
         // 工号
         employee_no: string;
         // 姓名
@@ -198,32 +201,7 @@ declare global {
     };
 
     /** 当前用户详情 */
-    type UserProfileVO = {
-        /** 用户ID */
-        id: string;
-        /** 工号 */
-        employee_no: string;
-        /** 登录用户名 */
-        username: string;
-        /** 姓名 */
-        real_name: string;
-        /** 头像 */
-        avatar: string;
-        /** 状态 */
-        status: UserStatus;
-        /** 语言 */
-        language: string;
-        /** 时区 */
-        timezone: string;
-        /** 主部门 ID */
-        primary_department_id: string;
-        /** 主部门名称 */
-        primary_department_name: string;
-        /** 关联部门摘要 */
-        associated_departments: UserDepartmentSummaryVO[];
-        /** 角色列表 */
-        roles: RoleInfo[];
-    };
+    type UserProfileVO = components["schemas"]["UserProfileVO"];
 
     /** 角色简要信息 */
     type RoleInfo = {
@@ -236,14 +214,7 @@ declare global {
     };
 
     /** 更新用户信息入参 */
-    type UserProfileFrom = {
-        /** 姓名 */
-        real_name: string;
-        /** 语言 */
-        language: string;
-        /** 时区 */
-        timezone: string;
-    };
+    type UserProfileFrom = components["schemas"]["UserProfileFrom"];
 
     /** 修改密码入参 */
     type ChangePasswordFrom = {

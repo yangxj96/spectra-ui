@@ -3,6 +3,7 @@ export {};
 declare global {
     // 菜单
     type Menu = BaseEntity & {
+        version: number;
         //父级ID
         pid?: string;
         //图标
@@ -21,6 +22,7 @@ declare global {
 
     type MenuSaveForm = {
         id?: string;
+        version?: number;
         pid?: string | null;
         icon: string;
         menuType: "DIRECTORY" | "MENU";

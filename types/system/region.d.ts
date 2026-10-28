@@ -10,6 +10,7 @@ declare global {
 
     // 行政区域信息
     type Region = BaseEntity & {
+        version: number;
         // 区域名称
         name: string;
 

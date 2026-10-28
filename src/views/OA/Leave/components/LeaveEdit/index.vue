@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { LeaveApi } from "@/api/oa/leave-api.ts";
-import { toIsoDateTime } from "@/utils/date-utils.ts";
+import { toIsoDateTime, toLocalDateTimeInput } from "@/utils/date-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import OaFormPage from "@/views/OA/components/OaFormPage/index.vue";
 
@@ -39,8 +39,8 @@ async function load(): Promise<void> {
         const row = await LeaveApi.get(editingId.value);
         Object.assign(form, {
             leave_type_code: row.leave_type_code,
-            start_time: row.start_time,
-            end_time: row.end_time,
+            start_time: toLocalDateTimeInput(row.start_time),
+            end_time: toLocalDateTimeInput(row.end_time),
             reason: row.reason,
             contact_address: row.contact_address || "",
             calculate_duration: true

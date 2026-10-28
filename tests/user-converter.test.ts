@@ -10,6 +10,7 @@ describe("userConverter department fields", () => {
     it("maps department summaries to editable IDs", () => {
         const form = userConverter.toForm({
             id: "user-1",
+            version: 7,
             employee_no: "E-1",
             real_name: "张三",
             username: "zhangsan",
@@ -27,6 +28,7 @@ describe("userConverter department fields", () => {
 
         expect(form.primary_department_id).toBe("main");
         expect(form.associated_department_ids).toEqual(["ops"]);
+        expect(userConverter.toDTO(form).version).toBe(7);
     });
 
     it("serializes the primary and associated department fields", () => {

@@ -637,8 +637,8 @@ function mapSessionState(status: UploadSession["status"]): FileUploadState {
 }
 
 function errorCode(error: unknown): string {
-    if (typeof error === "object" && error !== null && "code" in error) {
-        return String((error as { code?: string }).code ?? "FILE_UPLOAD_CONFLICT");
+    if (typeof error === "object" && error !== null && "errorCode" in error && typeof error.errorCode === "string") {
+        return error.errorCode;
     }
     return "FILE_UPLOAD_CONFLICT";
 }

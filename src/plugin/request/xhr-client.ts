@@ -53,21 +53,17 @@ function responseHeaders(xhr: XMLHttpRequest): Headers {
     return headers;
 }
 
-function parseXhrError(xhr: XMLHttpRequest, headers: Headers): BinaryRequestError {
-    // 上传接口可能返回统一 JSON，也可能只返回文本或响应头错误码，按优先级保留可展示消息。
+function parseXhrError(xhr: XMLHttpRequest): BinaryRequestError {
+    // 仅统一 JSON 的 error_code 表示稳定业务错误标识。
     const raw = xhr.responseText;
-    let payload: { code?: number | string; msg?: string; error_code?: string } | undefined;
+    let payload: { msg?: string; error_code?: string } | undefined;
     try {
-        payload = raw ? (JSON.parse(raw) as { code?: number | string; msg?: string; error_code?: string }) : undefined;
+        payload = raw ? (JSON.parse(raw) as { msg?: string; error_code?: string }) : undefined;
     } catch {
         payload = undefined;
     }
     const message = payload?.msg || (raw && raw.trim()) || xhr.statusText || "二进制请求失败";
-    return new BinaryRequestError(
-        xhr.status,
-        message,
-        payload?.error_code ?? headers.get("x-error-code") ?? payload?.code ?? undefined
-    );
+    return new BinaryRequestError(xhr.status, message, payload?.error_code);
 }
 
 type XhrContext = {
@@ -82,7 +78,7 @@ async function expireAndReject(): Promise<never> {
         MessageUtils.error("登录已过期");
         GlobalUtils.toLogin();
     }
-    throw new BinaryRequestError(401, "登录已过期", 401);
+    throw new BinaryRequestError(401, "登录已过期", "UNAUTHENTICATED");
 }
 
 /** 发起一次不可重试的 XHR；是否刷新 Token 由 requestBinary 的外层循环决定。 */
@@ -134,7 +130,7 @@ function send(
             if (xhr.status >= 200 && xhr.status < 300) {
                 finish(() => resolve({ status: xhr.status, headers: responseHeaderMap }));
             } else {
-                finish(() => reject(parseXhrError(xhr, responseHeaderMap)));
+                finish(() => reject(parseXhrError(xhr)));
             }
         };
         xhr.onerror = () => finish(() => reject(new BinaryRequestError(0, "网络请求失败")));

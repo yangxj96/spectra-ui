@@ -1,26 +1,26 @@
 /** 可识别的请求错误。 */
 export class HttpRequestError extends Error {
     readonly status?: number;
-    readonly code?: number | string;
+    readonly errorCode?: string;
 
-    constructor(message: string, code?: number | string, status?: number) {
+    constructor(message: string, errorCode?: string, status?: number) {
         super(message);
         this.name = "HttpRequestError";
         this.status = status;
-        this.code = code;
+        this.errorCode = errorCode;
     }
 }
 
 /** 上传请求错误，保留 HTTP 状态和服务端错误码。 */
 export class BinaryRequestError extends Error {
     readonly status: number;
-    readonly code?: number | string;
+    readonly errorCode?: string;
 
-    constructor(status: number, message: string, code?: number | string) {
+    constructor(status: number, message: string, errorCode?: string) {
         super(message);
         this.name = "BinaryRequestError";
         this.status = status;
-        this.code = code;
+        this.errorCode = errorCode;
     }
 }
 
@@ -35,7 +35,7 @@ export class RequestCancelledError extends Error {
 export type ParsedResponseError = {
     message: string;
     status?: number;
-    code?: number | string;
+    errorCode?: string;
 };
 
 /** HTTP 状态缺少业务消息时使用的稳定前端提示。 */
@@ -64,28 +64,16 @@ function responseMessage(status: number | undefined, fallback: string): string {
     return (status === undefined ? undefined : STATUS_MESSAGES[status]) ?? fallback;
 }
 
-function resolvePayload(payload: unknown): { message?: string; code?: number | string } {
-    // 兼容普通文本、统一响应和被网关再次嵌套的 data 结构。
+function resolvePayload(payload: unknown): { message?: string; errorCode?: string } {
     if (typeof payload === "string") {
         return nonBlank(payload) ? { message: payload.trim() } : {};
     }
     if (typeof payload !== "object" || payload === null) return {};
 
     const candidate = payload as Record<string, unknown>;
-    const nested = candidate.data;
-    if (typeof nested === "object" && nested !== null) {
-        const nestedValue = resolvePayload(nested);
-        const nestedCode = nestedValue.code;
-        if (nestedValue.message && (typeof nestedCode !== "undefined" || candidate.code === 200)) {
-            return nestedValue;
-        }
-    }
-
     const message = nonBlank(candidate.msg) ? candidate.msg.trim() : undefined;
     const errorCode = nonBlank(candidate.error_code) ? candidate.error_code : undefined;
-    const legacyCode =
-        typeof candidate.code === "number" || typeof candidate.code === "string" ? candidate.code : undefined;
-    return { message, code: errorCode ?? legacyCode };
+    return { message, errorCode };
 }
 
 /**
@@ -119,7 +107,7 @@ export async function parseResponseError(
     const resolved = resolvePayload(payload);
     return {
         status: response.status,
-        code: resolved.code,
+        errorCode: resolved.errorCode,
         message: resolved.message ?? responseMessage(response.status, fallback)
     };
 }

@@ -16,6 +16,10 @@ vendor/
 *.min.js
 *.min.css
 
+# 后端导出的契约事实源与生成类型
+contracts/
+src/api/generated/
+
 # 包管理器生成文件
 package-lock.json
 npm-shrinkwrap.json

@@ -99,5 +99,5 @@ describe("built-in role authorization visibility", () => {
 });
 
 function menu(id: string, name: string, menuType: Menu["menuType"], routeName: string | null, children?: Menu[]): Menu {
-    return { id, name, icon: "", menuType, routeName, sort: 0, children };
+    return { id, version: 1, name, icon: "", menuType, routeName, sort: 0, children };
 }

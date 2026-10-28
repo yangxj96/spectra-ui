@@ -10,8 +10,7 @@ describe("filterAuthorizedShortcuts", () => {
     ];
 
     it("only keeps shortcuts whose menu routes are authorized", () => {
-        expect(filterAuthorizedShortcuts(shortcuts, new Set(["Dashboard", "OACalendar"])))
-            .toEqual([shortcuts[1]]);
+        expect(filterAuthorizedShortcuts(shortcuts, new Set(["Dashboard", "OACalendar"]))).toEqual([shortcuts[1]]);
     });
 
     it("returns no shortcuts before the authorization menu is available", () => {

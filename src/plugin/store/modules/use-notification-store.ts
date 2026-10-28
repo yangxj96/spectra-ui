@@ -22,12 +22,7 @@ function buildNotificationQuery(params?: NotificationQueryParams): NotificationQ
         page_num: params?.page_num ?? 1,
         page_size: params?.page_size ?? 20
     };
-    const optionalKeys: Array<keyof NotificationQueryParams> = [
-        "is_read",
-        "keyword",
-        "start_time",
-        "end_time"
-    ];
+    const optionalKeys: Array<keyof NotificationQueryParams> = ["is_read", "keyword", "start_time", "end_time"];
     if (params?.purpose && params.purpose !== "all") {
         queryParams.purpose = params.purpose;
     }

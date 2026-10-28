@@ -285,7 +285,9 @@ function providerTypeChanged(channel: ExternalChannel): void {
     form.clear_secret = false;
 }
 
-function providerEditorDefaults(provider: NotificationProviderVO): Pick<ProviderEditor, "port" | "timeout_ms" | "rate_limit_per_second" | "max_attempts"> {
+function providerEditorDefaults(
+    provider: NotificationProviderVO
+): Pick<ProviderEditor, "port" | "timeout_ms" | "rate_limit_per_second" | "max_attempts"> {
     const isMock = provider.provider_type === "MOCK";
     const defaultNumber = (value: number, fallback: number): number => value || fallback;
     return {
@@ -360,17 +362,22 @@ async function loadData(): Promise<void> {
 function validateEditor(channel: ExternalChannel, form: ProviderEditor): boolean {
     const checks: Array<[boolean, string]> = [
         [isHttpProvider(form) && !form.endpoint.trim(), `${channelLabel(channel)} 的 HTTP 端点不能为空。`],
-        [isSmsProvider(form) && !form.credential_id.trim(), `${providerTypeLabel(form.provider_type)}必须填写凭据标识。`],
+        [
+            isSmsProvider(form) && !form.credential_id.trim(),
+            `${providerTypeLabel(form.provider_type)}必须填写凭据标识。`
+        ],
         [
             form.provider_type === "ALIYUN_SMS" && (!form.sign_name.trim() || !form.template_code.trim()),
             "阿里云短信必须填写已审核的短信签名和 TemplateCode。 "
         ],
         [
-            form.provider_type === "TENCENT_SMS" && (!form.app_id.trim() || !form.sign_name.trim() || !form.template_code.trim()),
+            form.provider_type === "TENCENT_SMS" &&
+                (!form.app_id.trim() || !form.sign_name.trim() || !form.template_code.trim()),
             "腾讯云短信必须填写 SmsSdkAppId、已审核签名和 TemplateId。 "
         ],
         [
-            isSmtpProvider(form) && (!form.endpoint.trim() || !form.credential_id.trim() || !form.sender_address.trim()),
+            isSmtpProvider(form) &&
+                (!form.endpoint.trim() || !form.credential_id.trim() || !form.sender_address.trim()),
             "SMTP 必须填写主机、用户名和发件地址。 "
         ],
         [isSmtpProvider(form) && form.ssl_enabled && form.starttls_enabled, "SMTP 不能同时启用隐式 SSL 和 STARTTLS。 "],

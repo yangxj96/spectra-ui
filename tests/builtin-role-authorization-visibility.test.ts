@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-
 import routes from "@/plugin/router/routes.ts";
 import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import {

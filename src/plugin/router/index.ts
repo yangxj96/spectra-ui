@@ -59,7 +59,8 @@ async function resolveGuideAccess(
         return true;
     }
     if (!guideStatus.required && isSystemGuide) {
-        const redirect = typeof to.query.redirect === "string" && to.query.redirect.startsWith("/") ? to.query.redirect : "/";
+        const redirect =
+            typeof to.query.redirect === "string" && to.query.redirect.startsWith("/") ? to.query.redirect : "/";
         next({ path: redirect, replace: true });
         return true;
     }

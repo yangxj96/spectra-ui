@@ -275,7 +275,11 @@ function removeBoundary(draft: RoleAssignmentDraft, permission: string): void {
     draft.boundaries = draft.boundaries.filter(boundary => boundary.permission !== permission);
 }
 
-function warnInvalidBoundary(draft: RoleAssignmentDraft, boundary: RoleAssignmentDraft["boundaries"][number], rolePermissionCodes: Set<string>): boolean {
+function warnInvalidBoundary(
+    draft: RoleAssignmentDraft,
+    boundary: RoleAssignmentDraft["boundaries"][number],
+    rolePermissionCodes: Set<string>
+): boolean {
     if (!rolePermissionCodes.has(boundary.permission)) {
         MessageUtils.warning(`角色“${roleLabel(draft)}”未声明权限：${boundary.permission}`);
         return false;

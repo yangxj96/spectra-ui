@@ -42,8 +42,8 @@ export const NotificationTemplateApi = {
         return post<void>(`${TEMPLATE_API}/${id}/archive`, { version });
     },
 
-    versions(id: string): Promise<NotificationTemplateVO[]> {
-        return get<NotificationTemplateVO[]>(`${TEMPLATE_API}/${id}/versions`);
+    versions(id: string, params?: BasePageParams): Promise<Page<NotificationTemplateVO>> {
+        return get<Page<NotificationTemplateVO>>(`${TEMPLATE_API}/${id}/versions`, params);
     },
 
     preview(params: NotificationTemplatePreviewParams): Promise<NotificationTemplatePreviewVO> {

@@ -16123,7 +16123,9 @@ export interface operations {
     };
     versions_3: {
         parameters: {
-            query?: never;
+            query: {
+                page: components["schemas"]["PageFrom"];
+            };
             header?: {
                 "Api-Version"?: "1.0.0";
             };
@@ -16143,7 +16145,7 @@ export interface operations {
                     "*/*": {
                         /** Format: int32 */
                         code: number;
-                        data?: components["schemas"]["NotificationTemplateVO"][];
+                        data?: components["schemas"]["IPageNotificationTemplateVO"];
                         msg: string;
                     };
                 };

@@ -51,6 +51,8 @@ const versionVisible = ref(false);
 const versionLoading = ref(false);
 const versionData = ref<NotificationTemplateVO[]>([]);
 const versionTemplateName = ref("");
+const versionTargetId = ref("");
+const versionPagination = ref({ page: 1, size: 10, total: 0 });
 const compareVisible = ref(false);
 const compareFromId = ref("");
 const compareToId = ref("");
@@ -191,6 +193,30 @@ function archive(row: NotificationTemplateVO): Promise<void> {
     );
 }
 
+async function loadVersions(): Promise<void> {
+    if (!versionTargetId.value) return;
+    versionLoading.value = true;
+    try {
+        const result = await NotificationTemplateApi.versions(versionTargetId.value, {
+            page_num: versionPagination.value.page,
+            page_size: versionPagination.value.size
+        });
+        versionData.value = result.records ?? [];
+        versionPagination.value.total = result.total ?? 0;
+        versionPagination.value.page = result.current ?? 1;
+        versionPagination.value.size = result.size ?? 10;
+        const ids = new Set(versionData.value.map(item => item.id));
+        if (!ids.has(compareFromId.value)) compareFromId.value = versionData.value[1]?.id ?? "";
+        if (!ids.has(compareToId.value)) compareToId.value = versionData.value[0]?.id ?? "";
+    } catch (error: unknown) {
+        MessageUtils.error(errorMessage(error, "加载版本历史失败"));
+        versionData.value = [];
+        versionPagination.value.total = 0;
+    } finally {
+        versionLoading.value = false;
+    }
+}
+
 async function openVersions(
     row: NotificationTemplateChannelGroupVO,
     group: NotificationTemplateGroupVO
@@ -198,18 +224,23 @@ async function openVersions(
     const target = editTarget(row);
     if (!target) return;
     versionVisible.value = true;
-    versionLoading.value = true;
     versionTemplateName.value = `${group.template_name}（${group.template_group_code}） / ${channelLabel(row.channel)}`;
-    try {
-        versionData.value = await NotificationTemplateApi.versions(target.id);
-        compareFromId.value = versionData.value[1]?.id ?? "";
-        compareToId.value = versionData.value[0]?.id ?? "";
-    } catch (error: unknown) {
-        MessageUtils.error(errorMessage(error, "加载版本历史失败"));
-        versionData.value = [];
-    } finally {
-        versionLoading.value = false;
-    }
+    versionTargetId.value = target.id;
+    versionPagination.value.page = 1;
+    compareFromId.value = "";
+    compareToId.value = "";
+    await loadVersions();
+}
+
+async function handleVersionCurrentChange(value: number): Promise<void> {
+    versionPagination.value.page = value;
+    await loadVersions();
+}
+
+async function handleVersionSizeChange(value: number): Promise<void> {
+    versionPagination.value.page = 1;
+    versionPagination.value.size = value;
+    await loadVersions();
 }
 
 function openCompare(): void {
@@ -442,6 +473,16 @@ function openCompare(): void {
                     <el-table-column align="center" label="更新时间" prop="updated_at" width="170" />
                 </el-table>
                 <el-empty v-if="!versionLoading && versionData.length === 0" description="暂无版本记录" />
+                <el-pagination
+                    v-if="versionPagination.total > 0"
+                    class="version-pagination"
+                    layout="total, sizes, prev, pager, next"
+                    :current-page="versionPagination.page"
+                    :page-size="versionPagination.size"
+                    :page-sizes="[10, 15, 50]"
+                    :total="versionPagination.total"
+                    @size-change="handleVersionSizeChange"
+                    @current-change="handleVersionCurrentChange" />
             </div>
         </el-dialog>
 
@@ -553,6 +594,10 @@ function openCompare(): void {
 
 .version-container {
     min-height: 240px;
+}
+
+.version-pagination {
+    margin-top: 14px;
 }
 
 .compare-toolbar {

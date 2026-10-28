@@ -21318,6 +21318,14 @@
             }
           },
           {
+            "in": "query",
+            "name": "page",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PageFrom"
+            }
+          },
+          {
             "in": "header",
             "name": "Api-Version",
             "schema": {
@@ -21340,10 +21348,7 @@
                       "type": "integer"
                     },
                     "data": {
-                      "items": {
-                        "$ref": "#/components/schemas/NotificationTemplateVO"
-                      },
-                      "type": "array"
+                      "$ref": "#/components/schemas/IPageNotificationTemplateVO"
                     },
                     "msg": {
                       "type": "string"

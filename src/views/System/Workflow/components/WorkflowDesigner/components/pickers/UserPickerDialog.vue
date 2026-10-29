@@ -17,6 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const loading = ref(false);
+let loadSequence = 0;
 const tableData = ref<UserPageVO[]>([]);
 const total = ref(0);
 const keyword = ref("");
@@ -29,6 +30,7 @@ const currentRow = ref<UserPageVO | null>(null);
 const selectedMap = ref<Map<string, string>>(new Map());
 
 const loadData = async () => {
+    const sequence = ++loadSequence;
     loading.value = true;
     try {
         const params: UserPageParams = {
@@ -37,11 +39,14 @@ const loadData = async () => {
         };
         if (keyword.value) params.real_name = keyword.value;
         const result = await UserApi.page(params);
+        if (sequence !== loadSequence || !visible.value) return;
         tableData.value = result?.records || [];
         total.value = result?.total || 0;
         syncTableSelection();
     } finally {
-        loading.value = false;
+        if (sequence === loadSequence) {
+            loading.value = false;
+        }
     }
 };
 
@@ -77,6 +82,10 @@ watch(
     },
     { immediate: true }
 );
+
+watch(visible, visible => {
+    if (!visible) loadSequence++;
+});
 
 // 用户手动勾选单行（不受翻页/程序化选中干扰）
 const handleSelect = (selection: UserPageVO[], row: UserPageVO) => {

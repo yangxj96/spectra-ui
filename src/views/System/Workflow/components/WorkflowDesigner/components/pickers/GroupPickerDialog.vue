@@ -17,17 +17,23 @@ const emit = defineEmits<{
 }>();
 
 const loading = ref(false);
+let loadSequence = 0;
 const treeData = ref<DepartmentTreeVO[]>([]);
 const treeRef = ref<InstanceType<typeof ElTree>>();
 const currentNode = ref<DepartmentTreeVO | null>(null);
 
 const loadData = async () => {
+    const sequence = ++loadSequence;
     loading.value = true;
     try {
-        treeData.value = await DepartmentApi.tree();
+        const result = await DepartmentApi.tree();
+        if (sequence !== loadSequence || !visible.value) return;
+        treeData.value = result;
         restoreSelection();
     } finally {
-        loading.value = false;
+        if (sequence === loadSequence) {
+            loading.value = false;
+        }
     }
 };
 
@@ -59,6 +65,10 @@ watch(
     },
     { immediate: true }
 );
+
+watch(visible, visible => {
+    if (!visible) loadSequence++;
+});
 
 const handleNodeClick = (data: DepartmentTreeVO) => {
     if (!props.multiple) {

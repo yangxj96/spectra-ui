@@ -17,17 +17,23 @@ const emit = defineEmits<{
 }>();
 
 const loading = ref(false);
+let loadSequence = 0;
 const tableData = ref<ProcessDefinitionVO[]>([]);
 const selected = ref<ProcessDefinitionVO | null>(null);
 const tableRef = ref<InstanceType<typeof ElTable>>();
 
 const loadData = async () => {
+    const sequence = ++loadSequence;
     loading.value = true;
     try {
-        tableData.value = await WorkflowApi.getProcessDefinitions();
+        const result = await WorkflowApi.getProcessDefinitions();
+        if (sequence !== loadSequence || !visible.value) return;
+        tableData.value = result;
         restoreSelection();
     } finally {
-        loading.value = false;
+        if (sequence === loadSequence) {
+            loading.value = false;
+        }
     }
 };
 
@@ -53,6 +59,10 @@ watch(
     },
     { immediate: true }
 );
+
+watch(visible, visible => {
+    if (!visible) loadSequence++;
+});
 
 const handleRowClick = (row: ProcessDefinitionVO) => {
     selected.value = row;

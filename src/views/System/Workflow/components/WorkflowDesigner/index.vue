@@ -4,7 +4,7 @@ import { Control, SelectionSelect } from "@logicflow/extension";
 import "@logicflow/extension/dist/index.css";
 import Flowable, { type PickerRequestPayload, type PickerType } from "@yangxj96/logicflow-plugin-flowable";
 import "@yangxj96/logicflow-plugin-flowable/style.css";
-import { computed, onMounted, reactive, ref, shallowRef, useTemplateRef } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, shallowRef, useTemplateRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
@@ -25,6 +25,8 @@ const panel = useTemplateRef<HTMLDivElement>("panel");
 const logicFlow = shallowRef<LogicFlow | null>(null);
 const loading = ref(false);
 const deploying = ref(false);
+let disposed = false;
+let loadSequence = 0;
 
 // 从 route query 获取编辑信息
 const definitionId = computed(() => route.query.id as string | undefined);
@@ -36,13 +38,28 @@ const picker = reactive({
     type: "" as PickerType | "",
     multiple: false,
     value: "",
-    resolve: null as ((value: string, label?: string) => void) | null
+    request: null as PickerRequestPayload | null
 });
 
-const handlePickerConfirm = (value: string, label?: string) => {
-    picker.resolve?.(value, label);
-    picker.visible = false;
+const clearPickerRequest = (cancel: boolean) => {
+    const request = picker.request;
+    picker.request = null;
+    if (cancel) request?.cancel();
 };
+
+const handlePickerConfirm = (value: string, label?: string) => {
+    const request = picker.request;
+    picker.request = null;
+    picker.visible = false;
+    request?.resolve(value, label);
+};
+
+watch(
+    () => picker.visible,
+    visible => {
+        if (!visible) clearPickerRequest(true);
+    }
+);
 
 /**
  * 初始化 LogicFlow 实例
@@ -95,11 +112,11 @@ const initLogicFlow = () => {
     logicFlow.value.render({});
 
     logicFlow.value.on("property:picker", (payload: PickerRequestPayload) => {
-        console.log("[WorkflowDesigner] property:picker:", payload);
+        clearPickerRequest(true);
         picker.type = payload.pickerType;
         picker.multiple = payload.multiple;
         picker.value = payload.currentValue;
-        picker.resolve = payload.resolve;
+        picker.request = payload;
         picker.visible = true;
     });
 };
@@ -110,19 +127,22 @@ const initLogicFlow = () => {
 const loadBpmnXml = async (id: string) => {
     if (!logicFlow.value) return;
 
+    const sequence = ++loadSequence;
     loading.value = true;
     try {
         const result = await WorkflowApi.getProcessDefinitionBpmnXml(id);
-        console.log(result);
+        if (disposed || sequence !== loadSequence || !logicFlow.value) return;
         if (result?.bpmn_xml) {
-            console.log(result.bpmn_xml);
             Flowable.fromBpmnXml(result.bpmn_xml, logicFlow.value);
         }
     } catch (error) {
+        if (disposed || sequence !== loadSequence) return;
         console.error("加载流程定义失败:", error);
         MessageUtils.error("加载流程定义失败");
     } finally {
-        loading.value = false;
+        if (!disposed && sequence === loadSequence) {
+            loading.value = false;
+        }
     }
 };
 
@@ -139,14 +159,16 @@ const handleDeploy = async () => {
             bpmn_xml: bpmnXml,
             key: definitionKey.value
         });
+        if (disposed) return;
 
         MessageUtils.success(`流程部署成功（版本 ${result.version}）`);
         router.push({ path: "/system/workflow" });
     } catch (error) {
+        if (disposed) return;
         console.error("部署失败:", error);
         MessageUtils.error("部署失败");
     } finally {
-        deploying.value = false;
+        if (!disposed) deploying.value = false;
     }
 };
 
@@ -164,6 +186,24 @@ onMounted(() => {
     if (isEditMode.value && definitionId.value) {
         loadBpmnXml(definitionId.value);
     }
+});
+
+onUnmounted(() => {
+    disposed = true;
+    loadSequence++;
+    clearPickerRequest(true);
+    picker.visible = false;
+
+    const instance = logicFlow.value;
+    logicFlow.value = null;
+    if (!instance) return;
+
+    try {
+        (instance.extension.flowable as { flush?: () => void } | undefined)?.flush?.();
+    } catch {
+        // 忽略销毁前的同步失败
+    }
+    instance.destroy();
 });
 </script>
 

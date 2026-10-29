@@ -70,7 +70,7 @@ mise exec -- pnpm start
 
 ## 文档
 
-项目文档统一维护在根仓库 [spectra-docs](https://github.com/yangxj96/spectra-docs)：
+项目文档统一维护在根仓库 [spectra](https://github.com/yangxj96/spectra)：
 
 | 文档            | 路径                           |
 | --------------- | ------------------------------ |

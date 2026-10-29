@@ -40,7 +40,7 @@ const condition = ref<MeetingPageParams>({
 // table分页请求
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<MeetingVO>(
     MeetingApi.page,
-    condition.value
+    condition
 );
 const router = useRouter();
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 
 import { ContactApi } from "@/api/oa/contact-api.ts";
 
@@ -9,18 +9,33 @@ const model = defineModel<string>();
 const loading = ref(false);
 const options = ref<ContactVO[]>([]);
 
+let requestSequence = 0;
+let disposed = false;
+
 async function load(keyword?: string): Promise<void> {
+    const sequence = ++requestSequence;
     loading.value = true;
     try {
-        options.value = (
-            await ContactApi.page({ page_num: 1, page_size: 100, keyword: keyword?.trim() || undefined })
-        ).records;
+        const result = await ContactApi.page({
+            page_num: 1,
+            page_size: 100,
+            keyword: keyword?.trim() || undefined
+        });
+        // 迟到的远程查询不能覆盖最新关键字的结果。
+        if (sequence === requestSequence && !disposed) options.value = result.records;
+    } catch {
+        // 请求层已统一提示错误；保留当前选项供用户继续操作。
     } finally {
-        loading.value = false;
+        if (sequence === requestSequence && !disposed) loading.value = false;
     }
 }
 
 onMounted(() => load());
+
+onUnmounted(() => {
+    disposed = true;
+    requestSequence++;
+});
 </script>
 
 <template>

@@ -10,6 +10,7 @@ import { MenuApi } from "@/api/system/menu-api.ts";
 import StepNavigation from "@/components/StepNavigation/index.vue";
 import type { StepNavigationItem } from "@/components/StepNavigation/types.ts";
 import { roleConverter, roleKindLabels } from "@/converter/role-converter.ts";
+import { HttpRequestError } from "@/plugin/request/error.ts";
 import { collectMenuIds } from "@/utils/menu-utils.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -515,8 +516,24 @@ function handleNextGrantableStep(): void {
     selectNode("menus");
 }
 
+/** 版本冲突后加载最新角色版本，保留当前编辑内容供用户核对后重新提交。 */
+async function recoverVersionConflict(): Promise<void> {
+    if (!isModify.value || !roleAuthorization.value) return;
+    try {
+        const [latestRole, latestAuthorization] = await Promise.all([
+            RoleApi.detail(form.id),
+            AuthorizationApi.currentRole(form.id)
+        ]);
+        currentRole.value = latestRole;
+        roleAuthorization.value = { ...roleAuthorization.value, version: latestAuthorization.version };
+        MessageUtils.warning("角色已被其他操作更新，已保留当前编辑内容并加载最新版本，请核对后重新提交。");
+    } catch (error) {
+        MessageUtils.error(error instanceof Error ? error.message : "加载最新角色版本失败");
+    }
+}
+
 async function submitRole(): Promise<void> {
-    if (!roleAuthorization.value || !isRoleWritable.value) return;
+    if (!roleAuthorization.value || !isRoleWritable.value || saving.value) return;
     captureCurrentStep();
     try {
         if (!(await validateBasicInfo())) return;
@@ -526,8 +543,8 @@ async function submitRole(): Promise<void> {
             return;
         }
 
-        await MessageUtils.box.confirm("将一次性提交角色信息、权限和菜单配置，是否继续？", "确认提交角色");
         saving.value = true;
+        await MessageUtils.box.confirm("将一次性提交角色信息、权限和菜单配置，是否继续？", "确认提交角色");
         const savedRole = await RoleApi.saveEditor({
             ...(isModify.value ? { id: form.id } : {}),
             name: form.name,
@@ -543,7 +560,11 @@ async function submitRole(): Promise<void> {
         MessageUtils.success("角色已提交");
         await goBack();
     } catch (error: unknown) {
-        if (error !== "cancel" && error !== "close") MessageUtils.error(error);
+        if (error instanceof HttpRequestError && error.status === 409) {
+            await recoverVersionConflict();
+        } else if (error !== "cancel" && error !== "close") {
+            MessageUtils.error(error);
+        }
     } finally {
         saving.value = false;
     }

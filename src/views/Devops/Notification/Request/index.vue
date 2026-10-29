@@ -35,7 +35,7 @@ const condition = ref<NotificationAdminRequestQuery>({ page_num: 1, page_size: 1
 const dateRange = ref<[string, string] | undefined>();
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable(
     NotificationAdminApi.pageRequests,
-    condition.value
+    condition
 );
 const router = useRouter();
 

@@ -51,5 +51,7 @@ declare global {
     type StoreDict = {
         // 字典缓存数组
         dicts: Record<string, DictItem[]>;
+        // 字典加载错误，按字典组KEY记录
+        errors: Record<string, string>;
     };
 }

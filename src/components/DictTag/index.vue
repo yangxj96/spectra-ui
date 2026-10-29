@@ -29,30 +29,39 @@ const dict_code = defineModel("dict_code", {
 const dictStore = useDictStore();
 
 const dict_data = ref<DictItem>();
+/** 字典加载失败时明确展示失败标签，不能显示成正常“未知”。 */
+const load_failed = ref(false);
 
 // 封装一个方法来加载并匹配字典数据
 const loadDictData = async () => {
     if (!dict_code.value) {
         dict_data.value = {} as DictItem;
+        load_failed.value = false;
         return;
     }
 
-    const dictData = (await dictStore.getDictData(dict_code.value)) || [];
+    try {
+        const dictData = await dictStore.getDictData(dict_code.value);
+        load_failed.value = false;
 
-    if (dictData.length <= 0) {
-        dict_data.value = {} as DictItem;
-        return;
-    }
-
-    for (const item of dictData) {
-        if (item.value === localValue.value) {
-            dict_data.value = item;
+        if (dictData.length <= 0) {
+            dict_data.value = {} as DictItem;
             return;
         }
-    }
 
-    // 如果没找到匹配项，清空 dict_data
-    dict_data.value = undefined;
+        for (const item of dictData) {
+            if (item.value === localValue.value) {
+                dict_data.value = item;
+                return;
+            }
+        }
+
+        // 如果没找到匹配项，清空 dict_data
+        dict_data.value = undefined;
+    } catch {
+        dict_data.value = undefined;
+        load_failed.value = true;
+    }
 };
 
 // 本地值,使用实时计算的,获取的值为v-model的值
@@ -67,6 +76,9 @@ const localValue = computed({
 
 // 计算显示的 label 或 "未知"
 const display_label = computed(() => {
+    if (load_failed.value) {
+        return "字典加载失败";
+    }
     if (dict_data.value && dict_data.value.label) {
         return dict_data.value.label;
     }
@@ -75,6 +87,9 @@ const display_label = computed(() => {
 
 // 计算tagType
 const tag_type = computed(() => {
+    if (load_failed.value) {
+        return "danger";
+    }
     if (!primary_value.value) {
         return "primary";
     }
@@ -101,7 +116,7 @@ watch(
 
 <template>
     <div>
-        <el-tag v-if="dict_data" :type="tag_type">
+        <el-tag v-if="dict_data || load_failed" :type="tag_type">
             {{ display_label }}
         </el-tag>
     </div>

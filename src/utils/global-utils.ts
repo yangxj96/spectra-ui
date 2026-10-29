@@ -1,5 +1,5 @@
+import { invalidateSessionScope } from "@/plugin/request/request-lifecycle";
 import router from "@/plugin/router/index";
-import { useUserStore } from "@/plugin/store/modules/use-user-store";
 
 /**
  * 全局工具类
@@ -13,7 +13,7 @@ export const GlobalUtils = {
      * 退出程序需要的处理内容
      */
     exit() {
-        useUserStore().clearSession();
+        invalidateSessionScope();
         globalThis.localStorage.clear();
         globalThis.sessionStorage.clear();
         location.reload();
@@ -23,7 +23,7 @@ export const GlobalUtils = {
      * 清除本地存储并携带当前路径作为 redirect 参数
      */
     toLogin() {
-        useUserStore().clearSession();
+        invalidateSessionScope();
         let query = {};
         // 安全获取当前路径
         const currentRoute = router.currentRoute.value;

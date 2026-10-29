@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessageBox } from "element-plus";
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { WorkflowApi } from "@/api/workflow/workflow-api.ts";
@@ -28,6 +28,9 @@ const statusOptions = [
 const diagramVisible = ref(false);
 const diagramUrl = ref("");
 const diagramLoading = ref(false);
+/** 流程图请求世代；关闭弹窗或卸载后迟到 Blob 不能创建新 URL。 */
+let diagramSequence = 0;
+let disposed = false;
 const currentDiagramName = ref("");
 
 /**
@@ -87,23 +90,26 @@ const handleEdit = (row: ProcessDefinitionVO) => {
  * 查看流程图
  */
 const handleViewDiagram = async (row: ProcessDefinitionVO) => {
+    const sequence = ++diagramSequence;
     diagramVisible.value = true;
     currentDiagramName.value = row.name || row.key;
     diagramLoading.value = true;
 
     try {
         const blob = await WorkflowApi.getProcessDefinitionDiagram(row.id);
+        if (disposed || sequence !== diagramSequence) return;
         // 释放之前的URL
         if (diagramUrl.value) {
             URL.revokeObjectURL(diagramUrl.value);
         }
         diagramUrl.value = URL.createObjectURL(blob);
     } catch (error) {
+        if (disposed || sequence !== diagramSequence) return;
         console.error("获取流程图失败:", error);
         MessageUtils.error("获取流程图失败");
         diagramVisible.value = false;
     } finally {
-        diagramLoading.value = false;
+        if (sequence === diagramSequence) diagramLoading.value = false;
     }
 };
 
@@ -111,6 +117,7 @@ const handleViewDiagram = async (row: ProcessDefinitionVO) => {
  * 关闭流程图预览
  */
 const handleDiagramClose = () => {
+    diagramSequence++;
     if (diagramUrl.value) {
         URL.revokeObjectURL(diagramUrl.value);
         diagramUrl.value = "";
@@ -146,6 +153,15 @@ const handleToggleStatus = async (row: ProcessDefinitionVO) => {
 
 onMounted(() => {
     loadData();
+});
+
+onUnmounted(() => {
+    disposed = true;
+    diagramSequence++;
+    if (diagramUrl.value) {
+        URL.revokeObjectURL(diagramUrl.value);
+        diagramUrl.value = "";
+    }
 });
 </script>
 

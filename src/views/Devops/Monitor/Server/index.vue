@@ -50,6 +50,10 @@ const heapDumpConfirm = ref(false);
 let diagnosticPollingTimer: ReturnType<typeof setInterval> | undefined;
 let pollingTimer: ReturnType<typeof setInterval> | undefined;
 let requestInFlight = false;
+/** 诊断请求世代；卸载或重新加载后旧响应不能恢复轮询。 */
+let diagnosticSequence = 0;
+let diagnosticInFlight = false;
+let disposed = false;
 
 const summary = computed(() => overview.value?.summary);
 const history = computed(() => {
@@ -204,19 +208,22 @@ async function loadAlertData() {
 }
 
 async function loadDiagnosticData() {
+    const sequence = ++diagnosticSequence;
     diagnosticLoading.value = true;
     try {
         const [runtime, tasks] = await Promise.all([
             ServiceMonitorApi.getRuntimeDiagnostic({ loading: false }),
             ServiceMonitorApi.getDiagnosticTasks({ loading: false })
         ]);
+        if (disposed || sequence !== diagnosticSequence) return;
         runtimeDiagnostic.value = runtime;
         diagnosticTasks.value = tasks;
         startDiagnosticPolling();
     } catch {
-        if (!runtimeDiagnostic.value) MessageUtils.error("运行时诊断数据加载失败，请检查诊断权限。");
+        if (!disposed && sequence === diagnosticSequence && !runtimeDiagnostic.value)
+            MessageUtils.error("运行时诊断数据加载失败，请检查诊断权限。");
     } finally {
-        diagnosticLoading.value = false;
+        if (!disposed && sequence === diagnosticSequence) diagnosticLoading.value = false;
     }
 }
 
@@ -255,6 +262,7 @@ async function saveRule() {
 }
 
 async function createDiagnosticTask() {
+    if (disposed) return;
     if (diagnosticType.value === "HEAP_DUMP" && !heapDumpConfirm.value) {
         MessageUtils.error("创建堆转储前请先确认可能产生较大文件并影响性能。");
         return;
@@ -275,6 +283,7 @@ async function createDiagnosticTask() {
 
 function startDiagnosticPolling() {
     stopDiagnosticPolling();
+    if (disposed) return;
     if (!diagnosticTasks.value.some(task => task.status === "PENDING" || task.status === "RUNNING")) return;
     diagnosticPollingTimer = globalThis.setInterval(() => void pollDiagnosticTasks(), 2000);
 }
@@ -287,18 +296,27 @@ function stopDiagnosticPolling() {
 }
 
 async function pollDiagnosticTasks() {
+    if (disposed || diagnosticInFlight) return;
     const pendingTasks = diagnosticTasks.value.filter(task => task.status === "PENDING" || task.status === "RUNNING");
     if (!pendingTasks.length) {
         stopDiagnosticPolling();
         return;
     }
-    const updated = await Promise.all(
-        pendingTasks.map(task => ServiceMonitorApi.getDiagnosticTask(task.id, { loading: false }))
-    );
-    const byId = new Map(updated.map(task => [task.id, task]));
-    diagnosticTasks.value = diagnosticTasks.value.map(task => byId.get(task.id) ?? task);
-    if (!diagnosticTasks.value.some(task => task.status === "PENDING" || task.status === "RUNNING"))
-        stopDiagnosticPolling();
+    diagnosticInFlight = true;
+    try {
+        const updated = await Promise.all(
+            pendingTasks.map(task => ServiceMonitorApi.getDiagnosticTask(task.id, { loading: false }))
+        );
+        if (disposed) return;
+        const byId = new Map(updated.map(task => [task.id, task]));
+        diagnosticTasks.value = diagnosticTasks.value.map(task => byId.get(task.id) ?? task);
+        if (!diagnosticTasks.value.some(task => task.status === "PENDING" || task.status === "RUNNING"))
+            stopDiagnosticPolling();
+    } catch {
+        // 请求层已提示失败；保留现有任务状态，下一轮继续查询。
+    } finally {
+        diagnosticInFlight = false;
+    }
 }
 
 async function downloadDiagnosticTask(task: ServiceMonitorDiagnosticTask) {
@@ -470,6 +488,8 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+    disposed = true;
+    diagnosticSequence++;
     stopPolling();
     stopDiagnosticPolling();
 });

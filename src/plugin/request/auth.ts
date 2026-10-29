@@ -1,10 +1,12 @@
 ﻿import { AuthApi } from "@/api/auth/auth-api";
 import { useUserStore } from "@/plugin/store/modules/use-user-store";
 
-import { cancelAllRequests } from "./request-lifecycle";
+import { getSessionEpoch, invalidateSessionScope } from "./request-lifecycle";
 
 /** 当前进行中的刷新请求；所有并发调用共享同一个 Promise，避免并发刷新覆盖 Token。 */
 let refreshPromise: Promise<Token | null> | null = null;
+/** 刷新请求所属会话代数；会话切换后旧刷新结果必须丢弃。 */
+let refreshEpoch = -1;
 /** 防止 Fetch 和 XHR 在同一次会话失效时重复提示和重复跳转。 */
 let sessionExpirationClaimed = false;
 
@@ -36,46 +38,63 @@ export function getAccessToken(): string | null {
 /**
  * 刷新 Token（并发安全）
  * 多个请求同时触发 401 时，只有第一个会真正发起刷新请求，
- * 其余请求排入队列等待刷新完成后共享新 Token
- * @returns 新 Token，刷新失败返回 null
+ * 其余请求排入队列等待刷新完成后共享新 Token。
+ *
+ * 刷新结果绑定发起时的会话代数：登录身份已切换或会话已失效时，
+ * 迟到的刷新既不能覆盖新 Token，也不能清理新会话。
+ * @returns 新 Token，刷新失败或会话已切换时返回 null
  */
 export async function refreshAccessToken(): Promise<Token | null> {
     const store = useUserStore();
+    const startEpoch = getSessionEpoch();
     if (!hasCsrfCookie()) {
         // 缺少 CSRF Cookie 时刷新必然失败，先清理本地会话，避免无效请求反复重试。
-        useUserStore().clearSession();
+        if (startEpoch === getSessionEpoch()) expireSession();
         return null;
     }
 
-    // 已有刷新进行中，直接共享结果；失败也必须让所有等待者收到 null，不能悬挂。
-    if (refreshPromise) {
+    // 已有同一会话的刷新进行中，直接共享结果；跨会话的旧刷新不能复用。
+    if (refreshPromise && refreshEpoch === startEpoch) {
         return refreshPromise;
     }
 
+    refreshEpoch = startEpoch;
     refreshPromise = (async () => {
         try {
             // Web Refresh Token 位于 HttpOnly Cookie，不能从 JS 读取或写入 localStorage。
             const newToken = await AuthApi.refresh();
+            if (startEpoch !== getSessionEpoch()) return null;
             store.setToken(newToken);
             sessionExpirationClaimed = false;
             return newToken;
         } catch {
-            // 刷新失败不能保留旧 access_token，否则后续请求会持续发送已失效凭据。
-            store.clearSession();
+            // 只有仍是同一会话时才清理；旧刷新失败不能影响刚建立的新身份。
+            if (startEpoch === getSessionEpoch()) expireSession();
             return null;
         } finally {
-            refreshPromise = null;
+            if (refreshEpoch === startEpoch) {
+                refreshPromise = null;
+                refreshEpoch = -1;
+            }
         }
     })();
 
     return refreshPromise;
 }
 
-/** 幂等清理会话；认证模块不依赖 Router，导航由调用方负责。 */
-export async function expireSession(): Promise<void> {
-    // 先清理内存认证状态，再取消请求；取消动作可能触发请求方的 finally 清理逻辑。
-    useUserStore().clearSession();
-    cancelAllRequests();
+/** 登录成功后以新会话代数替换旧身份范围，旧缓存、旧请求和旧 Store 数据全部失效。 */
+export function beginSession(token: Token): void {
+    invalidateSessionScope();
+    sessionExpirationClaimed = false;
+    useUserStore().setToken(token);
+}
+
+/**
+ * 幂等清理会话；认证模块不依赖 Router，导航由调用方负责。
+ * 同时清空请求缓存、去重登记、在途请求和其他 Store 的会话范围数据。
+ */
+export function expireSession(): void {
+    invalidateSessionScope();
 }
 
 /** 让 Fetch 与 XHR 共享一次会话失效提示和跳转。 */

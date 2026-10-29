@@ -14,11 +14,18 @@ const minLoadingTime: number = 300;
 /** ElLoading 实例 */
 let loading: LoadingInstance | undefined;
 
+/** 延迟关闭任务；新请求到来时必须取消，避免关闭新操作的遮罩。 */
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 当前遮罩实例序号，关闭任务只允许结束自己对应的实例。 */
+let loadingInstanceId = 0;
+
 /**
  * 打开 loading 遮罩
  */
 function open(): void {
     startTime = Date.now();
+    loadingInstanceId++;
     const els = document.querySelectorAll(".loading-box");
     const arr = [...els] as HTMLElement[];
     loading = ElLoading.service({
@@ -32,14 +39,17 @@ function open(): void {
 /**
  * 关闭 loading 遮罩（补足最小显示时间后关闭）
  */
-async function close(): Promise<void> {
+function close(): void {
     const elapsed = Date.now() - startTime;
     const remaining = Math.max(0, minLoadingTime - elapsed);
-    setTimeout(() => {
-        if (loading) {
+    const instanceId = loadingInstanceId;
+    if (closeTimer) clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => {
+        closeTimer = null;
+        if (loading && instanceId === loadingInstanceId && count === 0) {
             loading.close();
+            loading = undefined;
         }
-        loading = undefined;
     }, remaining);
 }
 
@@ -47,6 +57,11 @@ async function close(): Promise<void> {
  * 显示 loading 层（引用计数 +1）
  */
 export function showLoading(): void {
+    // 新操作开始时取消旧的延迟关闭任务，复用尚未真正关闭的遮罩。
+    if (closeTimer) {
+        clearTimeout(closeTimer);
+        closeTimer = null;
+    }
     if (count === 0 && loading === undefined) {
         open();
     }
@@ -62,8 +77,6 @@ export function hideLoading(): void {
     }
     count--;
     if (count === 0) {
-        close().then(() => {
-            console.log("loading关闭");
-        });
+        close();
     }
 }

@@ -14,7 +14,7 @@ const condition = ref<RolePageParams>({
 
 const { handlerConditionQuery, handleCurrentChange, handleSizeChange, pagination, table_data } = useTable<RolePageVO>(
     RoleApi.page,
-    condition.value
+    condition
 );
 
 const roleKindLabels: Record<string, string> = {

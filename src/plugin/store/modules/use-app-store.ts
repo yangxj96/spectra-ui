@@ -74,6 +74,16 @@ export const useAppStore = defineStore("app", {
         /** 标记启动配置请求失败，允许页面执行状态接口回退。 */
         markBootstrapUnavailable() {
             this.bootstrap_loaded = false;
+        },
+        /** 会话切换或退出时清空身份相关菜单、授权路由和引导状态。 */
+        resetSessionScope() {
+            this.menus = [];
+            this.currentMenus = [];
+            this.authorizedRouteNames = new Set<string>();
+            this.menusLoaded = false;
+            this.isFetchingMenus = false;
+            this.system_guide = { state: "PENDING", completed: false, required: false };
+            this.system_guide_loaded = false;
         }
     }
 });

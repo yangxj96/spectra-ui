@@ -20,7 +20,7 @@ declare global {
         params?: Record<string, unknown>;
 
         /**
-         * 是否显示 loading
+         * 是否显示全局 loading；默认 false，由页面或 Hook 管理局部反馈。
          */
         loading?: boolean;
 
@@ -30,9 +30,19 @@ declare global {
         download?: boolean;
 
         /**
-         * 网络失败重试次数
+         * 网络失败重试次数；只有安全方法或显式声明幂等的写入才会执行。
          */
         retry?: number;
+
+        /**
+         * 写入是否具有幂等契约；声明后允许在可重试错误下重试。
+         */
+        idempotent?: boolean;
+
+        /**
+         * 重试整体截止时间（毫秒），从请求开始计算。
+         */
+        retryDeadlineMs?: number;
 
         /** 是否附带当前 Access Token；Refresh 和预签名请求使用 skip。 */
         auth?: "required" | "skip";

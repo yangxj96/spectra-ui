@@ -29,7 +29,7 @@ const executionMap: Record<string, string> = {
 const condition = ref<PurchasePageParams>({ page_num: 1, page_size: 15 });
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<PurchaseVO>(
     PurchaseApi.page,
-    condition.value
+    condition
 );
 const approverEmail = ref("");
 const receiveVisible = ref(false);

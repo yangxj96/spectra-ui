@@ -25,7 +25,7 @@ const router = useRouter();
 // table分页请求
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<UserPageVO>(
     UserApi.page,
-    condition.value
+    condition
 );
 
 const handleInitData = async () => {
@@ -131,9 +131,8 @@ const handleOrganizationTreeNodeClick = (row: DepartmentTreeVO) => {
 
 // 挂载后执行
 onMounted(async () => {
-    // 预加载数据
-    await dictStore.getDictData("sys_language");
-    await dictStore.getDictData("sys_timezone");
+    // 预加载数据；字典失败已由字典选择器展示，不阻塞用户列表初始化。
+    await Promise.allSettled([dictStore.getDictData("sys_language"), dictStore.getDictData("sys_timezone")]);
     await handleInitData();
 });
 </script>

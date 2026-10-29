@@ -7,9 +7,8 @@ import { AuthApi } from "@/api/auth/auth-api.ts";
 import { fetchClientPrivateKey } from "@/api/system/crypto-api";
 import { SystemInitializationApi } from "@/api/system/initialization-api.ts";
 import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
-import { resetSessionExpiration } from "@/plugin/request/auth.ts";
+import { beginSession } from "@/plugin/request/auth.ts";
 import { useAppStore } from "@/plugin/store/modules/use-app-store.ts";
-import { useUserStore } from "@/plugin/store/modules/use-user-store.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 import { loginParticles } from "@/views/Login/Config/login-particles.ts";
 
@@ -39,8 +38,8 @@ const refreshKaptcha = () => {
 };
 
 const finishLogin = async (token: Token) => {
-    useUserStore().setToken(token);
-    resetSessionExpiration();
+    // 新登录必须先切换会话代数，旧身份的缓存、在途请求和 Store 数据不能带入新会话。
+    beginSession(token);
     await fetchClientPrivateKey();
     const requiresPasswordChange = token.password_change_required === true;
     MessageUtils[requiresPasswordChange ? "warning" : "success"](

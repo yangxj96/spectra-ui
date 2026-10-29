@@ -22,6 +22,8 @@ const DEFAULT_OPTIONS: Partial<MessageOptions> = {
  */
 const DUPLICATE_MESSAGE_WINDOW = 1000;
 const recentMessages = new Map<string, number>();
+/** 同一个 Error 对象只提示一次，避免请求层和页面 catch 重复展示同一失败。 */
+const handledErrors = new WeakSet<object>();
 
 /**
  * 标准化错误信息
@@ -42,7 +44,9 @@ function resolveMessage(message: unknown): string {
  */
 function createMessage(type: MessageType) {
     return (message: unknown, onClose?: CloseCallback, options?: Partial<MessageOptions>) => {
+        if (message instanceof Error && handledErrors.has(message)) return;
         const resolvedMessage = resolveMessage(message);
+        if (message instanceof Error) handledErrors.add(message);
         const key = `${type}:${resolvedMessage}`;
         const now = Date.now();
         const lastShownAt = recentMessages.get(key);

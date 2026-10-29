@@ -20,7 +20,7 @@ const condition = ref<FileAssetPageParams>({
 // table分页请求
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<FileAsset>(
     FileApi.assetsPage,
-    condition.value
+    condition
 );
 
 // 格式化文件大小

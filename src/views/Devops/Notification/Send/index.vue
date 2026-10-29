@@ -290,7 +290,10 @@ function availabilityTagType(available: boolean): "success" | "danger" {
     return available ? "success" : "danger";
 }
 
+let previewSequence = 0;
+
 function clearPreview(): void {
+    previewSequence++;
     previewResult.value = undefined;
     applyResult.value = undefined;
     previewDialogVisible.value = false;
@@ -424,20 +427,25 @@ async function preview(): Promise<void> {
     if (!request) return;
     previewLoading.value = true;
     clearPreview();
+    const sequence = previewSequence;
     try {
-        previewResult.value = await NotificationControlledSendApi.preview(request);
+        const result = await NotificationControlledSendApi.preview(request);
+        // 预览期间修改表单会递增世代，旧结果不能重新打开确认弹窗。
+        if (sequence !== previewSequence) return;
+        previewResult.value = result;
         previewDialogVisible.value = true;
         MessageUtils.success("发送预览已生成，请核对受众和渠道结果");
     } catch {
+        if (sequence !== previewSequence) return;
         validationMessage.value = "发送预览生成失败，请检查模板、受众和渠道状态后重试。";
     } finally {
-        previewLoading.value = false;
+        if (sequence === previewSequence) previewLoading.value = false;
     }
 }
 
 async function apply(): Promise<void> {
     const preview = previewResult.value;
-    if (!preview || !canApply.value) return;
+    if (!preview || !canApply.value || applyLoading.value) return;
     try {
         await MessageUtils.box.confirm(
             `将按当前预览创建 ${preview.eligible_task_count} 条投递任务，预览有效期至 ${formatDateTime(preview.expires_at)}。确认继续发送吗？`,
@@ -463,7 +471,7 @@ async function apply(): Promise<void> {
 
 function openRequest(): void {
     if (applyResult.value?.request_id) {
-        void router.push({ name: "DevopsNotificationRequest", query: { request_id: applyResult.value.request_id } });
+        void router.push({ name: "DevopsNotificationRequestDetail", query: { id: applyResult.value.request_id } });
     }
 }
 
@@ -487,6 +495,7 @@ watch(
     form,
     () => {
         clearPreview();
+        previewLoading.value = false;
         validationMessage.value = "";
     },
     { deep: true }

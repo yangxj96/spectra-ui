@@ -18,7 +18,7 @@ const condition = ref<RegionPageParams>({
 // table分页请求
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<Region>(
     RegionApi.page,
-    condition.value
+    condition
 );
 
 // 编辑抽屉状态

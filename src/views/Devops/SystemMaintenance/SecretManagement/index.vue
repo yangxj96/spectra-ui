@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CircleCheck, Download, Plus, Promotion, Refresh, Upload, View } from "@element-plus/icons-vue";
 import { ElMessageBox, type FormInstance, type UploadFile } from "element-plus";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 
 import { initCrypto } from "@/api/system/crypto-api.ts";
 import { SecretManagementApi } from "@/api/system/secret-management-api.ts";
@@ -33,6 +33,8 @@ const cryptoSubmitting = ref(false);
 const versionDialogVisible = ref(false);
 const versionFormRef = ref<FormInstance>();
 const versionSubmitting = ref(false);
+/** 发布/退役只能有一个意图在途，避免快速重入产生重复写入。 */
+const versionActionSubmitting = ref(false);
 const versionForm = reactive({ code: "", name: "", value: "" });
 
 const versionDrawerVisible = ref(false);
@@ -46,6 +48,14 @@ const importPreview = ref<SecretImportPreviewVO>();
 const importDialogVisible = ref(false);
 const importPreviewLoading = ref(false);
 const importSubmitting = ref(false);
+let importPreviewSequence = 0;
+let disposed = false;
+
+// 文件或导入口令变化后旧预览立即失效，确认时只能使用当前输入的预览结果。
+watch([importFile, importPassphrase], () => {
+    importPreviewSequence++;
+    importPreview.value = undefined;
+});
 
 const visibleDefinitions = computed(() => definitions.value.filter(item => item.category === activeCategory.value));
 const versionRules = {
@@ -149,6 +159,18 @@ async function toggleCrypto(enabled: boolean): Promise<void> {
     }
 }
 
+function resetVersionDraft(): void {
+    versionForm.code = "";
+    versionForm.name = "";
+    versionForm.value = "";
+}
+
+function resetImportDraft(): void {
+    importPassphrase.value = "";
+    importFile.value = undefined;
+    importPreview.value = undefined;
+}
+
 function openCreateVersion(row: SecretDefinitionVO): void {
     versionForm.code = row.code;
     versionForm.name = row.name;
@@ -157,10 +179,13 @@ function openCreateVersion(row: SecretDefinitionVO): void {
 }
 
 async function createVersion(): Promise<void> {
-    if (!versionFormRef.value) return;
-    const valid = await versionFormRef.value.validate().catch(() => false);
-    if (!valid) return;
+    if (versionSubmitting.value || !versionFormRef.value) return;
     versionSubmitting.value = true;
+    const valid = await versionFormRef.value.validate().catch(() => false);
+    if (!valid) {
+        versionSubmitting.value = false;
+        return;
+    }
     try {
         await SecretManagementApi.createVersion(versionForm.code, versionForm.value);
         MessageUtils.success("待启用版本已创建，请确认后发布。");
@@ -191,32 +216,50 @@ async function openVersions(row: SecretDefinitionVO): Promise<void> {
 }
 
 async function publishVersion(version: SecretVersionVO): Promise<void> {
+    if (versionActionSubmitting.value) return;
+    const code = versionCode.value;
     try {
         await ElMessageBox.confirm(
-            `确认发布 ${versionCode.value} 的第 ${version.version_no} 版吗？发布后原启用版本将自动退役。`,
+            `确认发布 ${code} 的第 ${version.version_no} 版吗？发布后原启用版本将自动退役。`,
             "确认发布密钥版本",
             { type: "warning", confirmButtonText: "确认发布", cancelButtonText: "取消" }
         );
-        await SecretManagementApi.publish(versionCode.value, version.id);
+    } catch {
+        return;
+    }
+    versionActionSubmitting.value = true;
+    try {
+        await SecretManagementApi.publish(code, version.id);
         MessageUtils.success("密钥版本已发布。");
-        await Promise.all([loadVersions(versionCode.value), loadDefinitions(false)]);
-    } catch (error: unknown) {
-        if (error !== "cancel" && error !== "close") MessageUtils.error("发布密钥版本失败。");
+        await Promise.all([loadVersions(code), loadDefinitions(false)]);
+    } catch {
+        MessageUtils.error("发布密钥版本失败。");
+    } finally {
+        versionActionSubmitting.value = false;
     }
 }
 
 async function retireVersion(version: SecretVersionVO): Promise<void> {
+    if (versionActionSubmitting.value) return;
+    const code = versionCode.value;
     try {
         await ElMessageBox.confirm("退役后当前运行态将不再使用该版本，是否继续？", "确认退役", {
             type: "warning",
             confirmButtonText: "确认退役",
             cancelButtonText: "取消"
         });
-        await SecretManagementApi.retire(versionCode.value, version.id);
+    } catch {
+        return;
+    }
+    versionActionSubmitting.value = true;
+    try {
+        await SecretManagementApi.retire(code, version.id);
         MessageUtils.success("密钥版本已退役。");
-        await Promise.all([loadVersions(versionCode.value), loadDefinitions(false)]);
-    } catch (error: unknown) {
-        if (error !== "cancel" && error !== "close") MessageUtils.error("退役密钥版本失败。");
+        await Promise.all([loadVersions(code), loadDefinitions(false)]);
+    } catch {
+        MessageUtils.error("退役密钥版本失败。");
+    } finally {
+        versionActionSubmitting.value = false;
     }
 }
 
@@ -265,21 +308,30 @@ async function previewImport(): Promise<void> {
         return;
     }
     importPreviewLoading.value = true;
+    const sequence = ++importPreviewSequence;
+    const file = importFile.value;
+    const passphrase = importPassphrase.value.trim();
     try {
-        importPreview.value = await SecretManagementApi.previewImport(importFile.value, importPassphrase.value.trim());
+        const result = await SecretManagementApi.previewImport(file, passphrase);
+        if (disposed || sequence !== importPreviewSequence) return;
+        importPreview.value = result;
     } catch {
+        if (disposed || sequence !== importPreviewSequence) return;
         importPreview.value = undefined;
         MessageUtils.error("导入包校验失败，请检查文件和导入口令。");
     } finally {
-        importPreviewLoading.value = false;
+        if (sequence === importPreviewSequence) importPreviewLoading.value = false;
     }
 }
 
 async function confirmImport(): Promise<void> {
-    if (!importFile.value || !importPreview.value?.valid) return;
+    const file = importFile.value;
+    const passphrase = importPassphrase.value.trim();
+    if (!file || !importPreview.value?.valid || importSubmitting.value) return;
     importSubmitting.value = true;
     try {
-        const count = await SecretManagementApi.importPending(importFile.value, importPassphrase.value.trim());
+        // 使用预览时的文件与口令快照提交，确认期间输入变化不会改变实际操作对象。
+        const count = await SecretManagementApi.importPending(file, passphrase);
         MessageUtils.success(`已导入 ${count} 个待启用版本，请逐项确认后发布。`);
         importDialogVisible.value = false;
         importFile.value = undefined;
@@ -294,6 +346,14 @@ async function confirmImport(): Promise<void> {
 }
 
 onMounted(() => void loadPage());
+
+onUnmounted(() => {
+    // 页面卸载时清理敏感编辑状态，缩短明文口令和版本内容的驻留时间。
+    disposed = true;
+    importPreviewSequence++;
+    resetVersionDraft();
+    resetImportDraft();
+});
 </script>
 
 <template>
@@ -380,7 +440,12 @@ onMounted(() => void loadPage());
             </el-table-column>
         </el-table>
 
-        <el-dialog v-model="versionDialogVisible" :title="`新增${versionForm.name}版本`" width="520px" destroy-on-close>
+        <el-dialog
+            v-model="versionDialogVisible"
+            :title="`新增${versionForm.name}版本`"
+            width="520px"
+            destroy-on-close
+            @closed="resetVersionDraft">
             <el-form ref="versionFormRef" :model="versionForm" :rules="versionRules" label-width="100px">
                 <el-form-item label="密钥编码"><el-input v-model="versionForm.code" disabled /></el-form-item>
                 <el-form-item prop="value">
@@ -447,7 +512,12 @@ onMounted(() => void loadPage());
             </div>
         </el-drawer>
 
-        <el-dialog v-model="importDialogVisible" title="导入密钥包" width="560px" destroy-on-close>
+        <el-dialog
+            v-model="importDialogVisible"
+            title="导入密钥包"
+            width="560px"
+            destroy-on-close
+            @closed="resetImportDraft">
             <el-form label-width="100px">
                 <el-form-item>
                     <template #label>

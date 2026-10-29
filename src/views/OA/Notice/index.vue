@@ -10,7 +10,7 @@ import OaListPage from "@/views/OA/components/OaListPage/index.vue";
 const condition = ref<NoticePageParams>({ page_num: 1, page_size: 15 });
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<NoticeVO>(
     NoticeApi.page,
-    condition.value
+    condition
 );
 const router = useRouter();
 

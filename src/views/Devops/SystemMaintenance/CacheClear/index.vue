@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { CacheManagementApi } from "@/api/system/cache-management-api.ts";
@@ -17,6 +17,11 @@ const errorMessage = ref("");
 const preview = ref<CacheOperation>();
 const operation = ref<CacheOperation>();
 let operationTimer: ReturnType<typeof setInterval> | undefined;
+/** 预览请求世代和卸载标记；迟到的预览/轮询响应不能写回当前页面。 */
+let previewSequence = 0;
+let operationSequence = 0;
+let pollingInFlight = false;
+let disposed = false;
 
 const businessForm = reactive<CacheBusinessClearRequest>({
     region_codes: [],
@@ -36,6 +41,16 @@ const verificationForm = reactive<SecurityVerificationClearRequest>({
 const loginFailureForm = reactive({ username: "", reason: "", confirmed: false });
 const nonceForm = reactive({ nonce: "", reason: "", confirmed: false });
 const globalNonceForm = reactive({ reason: "", confirmation_phrase: "" });
+
+// 输入变化立即失效旧预览，防止页面显示与当前输入不一致。
+watch(
+    businessForm,
+    () => {
+        previewSequence++;
+        preview.value = undefined;
+    },
+    { deep: true }
+);
 
 function createRemoteSearch<T>(load: (keyword: string) => Promise<T[]>) {
     const options = ref<T[]>([]);
@@ -230,14 +245,19 @@ async function previewBusinessClear(): Promise<void> {
         MessageUtils.warning("请选择已登记缓存区域，或选择全部普通缓存。");
         return;
     }
+    const sequence = ++previewSequence;
+    const request = {
+        region_codes: [...businessForm.region_codes],
+        all_regions: businessForm.all_regions,
+        all_instances: businessForm.all_instances
+    };
     try {
-        preview.value = await CacheManagementApi.previewBusinessClear({
-            region_codes: businessForm.region_codes,
-            all_regions: businessForm.all_regions,
-            all_instances: businessForm.all_instances
-        });
+        const result = await CacheManagementApi.previewBusinessClear(request);
+        if (disposed || sequence !== previewSequence) return;
+        preview.value = result;
         operation.value = undefined;
     } catch {
+        if (disposed || sequence !== previewSequence) return;
         MessageUtils.error("普通缓存清理预览失败。");
     }
 }
@@ -322,33 +342,43 @@ async function invalidateAllNonces(): Promise<void> {
 }
 
 async function execute(action: () => Promise<CacheOperation>): Promise<void> {
-    if (saving.value) return;
+    if (saving.value || disposed) return;
     saving.value = true;
+    const sequence = ++operationSequence;
     try {
-        operation.value = await action();
-        if (operation.value.status === "ACCEPTED" && operation.value.operation_id) {
-            startOperationPolling(operation.value.operation_id);
+        const result = await action();
+        if (disposed || sequence !== operationSequence) return;
+        operation.value = result;
+        if (result.status === "ACCEPTED" && result.operation_id) {
+            startOperationPolling(result.operation_id);
         }
     } catch {
-        MessageUtils.error("维护操作失败，请检查权限和安全 Redis 状态。");
+        if (!disposed) MessageUtils.error("维护操作失败，请检查权限和安全 Redis 状态。");
     } finally {
-        saving.value = false;
+        if (sequence === operationSequence) saving.value = false;
     }
 }
 
 function startOperationPolling(operationId: string): void {
     stopOperationPolling();
+    if (disposed) return;
     operationTimer = globalThis.setInterval(() => void pollOperation(operationId), 1000);
 }
 
 async function pollOperation(operationId: string): Promise<void> {
+    if (disposed || pollingInFlight) return;
+    pollingInFlight = true;
     try {
         const next = await CacheManagementApi.getOperation(operationId, { loading: false });
+        if (disposed) return;
         operation.value = next;
         if (next.status !== "ACCEPTED") stopOperationPolling();
     } catch {
+        if (disposed) return;
         stopOperationPolling();
         MessageUtils.error("缓存清理操作状态暂时无法确认。");
+    } finally {
+        pollingInFlight = false;
     }
 }
 
@@ -360,7 +390,12 @@ function stopOperationPolling(): void {
 }
 
 onMounted(() => void loadRegions());
-onUnmounted(stopOperationPolling);
+onUnmounted(() => {
+    disposed = true;
+    previewSequence++;
+    operationSequence++;
+    stopOperationPolling();
+});
 </script>
 
 <template>

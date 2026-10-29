@@ -25,6 +25,12 @@ export const useCryptoStore = defineStore("crypto", {
         /** 设置客户端私钥（密钥交换完成后调用） */
         setClientPrivateKey(key: string | null) {
             this.client_private_key = key;
+        },
+        /** 会话切换或退出时丢弃当前身份已协商的加密材料。 */
+        resetSessionScope() {
+            this.enabled = false;
+            this.server_public_key = null;
+            this.client_private_key = null;
         }
     },
     persist: {

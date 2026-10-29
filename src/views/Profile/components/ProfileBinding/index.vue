@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Iphone, Lock, Message, Phone } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
-import { computed, onMounted, ref, type Component } from "vue";
+import { computed, onMounted, onUnmounted, ref, type Component } from "vue";
 
 import { AuthenticationIdentityApi } from "@/api/authentication/identity-api";
 import { expireSession } from "@/plugin/request/auth.ts";
@@ -226,6 +226,14 @@ async function handleUnbind(identityId: string) {
 
 onMounted(() => {
     loadBindings();
+});
+
+onUnmounted(() => {
+    // 离开页面后倒计时不能继续运行。
+    if (phoneCountdownTimer) clearInterval(phoneCountdownTimer);
+    if (emailCountdownTimer) clearInterval(emailCountdownTimer);
+    phoneCountdownTimer = null;
+    emailCountdownTimer = null;
 });
 </script>
 

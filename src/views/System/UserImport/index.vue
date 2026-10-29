@@ -58,6 +58,10 @@ const departmentTreeProps = {
 };
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
 let refreshInFlight = false;
+/** 预览请求世代；卸载或重新编辑后旧响应不能写回当前步骤。 */
+let previewSequence = 0;
+let disposed = false;
+let applying = false;
 
 const activeStepMeta = computed(() => importSteps[activeStep.value] ?? importSteps[0]);
 const canViewApplyResult = computed(() =>
@@ -284,24 +288,28 @@ async function handlePreview(): Promise<void> {
 
     loading.value = true;
     parseError.value = "";
+    const sequence = ++previewSequence;
+    // 捕获本次预览的不可变输入，确认对象必须与实际提交内容一致。
+    const rowsSnapshot = structuredClone(rows.value);
+    const settingsSnapshot = structuredClone(importSettings.value);
     try {
-        const associationErrors = rows.value.flatMap((row, index) =>
+        const associationErrors = rowsSnapshot.flatMap((row, index) =>
             parseAssociatedDepartmentCodes(
                 row.associated_department_codes,
-                importSettings.value.department_code
+                settingsSnapshot.department_code
             ).errors.map(message => `第 ${index + 2} 行：${message}`)
         );
         if (associationErrors.length) {
             parseError.value = associationErrors.join("；");
             return;
         }
-        const previewRows: UserImportPreviewRow[] = rows.value.map(row => ({
+        const previewRows: UserImportPreviewRow[] = rowsSnapshot.map(row => ({
             ...row,
-            ...importSettings.value
+            ...settingsSnapshot
         }));
         const normalizedText = [
-            serializeUserImportRows(rows.value),
-            ...Object.entries(importSettings.value).map(([key, value]) => `${key}=${value}`)
+            serializeUserImportRows(rowsSnapshot),
+            ...Object.entries(settingsSnapshot).map(([key, value]) => `${key}=${value}`)
         ].join("\n");
         const nextTask = await UserImportApi.preview({
             idempotency_key: idempotencyKey.value || (idempotencyKey.value = createUserImportIdempotencyKey()),
@@ -310,45 +318,60 @@ async function handlePreview(): Promise<void> {
             skip_existing: skipExisting.value,
             rows: previewRows
         });
+        if (disposed || sequence !== previewSequence) return;
+        const nextErrorRows = await UserImportApi.errors(nextTask.id);
+        if (disposed || sequence !== previewSequence) return;
         task.value = nextTask;
-        errorRows.value = await UserImportApi.errors(nextTask.id);
+        errorRows.value = nextErrorRows;
         errorCategory.value = "ALL";
         activeStep.value = 1;
     } catch (error: unknown) {
+        if (disposed || sequence !== previewSequence) return;
         MessageUtils.error(error);
     } finally {
-        loading.value = false;
+        if (sequence === previewSequence) loading.value = false;
     }
 }
 
 function handleBackToEdit(): void {
+    previewSequence++;
+    loading.value = false;
     activeStep.value = 0;
     idempotencyKey.value = createUserImportIdempotencyKey();
     task.value = null;
 }
 
 async function handleApply(): Promise<void> {
-    if (!task.value || !previewReady.value || !task.value.preview_token) return;
+    const taskSnapshot = task.value;
+    if (!taskSnapshot || !previewReady.value || !taskSnapshot.preview_token || applying) return;
 
     try {
         await MessageUtils.box.confirm(
-            `将创建 ${task.value.valid_rows} 个用户，并按授权方案写入 ${task.value.assignment_count} 个授权实例。确定继续吗？`,
+            `将创建 ${taskSnapshot.valid_rows} 个用户，并按授权方案写入 ${taskSnapshot.assignment_count} 个授权实例。确定继续吗？`,
             "确认批量应用"
         );
     } catch {
         return;
     }
+    if (disposed || task.value?.id !== taskSnapshot.id) return;
 
+    applying = true;
     loading.value = true;
     try {
-        task.value = await UserImportApi.apply(task.value.id, { preview_token: task.value.preview_token });
+        // 确认期间页面状态变化时，仍使用用户确认的同一任务和预览令牌。
+        const appliedTask = await UserImportApi.apply(taskSnapshot.id, {
+            preview_token: taskSnapshot.preview_token
+        });
+        if (disposed) return;
+        task.value = appliedTask;
         activeStep.value = 2;
         await refreshTask();
         startPolling();
     } catch (error: unknown) {
-        MessageUtils.error(error);
+        if (!disposed) MessageUtils.error(error);
     } finally {
-        loading.value = false;
+        applying = false;
+        if (!disposed) loading.value = false;
     }
 }
 
@@ -357,18 +380,21 @@ function isTerminal(status: UserImportTaskStatus): boolean {
 }
 
 async function refreshTask(): Promise<void> {
-    if (!task.value || refreshInFlight) return;
+    if (disposed || !task.value || refreshInFlight) return;
     const taskId = task.value.id;
     refreshInFlight = true;
     try {
         const latestTask = await UserImportApi.detail(taskId);
-        if (task.value?.id !== taskId) return;
+        if (disposed || task.value?.id !== taskId) return;
         task.value = latestTask;
         if (isTerminal(latestTask.status)) {
-            errorRows.value = await UserImportApi.errors(taskId);
+            const latestErrors = await UserImportApi.errors(taskId);
+            if (disposed || task.value?.id !== taskId) return;
+            errorRows.value = latestErrors;
             stopPolling();
         }
     } catch (error: unknown) {
+        if (disposed) return;
         stopPolling();
         MessageUtils.error(error);
     } finally {
@@ -378,7 +404,7 @@ async function refreshTask(): Promise<void> {
 
 function startPolling(): void {
     stopPolling();
-    if (!task.value || isTerminal(task.value.status)) return;
+    if (disposed || !task.value || isTerminal(task.value.status)) return;
     pollingTimer = setInterval(() => void refreshTask(), 1000);
 }
 
@@ -423,7 +449,11 @@ function headerLabel(header: UserImportHeader): string {
     return USER_IMPORT_HEADER_LABELS[header];
 }
 
-onUnmounted(stopPolling);
+onUnmounted(() => {
+    disposed = true;
+    previewSequence++;
+    stopPolling();
+});
 onMounted(() => void loadImportOptions());
 </script>
 

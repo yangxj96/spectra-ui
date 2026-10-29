@@ -1,5 +1,7 @@
 import { hideLoading, showLoading } from "@/plugin/element/loading";
 
+import { clearCache } from "./cache";
+
 /** 请求生命周期协调器：统一管理取消、并发去重、全局 loading 和优先级配额。 */
 type PendingRequest = {
     controller: AbortController;
@@ -9,9 +11,11 @@ type PendingRequest = {
 const pendingRequests = new Map<string, PendingRequest>();
 const inflightRequests = new Map<string, Promise<unknown>>();
 let loadingCount = 0;
+let sessionEpoch = 0;
+let sessionInvalidationHandler: (() => void) | undefined;
 
 export function registerRequest(key: string, controller: AbortController, persistent = false): void {
-    // persistent 请求不会因会话失效被批量取消，例如需要跨页面继续的后台任务。
+    // persistent 请求不会因路由切换被批量取消，但会话失效时仍必须终止。
     pendingRequests.set(key, { controller, persistent });
 }
 
@@ -20,10 +24,10 @@ export function unregisterRequest(key: string): void {
     pendingRequests.delete(key);
 }
 
-export function cancelAllRequests(): void {
+export function cancelAllRequests(includePersistent = false): void {
     // 使用快照式遍历删除，确保取消同步触发的回调不会影响其他请求处理。
     for (const [key, request] of pendingRequests) {
-        if (request.persistent) continue;
+        if (request.persistent && !includePersistent) continue;
         request.controller.abort();
         pendingRequests.delete(key);
     }
@@ -42,6 +46,28 @@ export function setInflightRequest(key: string, promise: Promise<unknown>): void
 /** 删除并发去重登记，允许下一次相同请求重新执行。 */
 export function removeInflightRequest(key: string): void {
     inflightRequests.delete(key);
+}
+
+/** 当前会话代数；登录、退出和会话失效时必须递增。 */
+export function getSessionEpoch(): number {
+    return sessionEpoch;
+}
+
+/** 注册会话范围失效时的 Store 清理逻辑，避免请求层反向依赖业务 Store。 */
+export function registerSessionInvalidationHandler(handler: () => void): void {
+    sessionInvalidationHandler = handler;
+}
+
+/**
+ * 终止当前会话范围：递增代数、取消在途请求、清空缓存并通知 Store 清理。
+ * 旧响应因代数不一致不能写回新会话，旧缓存和去重登记也不再可见。
+ */
+export function invalidateSessionScope(): void {
+    sessionEpoch++;
+    inflightRequests.clear();
+    cancelAllRequests(true);
+    clearCache();
+    sessionInvalidationHandler?.();
 }
 
 export function acquireLoading(): void {

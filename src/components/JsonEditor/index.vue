@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import JSONEditor from "jsoneditor";
 import "jsoneditor/dist/jsoneditor.min.css";
-import { onMounted, useTemplateRef, watch } from "vue";
+import { onMounted, onUnmounted, useTemplateRef, watch } from "vue";
 
 defineOptions({
     name: "JsonEditor"
@@ -24,22 +24,39 @@ const emit = defineEmits<{
 const editor = useTemplateRef<HTMLElement>("editor");
 let instance: JSONEditor | undefined;
 let isUserTyping = false;
+let lastText = "";
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 解析并提交当前文本；无效 JSON 不覆盖模型。 */
+function emitText(text: string): void {
+    isUserTyping = true;
+
+    try {
+        const parsed = text ? JSON.parse(text) : {};
+        emit("update:modelValue", parsed);
+    } catch (error) {
+        console.error("JSON 解析错误:", error);
+    }
+}
+
+/** 提交前立即执行尚未触发的防抖输入，返回是否已同步。 */
+function flush(): void {
+    if (!debounceTimer) return;
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+    emitText(lastText);
+}
+
 const handleChangeText = (newValue: string) => {
+    lastText = newValue;
     if (debounceTimer) {
         clearTimeout(debounceTimer);
     }
 
     debounceTimer = setTimeout(() => {
-        isUserTyping = true;
-
-        try {
-            const parsed = newValue ? JSON.parse(newValue) : {};
-            emit("update:modelValue", parsed);
-        } catch (error) {
-            console.error("JSON 解析错误:", error);
-        }
+        debounceTimer = null;
+        emitText(lastText);
     }, 300);
 };
 
@@ -76,6 +93,16 @@ onMounted(() => {
     }
 });
 
+onUnmounted(() => {
+    // 卸载时取消未触发的输入并销毁第三方编辑器，避免计时器在卸载后继续 emit。
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+    }
+    instance?.destroy();
+    instance = undefined;
+});
+
 watch(
     () => props.modelValue,
     newVal => {
@@ -109,6 +136,8 @@ watch(
         if (expand && props.readOnly) instance?.expandAll();
     }
 );
+
+defineExpose({ flush });
 </script>
 
 <template>

@@ -19,7 +19,7 @@ const statusMap: Record<string, [string, "success" | "warning" | "danger" | "inf
 const condition = ref<AssetPageParams>({ page_num: 1, page_size: 15 });
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<AssetVO>(
     AssetApi.page,
-    condition.value
+    condition
 );
 const router = useRouter();
 

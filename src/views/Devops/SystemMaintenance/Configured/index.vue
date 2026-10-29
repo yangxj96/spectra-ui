@@ -57,13 +57,34 @@ const loadSettings = async (notifyOnFailure = true): Promise<boolean> => {
     }
 };
 
+/** 保存成功后只合并当前分类，其他分类尚未保存的编辑不能被全量刷新覆盖。 */
+async function refreshSavedCategory(category: ConfiguredSettingsCategory): Promise<boolean> {
+    try {
+        const latest = await ConfiguredApi.settings();
+        const latestById = new Map(latest.map(setting => [setting.id, setting]));
+        settings.value = settings.value.map(setting => {
+            if (setting.category !== category) return setting;
+            const latestSetting = latestById.get(setting.id);
+            if (!latestSetting) return setting;
+            return {
+                ...latestSetting,
+                value: latestSetting.type === "SECRET" ? "" : (latestSetting.value ?? "")
+            };
+        });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 const handleSave = async () => {
     if (saving.value || editableSettings.value.length === 0) return;
 
+    const savedCategory = activeCategory.value;
     saving.value = true;
     try {
         await ConfiguredApi.batchModify({
-            category: activeCategory.value,
+            category: savedCategory,
             items: editableSettings.value.map(setting => ({
                 id: setting.id,
                 version: setting.version,
@@ -72,10 +93,7 @@ const handleSave = async () => {
             }))
         });
 
-        settings.value = settings.value.map(setting =>
-            setting.type === "SECRET" ? { ...setting, value: "" } : setting
-        );
-        const refreshed = await loadSettings(false);
+        const refreshed = await refreshSavedCategory(savedCategory);
         MessageUtils.notify.success(
             refreshed ? "当前分类的配置已保存。" : "配置已保存，但刷新失败，请手动刷新页面确认。",
             "保存成功"

@@ -27,6 +27,8 @@ const pageLoading = ref(false);
 const submitting = ref(false);
 const activeStep = ref(0);
 const departmentForm = useTemplateRef<DepartmentFormExpose>("departmentForm");
+/** 预览请求世代；输入变化或卸载后旧响应不能重新进入确认步骤。 */
+let previewSequence = 0;
 
 const departments = computed(() => flattenDepartmentTree(departmentTree.value));
 const departmentById = computed(() => new Map(departments.value.map(department => [department.id, department])));
@@ -63,6 +65,8 @@ watch(sourceIds, clearPreview, { deep: true });
 watch(form, clearPreview, { deep: true });
 
 function clearPreview(): void {
+    previewSequence++;
+    submitting.value = false;
     preview.value = undefined;
     previewRequest.value = undefined;
 }
@@ -144,25 +148,32 @@ async function handlePreview(): Promise<void> {
     if (!(await departmentForm.value?.validate())) return;
 
     submitting.value = true;
+    const sequence = ++previewSequence;
     try {
         const expectedOrganizationVersion = await AuthorizationApi.organizationVersion();
         const request = makeRequest(expectedOrganizationVersion);
-        preview.value = await AuthorizationApi.previewDepartmentMerge(request);
+        const result = await AuthorizationApi.previewDepartmentMerge(request);
+        // 输入在预览期间变化或已发起新预览时，旧结果不能覆盖当前确认对象。
+        if (sequence !== previewSequence) return;
+        preview.value = result;
         previewRequest.value = request;
         activeStep.value = 2;
     } catch (error: unknown) {
+        if (sequence !== previewSequence) return;
         clearPreview();
         MessageUtils.error(error);
     } finally {
-        submitting.value = false;
+        if (sequence === previewSequence) submitting.value = false;
     }
 }
 
 async function handleApply(): Promise<void> {
-    if (!preview.value || !previewRequest.value) return;
+    const previewSnapshot = preview.value;
+    const requestSnapshot = previewRequest.value;
+    if (!previewSnapshot || !requestSnapshot) return;
     try {
         await MessageUtils.box.confirm(
-            `将把 ${preview.value.source_department_count} 个源部门及其子部门、${preview.value.affected_user_count} 名成员迁入新部门，并逻辑删除源部门。确认提交？`,
+            `将把 ${previewSnapshot.source_department_count} 个源部门及其子部门、${previewSnapshot.affected_user_count} 名成员迁入新部门，并逻辑删除源部门。确认提交？`,
             "确认部门合并"
         );
     } catch {
@@ -171,10 +182,11 @@ async function handleApply(): Promise<void> {
 
     submitting.value = true;
     try {
+        // 确认期间即使页面状态变化，提交的仍是用户看到的那一份预览对象。
         await AuthorizationApi.applyDepartmentMerge({
-            ...previewRequest.value,
-            expected_organization_version: preview.value.expected_organization_version,
-            preview_token: preview.value.preview_token
+            ...requestSnapshot,
+            expected_organization_version: previewSnapshot.expected_organization_version,
+            preview_token: previewSnapshot.preview_token
         });
         MessageUtils.success("部门合并完成");
         await router.replace({ name: "SystemDept" });

@@ -20,7 +20,7 @@ const statusMap: Record<string, [string, "success" | "warning" | "danger" | "inf
 
 const condition = ref<ReimbursementPageParams>({ page_num: 1, page_size: 15 });
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } =
-    useTable<ReimbursementVO>(ReimbursementApi.page, condition.value);
+    useTable<ReimbursementVO>(ReimbursementApi.page, condition);
 const approverEmail = ref("");
 const router = useRouter();
 

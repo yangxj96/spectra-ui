@@ -16,7 +16,7 @@ const statusMap: Record<string, [string, "success" | "warning" | "danger" | "inf
 const condition = ref<SupplyPageParams>({ page_num: 1, page_size: 15 });
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<SupplyItemVO>(
     SupplyApi.page,
-    condition.value
+    condition
 );
 const router = useRouter();
 

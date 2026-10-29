@@ -2,6 +2,9 @@ import { defineStore } from "pinia";
 
 import { NotificationApi } from "@/api/notification/notification-api.ts";
 
+/** 通知查询的会话代数；身份切换后旧响应不能写回新会话。 */
+let notificationScopeGeneration = 0;
+
 /** 消息类型配置 */
 const notificationPurposeConfigs: NotificationPurposeConfig[] = [
     { purpose: "SYSTEM_NOTICE", label: "系统通知", color: "#409eff", icon: "icon-notification" },
@@ -96,22 +99,26 @@ export const useNotificationStore = defineStore("notification", {
     actions: {
         /** 获取消息列表 */
         async fetchNotifications(params?: NotificationQueryParams): Promise<void> {
+            const generation = notificationScopeGeneration;
             this.loading = true;
             try {
                 const result = await NotificationApi.list(buildNotificationQuery(params));
+                if (generation !== notificationScopeGeneration) return;
                 this.notifications = result.records ?? [];
                 this.total = result.total ?? 0;
             } catch (error) {
                 console.error("[NotificationStore] 获取消息列表失败", error);
             } finally {
-                this.loading = false;
+                if (generation === notificationScopeGeneration) this.loading = false;
             }
         },
 
         /** 刷新未读数 */
         async refreshUnreadCount(): Promise<void> {
+            const generation = notificationScopeGeneration;
             try {
                 const result = await NotificationApi.unreadCount();
+                if (generation !== notificationScopeGeneration) return;
                 this.unreadCount = result as number;
             } catch (error) {
                 console.error("[NotificationStore] 获取未读数失败", error);
@@ -184,6 +191,16 @@ export const useNotificationStore = defineStore("notification", {
         /** 设置当前筛选用途 */
         setCurrentPurpose(purpose: NotificationPurpose | "all"): void {
             this.currentPurpose = purpose;
+        },
+
+        /** 会话切换或退出时清空身份范围数据，并使在途查询失效。 */
+        resetSessionScope(): void {
+            notificationScopeGeneration++;
+            this.notifications = [];
+            this.unreadCount = 0;
+            this.loading = false;
+            this.currentPurpose = "all";
+            this.total = 0;
         }
     }
 });

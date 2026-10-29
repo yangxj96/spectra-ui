@@ -10,7 +10,9 @@ import { getCache, setCache } from "./cache";
 import { HttpRequestError, isRequestCancelled, parseResponseError, RequestCancelledError } from "./error";
 import {
     acquireLoading,
+    cancelAllRequests,
     getInflightRequest,
+    getSessionEpoch,
     registerRequest,
     releaseLoading,
     releasePriority,
@@ -24,6 +26,9 @@ import type { RequestPriority } from "./request-lifecycle";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 const DEFAULT_TIMEOUT = 60000;
+const DEFAULT_RETRY_DEADLINE = 10000;
+const RETRYABLE_STATUS = new Set([408, 425, 429, 502, 503, 504]);
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 let binaryRequestSequence = 0;
 
 export { HttpRequestError } from "./error";
@@ -45,9 +50,9 @@ function stableStringify(value: unknown): string {
 }
 
 function createKey(url: string, method: string, body?: unknown, params?: unknown): string {
-    // 普通请求使用稳定键支持缓存和并发去重；二进制请求不尝试序列化内容，直接按序号区分。
+    // 会话代数进入键：身份切换后旧缓存和旧去重登记不可见，避免跨身份复用响应。
     const bodyKey = isBinaryBody(body) ? `binary:${++binaryRequestSequence}` : stableStringify(body ?? {});
-    return `${method}:${url}:${stableStringify(params ?? {})}:${bodyKey}`;
+    return `${getSessionEpoch()}:${method}:${url}:${stableStringify(params ?? {})}:${bodyKey}`;
 }
 
 function joinUrl(base: string, url: string): string {
@@ -87,6 +92,10 @@ function generateNonce(): string {
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
         .replace(/=+$/g, "");
+}
+
+function delay(milliseconds: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
 type EncryptedResponseBody = {
@@ -174,12 +183,21 @@ async function handleBlobDownload(res: Response, shouldDownload: boolean): Promi
 
 async function failSession(): Promise<never> {
     // Fetch 和 XHR 都会进入这里；会话清理可重复执行，但提示和跳转只允许一次。
-    await expireSession();
+    expireSession();
+    const error = new HttpRequestError("登录已过期", "UNAUTHENTICATED", 401);
     if (claimSessionExpiration()) {
-        MessageUtils.error("登录已过期");
+        MessageUtils.error(error);
         GlobalUtils.toLogin();
     }
-    throw new HttpRequestError("登录已过期", "UNAUTHENTICATED", 401);
+    throw error;
+}
+
+/** 刷新失败时区分“会话已切换到新身份”和“当前会话过期”。 */
+function handleRefreshFailure(epoch: number): Promise<never> {
+    if (epoch !== getSessionEpoch() && getAccessToken()) {
+        return Promise.reject(new RequestCancelledError("会话已切换"));
+    }
+    return failSession();
 }
 
 function bindRequestSignal(signal: AbortSignal | null | undefined, controller: AbortController): void {
@@ -208,20 +226,23 @@ function requestHeaders(context: {
     };
 }
 
+type AuthFetchContext = {
+    rest: RequestInit;
+    method: string;
+    fetchPriority: RequestInit["priority"];
+    isFormData: boolean;
+    isBinary: boolean;
+    auth: "required" | "skip";
+    retryOnAuth: boolean;
+    headers?: HeadersInit;
+    controller: AbortController;
+    epoch: number;
+};
+
 async function fetchWithAuth(
     finalUrl: string,
     body: BodyInit | null | undefined,
-    context: {
-        rest: RequestInit;
-        method: string;
-        fetchPriority: RequestInit["priority"];
-        isFormData: boolean;
-        isBinary: boolean;
-        auth: "required" | "skip";
-        retryOnAuth: boolean;
-        headers?: HeadersInit;
-        controller: AbortController;
-    }
+    context: AuthFetchContext
 ): Promise<Response> {
     let token = getAccessToken();
     let authRetried = false;
@@ -243,9 +264,11 @@ async function fetchWithAuth(
         });
         if (response.status !== 401 || context.auth !== "required" || !context.retryOnAuth || authRetried)
             return response;
+        const refreshEpoch = context.epoch;
         authRetried = true;
         const newToken = await refreshAccessToken();
-        if (!newToken) return failSession();
+        // 会话已切换到新登录时不能再清理新身份；纯过期则仍需统一提示和跳转登录。
+        if (!newToken) return handleRefreshFailure(refreshEpoch);
         token = newToken.access_token;
     }
 }
@@ -266,19 +289,17 @@ async function parseSuccessfulResponse<T>(
     }
     result.data = await decryptResult<T>(result.data);
     if (result.code !== 200) {
-        MessageUtils.error(result.msg || "请求失败");
         throw new HttpRequestError(result.msg || "请求失败", result.error_code, response.status);
     }
     if (options.cache) setCache(options.key, result.data);
     return result.data as T;
 }
 
-async function executeRequest<T>(context: {
+type ExecuteContext = {
     finalUrl: string;
     method: string;
     rest: RequestInit;
     body: BodyInit | null | undefined;
-    priority: RequestPriority;
     fetchPriority: RequestInit["priority"];
     auth: "required" | "skip";
     retryOnAuth: boolean;
@@ -290,7 +311,10 @@ async function executeRequest<T>(context: {
     cache: boolean;
     key: string;
     errorFallback?: string;
-}): Promise<T> {
+    epoch: number;
+};
+
+async function executeRequest<T>(context: ExecuteContext): Promise<T> {
     const response = await fetchWithAuth(context.finalUrl, context.body, {
         rest: context.rest,
         method: context.method,
@@ -300,12 +324,15 @@ async function executeRequest<T>(context: {
         auth: context.auth,
         retryOnAuth: context.retryOnAuth,
         headers: context.headers,
-        controller: context.controller
+        controller: context.controller,
+        epoch: context.epoch
     });
     if (!response.ok) {
         const parsed = await parseResponseError(response, context.errorFallback);
-        if (parsed.status === 401 && context.auth === "required") return failSession();
-        if (!isRequestCancelled(parsed)) MessageUtils.error(parsed.message);
+        if (parsed.status === 401 && context.auth === "required") {
+            if (context.epoch !== getSessionEpoch()) throw new RequestCancelledError("会话已切换");
+            return failSession();
+        }
         throw new HttpRequestError(parsed.message, parsed.errorCode, parsed.status);
     }
     return parseSuccessfulResponse<T>(response, context);
@@ -352,76 +379,120 @@ async function prepareBody(body: BodyInit | null | undefined, method: string): P
     return isBinary ? body : encryptRequestBody(body, isFormData, method);
 }
 
+const REQUEST_DEFAULTS = {
+    loading: false,
+    download: false,
+    priority: "normal" as RequestPriority,
+    fetchPriority: "auto" as RequestInit["priority"],
+    retry: 0,
+    idempotent: false,
+    retryDeadlineMs: DEFAULT_RETRY_DEADLINE,
+    cache: false,
+    dedupe: true,
+    persistent: false,
+    auth: "required" as "required" | "skip",
+    retryOnAuth: true,
+    noBody: false,
+    responseType: "json" as "json" | "blob" | "empty",
+    timeout: DEFAULT_TIMEOUT
+};
+
 function normalizeRequestOptions<U extends string>(options: RequestOptions<U>) {
-    const {
-        params,
-        loading = true,
-        download = false,
-        priority = "normal",
-        fetchPriority = "auto",
-        retry = 0,
-        cache = false,
-        dedupe = true,
-        persistent = false,
-        headers,
-        auth = "required",
-        retryOnAuth = true,
-        errorFallback,
-        noBody = false,
-        responseType = "json",
-        timeout = DEFAULT_TIMEOUT,
-        signal,
-        ...rest
-    } = options;
+    // cache 与 priority 在 RequestInit 中另有语义，必须从透传给 fetch 的 rest 中剔除。
+    const { params, cache, priority, ...rest } = options;
     return {
+        ...REQUEST_DEFAULTS,
+        ...options,
+        cache: cache ?? REQUEST_DEFAULTS.cache,
+        priority: priority ?? REQUEST_DEFAULTS.priority,
         params,
-        loading,
-        download,
-        priority,
-        fetchPriority,
-        retry,
-        cache,
-        dedupe,
-        persistent,
-        headers,
-        auth,
-        retryOnAuth,
-        errorFallback,
-        noBody,
-        responseType,
-        timeout,
-        signal,
         rest
     };
 }
 
-async function runWithLifecycle<T>(
-    context: {
-        loading: boolean;
-        retry: number;
-        url: string;
-        options: RequestOptions<string>;
-        priority: RequestPriority;
-        timeoutId: ReturnType<typeof setTimeout>;
-        key: string;
-    },
-    execute: () => Promise<T>
-): Promise<T> {
+/** 只有安全方法或显式声明幂等的写入才允许在分类错误下重试。 */
+function shouldRetry(
+    error: unknown,
+    method: string,
+    context: { retry: number; idempotent: boolean; deadline: number }
+) {
+    if (context.retry <= 0 || Date.now() >= context.deadline) return false;
+    if (!SAFE_METHODS.has(method) && !context.idempotent) return false;
+    if (error instanceof HttpRequestError) {
+        if (error.errorCode === "UNAUTHENTICATED") return false;
+        return error.status === undefined || RETRYABLE_STATUS.has(error.status);
+    }
+    // Fetch 的网络层失败通常是 TypeError；加解密等本地错误不在此列。
+    return error instanceof TypeError;
+}
+
+type RequestLifecycleContext<T> = {
+    finalUrl: string;
+    method: string;
+    rest: RequestInit;
+    loading: boolean;
+    retry: number;
+    idempotent: boolean;
+    deadline: number;
+    priority: RequestPriority;
+    fetchPriority: RequestInit["priority"];
+    auth: "required" | "skip";
+    retryOnAuth: boolean;
+    headers?: HeadersInit;
+    responseType: string;
+    download: boolean;
+    noBody: boolean;
+    cache: boolean;
+    key: string;
+    errorFallback?: string;
+    timeout: number;
+    signal: AbortSignal | null | undefined;
+    persistent: boolean;
+    execute: (controller: AbortController) => Promise<T>;
+};
+
+/** 执行一次尝试；每次尝试使用独立控制器并在 finally 释放登记和优先级配额。 */
+async function attemptRequest<T>(context: RequestLifecycleContext<T>): Promise<T> {
+    const controller = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let priorityAcquired = false;
+    try {
+        bindRequestSignal(context.signal, controller);
+        registerRequest(context.key, controller, context.persistent);
+        timeoutId = setTimeout(() => controller.abort(), context.timeout);
+        await waitPriority(context.priority);
+        priorityAcquired = true;
+        return await context.execute(controller);
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+        unregisterRequest(context.key);
+        if (priorityAcquired) releasePriority(context.priority);
+    }
+}
+
+async function retryLoop<T>(context: RequestLifecycleContext<T>): Promise<T> {
+    let attempt = 0;
+    for (;;) {
+        try {
+            return await attemptRequest(context);
+        } catch (error) {
+            if (isRequestCancelled(error)) throw new RequestCancelledError();
+            if (!shouldRetry(error, context.method, context)) {
+                MessageUtils.error(error);
+                throw error;
+            }
+            attempt++;
+            await delay(Math.min(200 * attempt, 1000));
+        }
+    }
+}
+
+async function runWithLifecycle<T>(context: RequestLifecycleContext<T>): Promise<T> {
     if (context.loading) acquireLoading();
     try {
-        return await execute();
-    } catch (error) {
-        if (isRequestCancelled(error)) throw new RequestCancelledError();
-        if (context.retry > 0) {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            return request<T, string>(context.url, { ...context.options, retry: context.retry - 1 });
-        }
-        throw error;
+        return await retryLoop(context);
     } finally {
-        clearTimeout(context.timeoutId);
-        unregisterRequest(context.key);
         removeInflightRequest(context.key);
-        releasePriority(context.priority);
         if (context.loading) releaseLoading();
     }
 }
@@ -439,6 +510,8 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
         priority,
         fetchPriority,
         retry,
+        idempotent,
+        retryDeadlineMs,
         cache,
         dedupe,
         persistent,
@@ -458,31 +531,36 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
     const reusable = reusableRequest<T>(key, cache, dedupe);
     if (reusable !== undefined) return reusable;
 
-    // 每个请求都使用自己的控制器；会话失效时由 request-lifecycle 批量取消非持久请求。
-    const controller = new AbortController();
-    bindRequestSignal(signal, controller);
-    registerRequest(key, controller, persistent);
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    const requestPromise = runWithLifecycle<T>(
-        {
-            loading,
-            retry,
-            url,
-            options: options as RequestOptions<string>,
-            priority,
-            timeoutId,
-            key
-        },
-        async () => {
+    const epoch = getSessionEpoch();
+    const requestPromise = runWithLifecycle<T>({
+        finalUrl,
+        method,
+        rest,
+        loading,
+        retry,
+        idempotent,
+        deadline: Date.now() + retryDeadlineMs,
+        priority,
+        fetchPriority,
+        auth,
+        retryOnAuth,
+        headers,
+        responseType,
+        download,
+        noBody,
+        cache,
+        key,
+        errorFallback,
+        timeout,
+        signal,
+        persistent,
+        execute: async controller => {
             const body = await prepareBody(rest.body, method);
-            await waitPriority(priority);
             return executeRequest<T>({
                 finalUrl,
                 method,
                 rest,
                 body,
-                priority,
                 fetchPriority,
                 auth,
                 retryOnAuth,
@@ -493,12 +571,13 @@ export async function request<T, U extends string>(url: U, options: RequestOptio
                 noBody,
                 cache,
                 key,
-                errorFallback
+                errorFallback,
+                epoch
             });
         }
-    );
+    });
     if (dedupe) setInflightRequest(key, requestPromise);
     return requestPromise;
 }
 
-if (typeof window !== "undefined") window.addEventListener("beforeunload", () => unregisterRequest(""));
+if (typeof window !== "undefined") window.addEventListener("beforeunload", () => cancelAllRequests(true));

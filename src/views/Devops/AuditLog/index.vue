@@ -16,7 +16,7 @@ const condition = ref<AuditLogPageParams>({
 });
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable<AuditLogVO>(
     AuditLogApi.page,
-    condition.value
+    condition
 );
 const router = useRouter();
 

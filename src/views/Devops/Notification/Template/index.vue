@@ -44,7 +44,7 @@ const condition = ref<NotificationTemplatePageParams>({
 
 const { handleCurrentChange, handleSizeChange, handlerConditionQuery, pagination, table_data } = useTable(
     NotificationTemplateApi.groupPage,
-    condition.value
+    condition
 );
 
 const versionVisible = ref(false);

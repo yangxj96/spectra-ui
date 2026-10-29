@@ -3,7 +3,7 @@ import { MessageUtils } from "@/utils/message-utils";
 
 import { claimSessionExpiration, expireSession, getAccessToken, refreshAccessToken } from "./auth";
 import { BinaryRequestError, RequestCancelledError } from "./error";
-import { registerRequest, unregisterRequest } from "./request-lifecycle";
+import { getSessionEpoch, registerRequest, unregisterRequest } from "./request-lifecycle";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 let requestSequence = 0;
@@ -69,16 +69,26 @@ function parseXhrError(xhr: XMLHttpRequest): BinaryRequestError {
 type XhrContext = {
     token: string | null;
     controller: AbortController;
+    epoch: number;
 };
+
+/** 刷新失败时区分“会话已切换到新身份”和“当前会话过期”。 */
+function handleRefreshFailure(epoch: number): Promise<never> {
+    if (epoch !== getSessionEpoch() && getAccessToken()) {
+        return Promise.reject(new RequestCancelledError("会话已切换"));
+    }
+    return expireAndReject();
+}
 
 async function expireAndReject(): Promise<never> {
     // 上传和普通请求共用会话失效处理，确保用户只看到一次过期提示并回到登录页。
-    await expireSession();
+    expireSession();
+    const error = new BinaryRequestError(401, "登录已过期", "UNAUTHENTICATED");
     if (claimSessionExpiration()) {
-        MessageUtils.error("登录已过期");
+        MessageUtils.error(error);
         GlobalUtils.toLogin();
     }
-    throw new BinaryRequestError(401, "登录已过期", "UNAUTHENTICATED");
+    throw error;
 }
 
 /** 发起一次不可重试的 XHR；是否刷新 Token 由 requestBinary 的外层循环决定。 */
@@ -88,6 +98,7 @@ function send(
     options: XhrRequestOptions,
     context: XhrContext
 ): Promise<BinaryResponse> {
+    if (context.controller.signal.aborted) throw new RequestCancelledError();
     const external = options.external === true;
     const finalUrl = external ? url : joinUrl(BASE_URL, url);
     const headers = new Headers(options.headers);
@@ -137,7 +148,12 @@ function send(
         xhr.ontimeout = () => finish(() => reject(new BinaryRequestError(408, "二进制请求超时")));
         xhr.onabort = () => finish(() => reject(new RequestCancelledError()));
         // 将 Fetch 风格的 AbortSignal 映射到 XHR 的 abort 事件，保持两个客户端的取消语义一致。
+        // 监听必须在 send 前注册；注册后再次检查，避免刷新等待期间错过取消事件。
         context.controller.signal.addEventListener("abort", () => xhr.abort(), { once: true });
+        if (context.controller.signal.aborted) {
+            finish(() => reject(new RequestCancelledError()));
+            return;
+        }
         const requestBody = ArrayBuffer.isView(body)
             ? new Uint8Array(body.buffer, body.byteOffset, body.byteLength).slice().buffer
             : body;
@@ -159,11 +175,12 @@ export async function requestBinary(
     const auth = external ? "skip" : (options.auth ?? "required");
     const key = `xhr:${++requestSequence}`;
     const controller = new AbortController();
+    const epoch = getSessionEpoch();
     // 注册到统一请求生命周期，登录失效时可以取消正在进行的本地上传。
     registerRequest(key, controller);
     bindAbortSignal(options.signal, controller);
     try {
-        return await sendWithAuthRetry(url, body, options, auth, controller);
+        return await sendWithAuthRetry({ url, body, options, auth, controller, epoch });
     } finally {
         unregisterRequest(key);
     }
@@ -178,23 +195,27 @@ function bindAbortSignal(signal: AbortSignal | undefined, controller: AbortContr
     signal.addEventListener("abort", () => controller.abort(), { once: true });
 }
 
-async function sendWithAuthRetry(
-    url: string,
-    body: Blob | ArrayBuffer | ArrayBufferView,
-    options: XhrRequestOptions,
-    auth: "required" | "skip",
-    controller: AbortController
-): Promise<BinaryResponse> {
+type XhrRetryContext = {
+    url: string;
+    body: Blob | ArrayBuffer | ArrayBufferView;
+    options: XhrRequestOptions;
+    auth: "required" | "skip";
+    controller: AbortController;
+    epoch: number;
+};
+
+async function sendWithAuthRetry(context: XhrRetryContext): Promise<BinaryResponse> {
+    const { url, body, options, auth, controller, epoch } = context;
     let token = auth === "required" ? getAccessToken() : null;
     let retried = false;
     while (true) {
         try {
-            return await send(url, body, { ...options, auth }, { token, controller });
+            return await send(url, body, { ...options, auth }, { token, controller, epoch });
         } catch (error) {
             if (!canRefresh(error, auth, options, retried)) throw error;
             retried = true;
             const newToken = await refreshAccessToken();
-            if (!newToken) return expireAndReject();
+            if (!newToken) return handleRefreshFailure(epoch);
             token = newToken.access_token;
         }
     }

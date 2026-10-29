@@ -338,10 +338,14 @@ async function loadData(): Promise<void> {
             NotificationProviderApi.list(),
             NotificationAdminApi.overview(24, { loading: false })
         ]);
+        // 刷新服务端数据时保留仍有未保存编辑的渠道草稿，避免静默覆盖用户输入。
+        const dirtyChannels = new Set(
+            providerData.filter(provider => providerEditorDirty(provider)).map(provider => provider.channel)
+        );
         providers.value = providerData;
         overview.value = overviewData;
         providerData.forEach(provider => {
-            syncEditor(provider);
+            if (!dirtyChannels.has(provider.channel)) syncEditor(provider);
             if (provider.channel === "SMS" || provider.channel === "EMAIL") {
                 if (provider.checked_at) {
                     lastHealthAt[provider.channel] = provider.checked_at;

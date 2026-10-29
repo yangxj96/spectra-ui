@@ -369,18 +369,15 @@ onMounted(load);
                             </el-row>
                         </el-form>
 
-                        <template v-if="activeStep !== 0">
-                            <div
-                                v-if="form.id || !isEditing"
-                                v-show="activeStep !== 0"
-                                class="authorization-editor-wrapper">
+                        <div v-show="activeStep !== 0">
+                            <div v-if="form.id || !isEditing" class="authorization-editor-wrapper">
                                 <RoleAssignmentEditor
                                     ref="roleAssignmentEditor"
                                     :user-id="form.id || undefined"
                                     :stage="activeStep === 1 ? 'selection' : 'details'"
                                     @roles-change="handleRoleStepsChange" />
                             </div>
-                        </template>
+                        </div>
                     </div>
                 </section>
 

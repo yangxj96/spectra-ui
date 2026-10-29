@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef } from "vue";
+import { computed, onMounted, ref, useTemplateRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { NotificationTemplateApi } from "@/api/notification/notification-template-api.ts";
 import StepNavigation from "@/components/StepNavigation/index.vue";
 import type { StepNavigationItem } from "@/components/StepNavigation/types.ts";
+import { HttpRequestError } from "@/plugin/request/error.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
 import type { FormInstance, FormRules } from "element-plus";
@@ -64,6 +65,18 @@ const previewVisible = ref(false);
 const previewResult = ref<NotificationTemplatePreviewVO>();
 const saveMessage = ref("");
 const activeStep = ref(0);
+let previewSequence = 0;
+
+// 编辑内容变化后旧预览立即失效，确认区域不能继续展示过期模板。
+watch(
+    editor,
+    () => {
+        previewSequence++;
+        previewResult.value = undefined;
+        previewVisible.value = false;
+    },
+    { deep: true }
+);
 
 const editorRules: FormRules = {
     template_group_code: [{ required: true, message: "请输入模板组编码", trigger: "blur" }],
@@ -372,7 +385,21 @@ async function load(): Promise<void> {
     }
 }
 
+/** 版本冲突后只更新最新版本号，保留当前草稿供用户核对后重新提交。 */
+async function recoverVersionConflict(): Promise<void> {
+    if (!editingId.value) return;
+    try {
+        const latest = await NotificationTemplateApi.detail(editingId.value);
+        editor.value.version = latest.version;
+        editor.value.state = latest.state;
+        MessageUtils.warning("模板已被其他操作更新，已保留当前草稿并加载最新版本，请核对后重新提交。");
+    } catch (error) {
+        MessageUtils.error(errorMessage(error, "加载最新模板版本失败"));
+    }
+}
+
 async function save(publishAfterSave = false): Promise<void> {
+    if (submitting.value) return;
     const valid = await formRef.value?.validate().catch(() => false);
     if (!valid) return;
 
@@ -433,10 +460,19 @@ async function save(publishAfterSave = false): Promise<void> {
         }
     } catch (error: unknown) {
         saveMessage.value = "";
-        MessageUtils.error(errorMessage(error, "保存模板失败，可能是版本已变化"));
+        await handleSaveFailure(error);
     } finally {
         submitting.value = false;
     }
+}
+
+/** 保存失败统一处理：版本冲突进入恢复流程，其他错误由单一责任方提示。 */
+async function handleSaveFailure(error: unknown): Promise<void> {
+    if (error instanceof HttpRequestError && error.status === 409) {
+        await recoverVersionConflict();
+        return;
+    }
+    MessageUtils.error(errorMessage(error, "保存模板失败，可能是版本已变化"));
 }
 
 async function preview(): Promise<void> {
@@ -475,11 +511,13 @@ async function preview(): Promise<void> {
         return;
     }
 
+    if (previewLoading.value) return;
     previewLoading.value = true;
+    const sequence = ++previewSequence;
     previewResult.value = undefined;
     previewVisible.value = true;
-    try {
-        previewResult.value = await NotificationTemplateApi.preview({
+    await runPreview(
+        {
             channel: editor.value.channel,
             purpose: editor.value.purpose,
             title_template: templateFields.title,
@@ -488,12 +526,23 @@ async function preview(): Promise<void> {
             parameter_schema: parameterSchema,
             parameters,
             sensitive_parameters: sensitiveParameters
-        });
+        },
+        sequence
+    );
+}
+
+/** 预览请求与结果收敛；编辑变化导致世代变化时丢弃旧结果和错误。 */
+async function runPreview(request: NotificationTemplatePreviewParams, sequence: number): Promise<void> {
+    try {
+        const result = await NotificationTemplateApi.preview(request);
+        if (sequence !== previewSequence) return;
+        previewResult.value = result;
         MessageUtils.success("模板预览已生成");
     } catch (error: unknown) {
+        if (sequence !== previewSequence) return;
         MessageUtils.error(errorMessage(error, "模板预览失败，请检查变量和 HTML 安全规则"));
     } finally {
-        previewLoading.value = false;
+        if (sequence === previewSequence) previewLoading.value = false;
     }
 }
 

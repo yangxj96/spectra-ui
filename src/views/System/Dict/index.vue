@@ -59,7 +59,12 @@ const initData = async () => {
 
 const handleGetDictData = async () => {
     if (!currentGroup.value) return;
-    dictDataTableData.value = await dictStore.refreshDictData(currentGroup.value.code);
+    try {
+        dictDataTableData.value = await dictStore.refreshDictData(currentGroup.value.code);
+    } catch (error) {
+        dictDataTableData.value = [];
+        MessageUtils.error(error);
+    }
 };
 
 // 字典组编辑打开

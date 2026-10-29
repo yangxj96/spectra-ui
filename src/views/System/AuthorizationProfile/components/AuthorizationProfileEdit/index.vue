@@ -9,6 +9,7 @@ import { RoleApi } from "@/api/auth/role-api.ts";
 import { DepartmentApi } from "@/api/user/department-api.ts";
 import StepNavigation from "@/components/StepNavigation/index.vue";
 import type { StepNavigationItem } from "@/components/StepNavigation/types.ts";
+import { HttpRequestError } from "@/plugin/request/error.ts";
 import { treeDefaultProps } from "@/utils/default-config.ts";
 import { MessageUtils } from "@/utils/message-utils.ts";
 
@@ -442,10 +443,11 @@ function validateAssignmentBoundaries(
 ): boolean {
     const permissionCodes = new Set<string>();
     for (const boundary of assignment.boundaries) {
-        if (!permissionCodes.add(boundary.permission)) {
+        if (permissionCodes.has(boundary.permission)) {
             MessageUtils.warning(`权限不能重复配置：${boundary.permission}`);
             return false;
         }
+        permissionCodes.add(boundary.permission);
         if (!rolePermissionCodes.has(boundary.permission)) {
             MessageUtils.warning(`${assignment.role_code} 未声明权限：${boundary.permission}`);
             return false;
@@ -467,10 +469,11 @@ function validateAssignment(assignment: ProfileAssignmentDraft, roleCodes: Set<s
         MessageUtils.warning("请选择角色");
         return false;
     }
-    if (!roleCodes.add(assignment.role_code)) {
+    if (roleCodes.has(assignment.role_code)) {
         MessageUtils.warning("同一个授权方案不能重复配置角色");
         return false;
     }
+    roleCodes.add(assignment.role_code);
     const role = roles.value.find(item => item.code === assignment.role_code);
     const authorization = roleAuthorization(assignment.role_code);
     if (!role || !authorization) {
@@ -608,8 +611,28 @@ function handleAssignmentSelection(key: string): void {
     void handleAssignmentNavigation(assignmentIndex);
 }
 
+/** 版本冲突后加载最新版本，只更新期望版本，保留当前草稿供用户核对后重新提交。 */
+async function recoverVersionConflict(): Promise<void> {
+    if (!editingId.value) return;
+    try {
+        const latest = await AuthorizationApi.profile(editingId.value);
+        form.expected_version = latest.version;
+        await Promise.all(
+            form.assignments.map(async assignment => {
+                const role = roles.value.find(item => item.code === assignment.role_code);
+                if (!role) return;
+                const authorization = await AuthorizationApi.currentRole(role.id);
+                assignment.role_version = authorization.version;
+            })
+        );
+        MessageUtils.warning("数据已被其他操作更新，已保留当前草稿并加载最新版本，请核对后重新提交。");
+    } catch (error) {
+        MessageUtils.error(error instanceof Error ? error.message : "加载最新版本失败");
+    }
+}
+
 async function handleSave(): Promise<void> {
-    if (currentStep.value !== 2) return;
+    if (currentStep.value !== 2 || saving.value) return;
     try {
         if (!validateAssignments()) return;
         saving.value = true;
@@ -633,7 +656,11 @@ async function handleSave(): Promise<void> {
         MessageUtils.success(editingId.value ? "修改授权方案成功" : "创建授权方案成功");
         await goBack();
     } catch (error: unknown) {
-        MessageUtils.error(error);
+        if (error instanceof HttpRequestError && error.status === 409) {
+            await recoverVersionConflict();
+        } else {
+            MessageUtils.error(error);
+        }
     } finally {
         saving.value = false;
     }

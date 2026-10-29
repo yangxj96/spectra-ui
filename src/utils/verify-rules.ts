@@ -49,6 +49,6 @@ export const email: FormItemRule["validator"] = (_rule, value, callback) => {
             }
         })
         .catch(() => {
-            callback(new Error("逻辑执行错误"));
+            callback(new Error("邮箱后缀校验暂不可用，请稍后重试"));
         });
 };

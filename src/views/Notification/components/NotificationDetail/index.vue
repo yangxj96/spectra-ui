@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { Close, Link, Delete, ArrowLeft, ArrowRight, User, Bell } from "@element-plus/icons-vue";
+import { Close, Link, Delete, ArrowLeft, ArrowRight, Bell } from "@element-plus/icons-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 
-import { useNotificationStore } from "@/plugin/store/modules/use-notification-store.ts";
 import { formatDateTime } from "@/utils/date-utils.ts";
 
 defineOptions({
@@ -33,7 +32,6 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
-const notificationStore = useNotificationStore();
 
 /** 抽屉显示状态 */
 const visible = computed({
@@ -46,16 +44,6 @@ const visible = computed({
 /** 格式化时间 */
 function formatTime(time: string): string {
     return formatDateTime(time);
-}
-
-/** 获取用途标签 */
-function getPurposeLabel(purpose: NotificationPurpose): string {
-    return notificationStore.getPurposeLabel(purpose);
-}
-
-/** 获取用途颜色 */
-function getPurposeColor(purpose: NotificationPurpose): string {
-    return notificationStore.getPurposeColor(purpose);
 }
 
 /** 跳转链接 */
@@ -104,9 +92,6 @@ function handleClose(): void {
         <div v-if="notification" class="notification-detail">
             <!-- 状态栏 -->
             <div class="detail-status">
-                <el-tag :color="getPurposeColor(notification.purpose)" effect="dark" size="small" class="type-tag">
-                    {{ getPurposeLabel(notification.purpose) }}
-                </el-tag>
                 <el-tag :type="notification.is_read ? 'info' : 'danger'" size="small" effect="plain">
                     {{ notification.is_read ? "已读" : "未读" }}
                 </el-tag>
@@ -117,15 +102,6 @@ function handleClose(): void {
 
             <!-- 元信息卡片 -->
             <div class="meta-card">
-                <div class="meta-item">
-                    <div class="meta-avatar">
-                        <el-icon :size="18"><User /></el-icon>
-                    </div>
-                    <div class="meta-info">
-                        <span class="meta-label">发送者</span>
-                        <span class="meta-value">{{ notification.sender_name || "系统" }}</span>
-                    </div>
-                </div>
                 <div class="meta-item">
                     <div class="meta-avatar">
                         <el-icon :size="18"><Bell /></el-icon>

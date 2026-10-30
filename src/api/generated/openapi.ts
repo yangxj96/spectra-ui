@@ -22,7 +22,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_20"];
+        get: operations["page_21"];
         put?: never;
         post?: never;
         delete?: never;
@@ -38,7 +38,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["detail_8"];
+        get: operations["detail_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -518,7 +518,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_19"];
+        get: operations["page_20"];
         put?: never;
         post?: never;
         delete?: never;
@@ -566,7 +566,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["preview_5"];
+        get: operations["preview_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -598,7 +598,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_18"];
+        get: operations["page_19"];
         put?: never;
         post?: never;
         delete?: never;
@@ -632,7 +632,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["create_10"];
+        post: operations["create_9"];
         delete?: never;
         options?: never;
         head?: never;
@@ -646,7 +646,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_17"];
+        get: operations["page_18"];
         put?: never;
         post?: never;
         delete?: never;
@@ -662,8 +662,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_9"];
-        put: operations["modify_6"];
+        get: operations["get_8"];
+        put: operations["modify_8"];
         post?: never;
         delete?: never;
         options?: never;
@@ -680,7 +680,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["disable_4"];
+        post: operations["disable_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -696,7 +696,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["enable_4"];
+        post: operations["enable_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -712,7 +712,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["create_9"];
+        post: operations["create_8"];
         delete?: never;
         options?: never;
         head?: never;
@@ -726,7 +726,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_16"];
+        get: operations["page_17"];
         put?: never;
         post?: never;
         delete?: never;
@@ -745,7 +745,7 @@ export interface paths {
         get: operations["status_2"];
         put?: never;
         post?: never;
-        delete: operations["cancel_6"];
+        delete: operations["cancel_5"];
         options?: never;
         head?: never;
         patch?: never;
@@ -774,7 +774,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["detail_7"];
+        get: operations["detail_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -856,7 +856,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["created_5"];
+        post: operations["created_8"];
         delete?: never;
         options?: never;
         head?: never;
@@ -887,7 +887,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["modify_5"];
+        put: operations["modify_7"];
         post?: never;
         delete?: never;
         options?: never;
@@ -921,93 +921,29 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete: operations["deleteById_5"];
+        delete: operations["deleteById_8"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/notification-center/preferences": {
+    "/notification/admin/email-configs": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["list"];
-        put: operations["save"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/channels/{channel}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["availability"];
+        get?: never;
         put?: never;
-        post?: never;
+        post: operations["created_7"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/deliveries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["pageDeliveries"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/deliveries/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getDelivery"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/overview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["overview"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/providers": {
+    "/notification/admin/email-configs/list": {
         parameters: {
             query?: never;
             header?: never;
@@ -1023,23 +959,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/providers/{channel}": {
+    "/notification/admin/email-configs/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["get_8"];
-        put: operations["modify_4"];
+        get: operations["detail_3"];
+        put: operations["modify_6"];
         post?: never;
-        delete?: never;
+        delete: operations["deleteById_4"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/providers/{channel}/health": {
+    "/notification/admin/email-configs/{id}/activate": {
         parameters: {
             query?: never;
             header?: never;
@@ -1048,37 +984,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["health"];
+        post: operations["activate_3"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/providers/{channel}/test": {
+    "/notification/admin/messages/page": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        post: operations["test"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["pageRequests"];
+        get: operations["page_16"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1087,14 +1007,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/requests/{id}": {
+    "/notification/admin/messages/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getRequest"];
+        get: operations["detail_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1103,7 +1023,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/send/apply": {
+    "/notification/admin/sms-configs": {
         parameters: {
             query?: never;
             header?: never;
@@ -1112,37 +1032,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["apply_2"];
+        post: operations["created_6"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/send/preview": {
+    "/notification/admin/sms-configs/list": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        post: operations["preview_4"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/tasks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["pageTasks"];
+        get: operations["list_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1151,23 +1055,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/tasks/{id}": {
+    "/notification/admin/sms-configs/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getTask"];
-        put?: never;
+        get: operations["detail_2"];
+        put: operations["modify_5"];
         post?: never;
-        delete: operations["cancel_5"];
+        delete: operations["deleteById_3"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/tasks/{id}/retry": {
+    "/notification/admin/sms-configs/{id}/activate": {
         parameters: {
             query?: never;
             header?: never;
@@ -1176,7 +1080,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["retry"];
+        post: operations["activate_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1190,41 +1094,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page"];
-        put?: never;
-        post: operations["create_8"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/templates/groups": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["groupPage"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/templates/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
         get?: never;
         put?: never;
-        post: operations["preview_3"];
+        post: operations["created_5"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notification/admin/templates/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["page_15"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1239,15 +1127,15 @@ export interface paths {
             cookie?: never;
         };
         get: operations["detail_1"];
-        put: operations["update_7"];
+        put: operations["modify_4"];
         post?: never;
-        delete?: never;
+        delete: operations["deleteById_2"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/notification/admin/templates/{id}/archive": {
+    "/notification/admin/templates/{id}/enabled": {
         parameters: {
             query?: never;
             header?: never;
@@ -1255,71 +1143,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
-        post: operations["archive_2"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/templates/{id}/disable": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["disable_3"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/templates/{id}/enable": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["enable_3"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/templates/{id}/publish": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["publish_3"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/admin/templates/{id}/versions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["versions_3"];
-        put?: never;
+        put: operations["changeEnabled"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1350,25 +1174,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_3"];
+        get: operations["list_2"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notification/provider/callback/{channel}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["callback"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1414,10 +1222,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["detail_6"];
+        get: operations["detail_8"];
         put?: never;
         post?: never;
-        delete: operations["deleteById_4"];
+        delete: operations["deleteById_7"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1446,7 +1254,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_15"];
+        get: operations["page_14"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1510,7 +1318,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_12"];
+        get: operations["get_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1622,7 +1430,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_14"];
+        get: operations["page_13"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1750,7 +1558,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_13"];
+        get: operations["page_12"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1782,7 +1590,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_12"];
+        get: operations["page_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1814,7 +1622,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_11"];
+        get: operations["page_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2006,7 +1814,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_10"];
+        get: operations["page_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2118,7 +1926,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_9"];
+        get: operations["page_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2214,7 +2022,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_8"];
+        get: operations["page_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2294,7 +2102,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_7"];
+        get: operations["page_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2310,7 +2118,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_11"];
+        get: operations["get_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2390,7 +2198,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_6"];
+        get: operations["page_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2518,7 +2326,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_5"];
+        get: operations["page_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2678,7 +2486,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_4"];
+        get: operations["page_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2838,7 +2646,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_3"];
+        get: operations["page_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2870,10 +2678,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["detail_5"];
+        get: operations["detail_7"];
         put?: never;
         post?: never;
-        delete: operations["deleteById_3"];
+        delete: operations["deleteById_6"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2902,7 +2710,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_2"];
+        get: operations["list_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2918,7 +2726,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_2"];
+        get: operations["page_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2934,10 +2742,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["detail_4"];
+        get: operations["detail_6"];
         put?: never;
         post?: never;
-        delete: operations["deleteById_2"];
+        delete: operations["deleteById_5"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3574,7 +3382,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_1"];
+        get: operations["list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4006,7 +3814,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_10"];
+        get: operations["get_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4214,7 +4022,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["detail_3"];
+        get: operations["detail_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4310,7 +4118,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["page_1"];
+        get: operations["page"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4406,7 +4214,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["detail_2"];
+        get: operations["detail_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5238,15 +5046,6 @@ export interface components {
             old_password: string;
             verify_password: string;
         };
-        ChannelSummary: {
-            availability?: components["schemas"]["NotificationChannelAvailability"];
-            /** Format: int64 */
-            failed_task_count?: number;
-            /** Format: int64 */
-            pending_task_count?: number;
-            /** Format: int64 */
-            unknown_task_count?: number;
-        };
         ConfiguredBatchFrom: {
             /** @enum {string} */
             category: "SYSTEM" | "SECURITY" | "NOTIFICATION" | "OTHER";
@@ -5774,14 +5573,6 @@ export interface components {
             /** Format: int32 */
             version?: number;
         };
-        ErrorSummary: {
-            channel?: string;
-            error_code?: string;
-            message?: string;
-            /** Format: date-time */
-            occurred_at?: string;
-            status?: string;
-        };
         FieldDefinition: {
             required?: boolean;
             sensitive?: boolean;
@@ -6237,20 +6028,6 @@ export interface components {
             /** Format: int64 */
             total?: number;
         };
-        IPageNotificationDeliveryAdminVO: {
-            /** Format: int64 */
-            current?: number;
-            /**
-             * Format: int64
-             * @deprecated
-             */
-            pages?: number;
-            records?: components["schemas"]["NotificationDeliveryAdminVO"][];
-            /** Format: int64 */
-            size?: number;
-            /** Format: int64 */
-            total?: number;
-        };
         IPageNotificationInboxVO: {
             /** Format: int64 */
             current?: number;
@@ -6265,7 +6042,7 @@ export interface components {
             /** Format: int64 */
             total?: number;
         };
-        IPageNotificationRequestAdminVO: {
+        IPageNotificationMessageVO: {
             /** Format: int64 */
             current?: number;
             /**
@@ -6273,35 +6050,7 @@ export interface components {
              * @deprecated
              */
             pages?: number;
-            records?: components["schemas"]["NotificationRequestAdminVO"][];
-            /** Format: int64 */
-            size?: number;
-            /** Format: int64 */
-            total?: number;
-        };
-        IPageNotificationTaskAdminVO: {
-            /** Format: int64 */
-            current?: number;
-            /**
-             * Format: int64
-             * @deprecated
-             */
-            pages?: number;
-            records?: components["schemas"]["NotificationTaskAdminVO"][];
-            /** Format: int64 */
-            size?: number;
-            /** Format: int64 */
-            total?: number;
-        };
-        IPageNotificationTemplateGroupVO: {
-            /** Format: int64 */
-            current?: number;
-            /**
-             * Format: int64
-             * @deprecated
-             */
-            pages?: number;
-            records?: components["schemas"]["NotificationTemplateGroupVO"][];
+            records?: components["schemas"]["NotificationMessageVO"][];
             /** Format: int64 */
             size?: number;
             /** Format: int64 */
@@ -6657,137 +6406,117 @@ export interface components {
             target_type?: string;
             title?: string;
         };
-        NotificationAdminQueryFrom: {
-            business_id?: string;
-            business_type?: string;
-            channel?: string;
-            end_time?: string;
-            purpose?: string;
-            /** Format: uuid */
-            recipient_user_id?: string;
-            /** Format: uuid */
-            request_id?: string;
-            source_module?: string;
-            start_time?: string;
-            status?: string;
-            /** Format: uuid */
-            task_id?: string;
-        };
-        NotificationAudienceFrom: {
-            department_ids?: string[];
-            role_ids?: string[];
-            user_ids?: string[];
-        };
         NotificationBatchDeleteFrom: {
             ids: string[];
         };
-        NotificationChannelAvailability: {
-            available?: boolean;
-            /** @enum {string} */
-            channel?: "IN_APP" | "SMS" | "EMAIL";
-            reason?: string;
-        };
-        NotificationControlledSendApplyFrom: {
-            /** Format: uuid */
-            preview_id: string;
-            preview_token: string;
-            request_hash: string;
-        };
-        NotificationControlledSendApplyVO: {
-            idempotent_replay?: boolean;
-            /** Format: uuid */
-            request_id?: string;
-            status?: string;
-            /** Format: int32 */
-            task_count?: number;
-        };
-        NotificationControlledSendFrom: {
-            audience: components["schemas"]["NotificationAudienceFrom"];
-            business_id?: string;
-            business_type?: string;
-            channels: ("IN_APP" | "SMS" | "EMAIL")[];
-            idempotency_key: string;
-            link?: string;
-            parameters: {
+        NotificationEmailConfigSaveFrom: {
+            extra?: {
                 [key: string]: unknown;
             };
+            from_address?: string;
+            from_name?: string;
+            host?: string;
+            name: string;
+            password?: string;
+            /** Format: int32 */
+            port?: number;
             /** @enum {string} */
-            purpose: "LOGIN_CODE" | "BIND_PHONE_CODE" | "BIND_EMAIL_CODE" | "RESET_PASSWORD_CODE" | "SECURITY_ALERT" | "SYSTEM_NOTICE" | "WORKFLOW_TODO" | "WORKFLOW_RESULT" | "OA_NOTICE" | "OA_REMINDER" | "INNER_MESSAGE";
-            template_version_ids: {
-                [key: string]: string;
-            };
+            provider: "SMTP" | "MOCK";
+            /** @enum {string} */
+            ssl_mode?: "NONE" | "SSL" | "STARTTLS";
+            username?: string;
         };
-        NotificationControlledSendPreviewVO: {
-            /** Format: int32 */
-            candidate_user_count?: number;
-            channel_availability?: {
-                [key: string]: components["schemas"]["NotificationChannelAvailability"];
-            };
-            /** Format: int32 */
-            eligible_task_count?: number;
+        NotificationEmailConfigVO: {
+            active?: boolean;
             /** Format: date-time */
-            expires_at?: string;
+            created_at?: string;
+            extra?: {
+                [key: string]: unknown;
+            };
+            from_address?: string;
+            from_name?: string;
+            host?: string;
             /** Format: uuid */
-            preview_id?: string;
-            preview_token?: string;
-            request_hash?: string;
-            samples?: components["schemas"]["NotificationControlledSendSampleVO"][];
-            skipped_counts?: {
-                [key: string]: number;
-            };
-            skipped_details?: components["schemas"]["NotificationControlledSendSkippedDetailVO"][];
+            id?: string;
+            name?: string;
+            password?: string;
             /** Format: int32 */
-            skipped_task_count?: number;
-            templates?: {
-                [key: string]: components["schemas"]["NotificationControlledSendTemplateVO"];
-            };
+            port?: number;
+            provider?: string;
+            ssl_mode?: string;
+            username?: string;
         };
-        NotificationControlledSendSampleVO: {
-            channel?: string;
-            recipient_masked?: string;
-        };
-        NotificationControlledSendSkippedDetailVO: {
+        NotificationHistoryQueryFrom: {
             /** @enum {string} */
             channel?: "IN_APP" | "SMS" | "EMAIL";
-            /** Format: int32 */
-            count?: number;
-            reason?: string;
+            end_time?: string;
+            keyword?: string;
+            start_time?: string;
+            /** @enum {string} */
+            status?: "SUCCESS" | "FAILED";
         };
-        NotificationControlledSendTemplateVO: {
+        NotificationInboxVO: {
+            content?: string;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: uuid */
+            id?: string;
+            is_read?: boolean;
+            link?: string;
+            /** Format: date-time */
+            read_at?: string;
+            /** Format: uuid */
+            receiver_user_id?: string;
+            template_code?: string;
+            title?: string;
+        };
+        NotificationMessageVO: {
+            business_id?: string;
+            business_type?: string;
             channel?: string;
             content?: string;
-            html?: string;
-            /** Format: uuid */
-            template_id?: string;
-            title?: string;
-            version_digest?: string;
-            /** Format: int32 */
-            version_no?: number;
-        };
-        NotificationDeliveryAdminVO: {
-            channel?: string;
             /** Format: date-time */
             created_at?: string;
             error_code?: string;
             error_message?: string;
+            html_content?: string;
             /** Format: uuid */
             id?: string;
-            provider_code?: string;
-            provider_message_id?: string;
-            response_summary?: string;
+            link?: string;
+            provider?: string;
             /** Format: date-time */
-            sent_at?: string;
+            read_at?: string;
+            recipient_address?: string;
+            /** Format: uuid */
+            recipient_user_id?: string;
+            source_module?: string;
             status?: string;
-            /** Format: uuid */
-            task_id?: string;
-            /** Format: uuid */
-            template_id?: string;
-            template_version_digest?: string;
-            /** Format: int32 */
-            template_version_no?: number;
+            template_code?: string;
+            title?: string;
         };
-        NotificationInboxVO: {
-            content?: string;
+        NotificationQueryFrom: {
+            end_time?: string;
+            is_read?: boolean;
+            keyword?: string;
+            start_time?: string;
+        };
+        NotificationSmsConfigSaveFrom: {
+            access_key_id?: string;
+            access_key_secret?: string;
+            extra?: {
+                [key: string]: unknown;
+            };
+            name: string;
+            /** @enum {string} */
+            provider: "ALIYUN" | "TENCENT" | "MOCK";
+            provider_template_code?: string;
+            region?: string;
+            sign_name?: string;
+        };
+        NotificationSmsConfigVO: {
+            access_key_id?: string;
+            access_key_secret?: string;
+            active?: boolean;
             /** Format: date-time */
             created_at?: string;
             extra?: {
@@ -6795,320 +6524,46 @@ export interface components {
             };
             /** Format: uuid */
             id?: string;
-            is_read?: boolean;
-            link?: string;
-            purpose?: string;
-            /** Format: date-time */
-            read_at?: string;
-            /** Format: uuid */
-            receiver_user_id?: string;
-            sender_name?: string;
-            /** Format: uuid */
-            sender_user_id?: string;
-            title?: string;
-        };
-        NotificationOverviewFrom: {
-            /** Format: int32 */
-            hours?: number;
-        };
-        NotificationOverviewVO: {
-            channels?: components["schemas"]["ChannelSummary"][];
-            /** Format: int64 */
-            delivery_count?: number;
-            /** Format: int64 */
-            failed_delivery_count?: number;
-            /** Format: int64 */
-            failed_task_count?: number;
-            /** Format: double */
-            failure_rate?: number;
-            /** Format: date-time */
-            generated_at?: string;
-            /** Format: date-time */
-            oldest_pending_task_at?: string;
-            /** Format: int64 */
-            pending_task_count?: number;
-            /** Format: int64 */
-            processing_task_count?: number;
-            /** Format: int32 */
-            range_hours?: number;
-            recent_errors?: components["schemas"]["ErrorSummary"][];
-            /** Format: int64 */
-            successful_delivery_count?: number;
-            trend?: components["schemas"]["TrendPoint"][];
-            /** Format: int64 */
-            unknown_delivery_count?: number;
-            /** Format: int64 */
-            unknown_task_count?: number;
-        };
-        NotificationProviderCallbackVO: {
-            result_status?: string;
-            status?: string;
-        };
-        NotificationProviderHealth: {
-            /** Format: date-time */
-            checked_at?: string;
-            reason?: string;
-            /** @enum {string} */
-            state?: "HEALTHY" | "UNHEALTHY" | "NOT_CONFIGURED" | "DISABLED" | "BLOCKED";
-        };
-        NotificationProviderSaveFrom: {
-            app_id?: string;
-            clear_secret?: boolean;
-            credential_id?: string;
-            enabled?: boolean;
-            endpoint?: string;
-            /** Format: int32 */
-            max_attempts?: number;
-            /** Format: int32 */
-            port?: number;
-            provider_type: string;
-            /** Format: int32 */
-            rate_limit_per_second?: number;
+            name?: string;
+            provider?: string;
+            provider_template_code?: string;
             region?: string;
-            secret?: string;
-            sender_address?: string;
-            sender_name?: string;
             sign_name?: string;
-            ssl_enabled?: boolean;
-            starttls_enabled?: boolean;
-            template_code?: string;
-            template_parameter_order?: string;
-            /** Format: int32 */
-            timeout_ms?: number;
         };
-        NotificationProviderTestFrom: {
-            confirmation: string;
-            content: string;
-            recipient_address: string;
-            title: string;
+        NotificationTemplateEnabledFrom: {
+            enabled: boolean;
         };
-        NotificationProviderTestVO: {
-            channel?: string;
-            provider_code?: string;
-            provider_message_id?: string;
-            status?: string;
-            summary?: string;
-            /** Format: date-time */
-            tested_at?: string;
-        };
-        NotificationProviderVO: {
-            app_id?: string;
-            channel?: string;
-            /** Format: date-time */
-            checked_at?: string;
-            credential_id?: string;
-            enabled?: boolean;
-            endpoint?: string;
-            /** Format: int32 */
-            max_attempts?: number;
-            /** Format: int32 */
-            port?: number;
-            provider_type?: string;
-            /** Format: int32 */
-            rate_limit_per_second?: number;
-            reason?: string;
-            region?: string;
-            secret_configured?: boolean;
-            secret_key_id?: string;
-            sender_address?: string;
-            sender_name?: string;
-            sign_name?: string;
-            ssl_enabled?: boolean;
-            starttls_enabled?: boolean;
-            state?: string;
-            template_code?: string;
-            template_parameter_order?: string;
-            /** Format: int32 */
-            timeout_ms?: number;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        NotificationQueryFrom: {
-            end_time?: string;
-            is_read?: boolean;
-            keyword?: string;
-            purpose?: string;
-            start_time?: string;
-        };
-        NotificationRequestAdminVO: {
-            business_id?: string;
-            business_type?: string;
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            expires_at?: string;
-            /** Format: uuid */
-            id?: string;
-            /** Format: int32 */
-            priority?: number;
-            purpose?: string;
-            /** Format: int32 */
-            recipient_count?: number;
-            /** Format: date-time */
-            scheduled_at?: string;
-            source_module?: string;
-            status?: string;
-            /** Format: int32 */
-            task_count?: number;
-            template_code?: string;
-            template_snapshot?: {
-                [key: string]: unknown;
-            };
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        NotificationTaskAdminVO: {
-            channel?: string;
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            expires_at?: string;
-            /** Format: uuid */
-            id?: string;
-            last_error?: string;
-            purpose?: string;
-            recipient_address?: string;
-            /** Format: uuid */
-            recipient_user_id?: string;
-            /** Format: uuid */
-            request_id?: string;
-            /** Format: int32 */
-            retry_count?: number;
-            /** Format: date-time */
-            scheduled_at?: string;
-            status?: string;
-            /** Format: uuid */
-            template_id?: string;
-            template_version_digest?: string;
-            /** Format: int32 */
-            template_version_no?: number;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        NotificationTemplateActionFrom: {
-            /** Format: int64 */
-            version: number;
-        };
-        NotificationTemplateChannelGroupVO: {
-            channel?: string;
-            current?: components["schemas"]["NotificationTemplateVO"];
-            draft?: components["schemas"]["NotificationTemplateVO"];
-        };
-        NotificationTemplateGroupVO: {
-            channels?: components["schemas"]["NotificationTemplateChannelGroupVO"][];
-            purpose?: string;
-            template_group_code?: string;
-            template_name?: string;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        NotificationTemplatePageFrom: {
-            channel?: string;
-            purpose?: string;
-            state?: string;
-            template_group_code?: string;
-        };
-        NotificationTemplatePreviewFrom: {
+        NotificationTemplateQueryFrom: {
             /** @enum {string} */
             channel?: "IN_APP" | "SMS" | "EMAIL";
-            content_template?: string;
-            html_template?: string;
-            parameter_schema?: {
-                [key: string]: unknown;
-            };
-            parameters: {
-                [key: string]: unknown;
-            };
-            purpose?: string;
-            sensitive_parameters?: {
-                [key: string]: unknown;
-            };
-            /** Format: uuid */
-            template_id?: string;
-            title_template?: string;
-        };
-        NotificationTemplatePreviewVO: {
-            channel?: string;
-            content?: string;
-            html?: string;
-            /** Format: date-time */
-            previewed_at?: string;
-            purpose?: string;
-            template_group_code?: string;
-            /** Format: uuid */
-            template_id?: string;
-            title?: string;
-            /** Format: int32 */
-            version_no?: number;
+            enabled?: boolean;
+            keyword?: string;
         };
         NotificationTemplateSaveFrom: {
             /** @enum {string} */
             channel: "IN_APP" | "SMS" | "EMAIL";
+            code: string;
             content_template: string;
+            enabled?: boolean;
             html_template?: string;
-            /** Format: uuid */
-            id: string;
-            parameter_schema: {
-                [key: string]: unknown;
-            };
+            name: string;
             provider_template_code?: string;
-            purpose: string;
-            template_group_code: string;
-            template_name: string;
             title_template?: string;
-            /** Format: int64 */
-            version: number;
         };
         NotificationTemplateVO: {
+            builtin?: boolean;
             channel?: string;
+            code?: string;
             content_template?: string;
             /** Format: date-time */
             created_at?: string;
+            enabled?: boolean;
             html_template?: string;
             /** Format: uuid */
             id?: string;
-            parameter_schema?: {
-                [key: string]: unknown;
-            };
+            name?: string;
             provider_template_code?: string;
-            purpose?: string;
-            state?: string;
-            template_group_code?: string;
-            template_name?: string;
             title_template?: string;
-            /** Format: date-time */
-            updated_at?: string;
-            /** Format: int64 */
-            version?: number;
-            version_digest?: string;
-            /** Format: int32 */
-            version_no?: number;
-        };
-        NotificationUserPreferenceEntity: {
-            channel?: string;
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: uuid */
-            created_by?: string;
-            /** Format: date-time */
-            deleted?: string;
-            do_not_disturb?: boolean;
-            /** Format: date-time */
-            do_not_disturb_end?: string;
-            /** Format: date-time */
-            do_not_disturb_start?: string;
-            enabled?: boolean;
-            /** Format: uuid */
-            id?: string;
-            purpose?: string;
-            /** Format: date-time */
-            updated_at?: string;
-            /** Format: uuid */
-            updated_by?: string;
-            /** Format: uuid */
-            user_id?: string;
-            /** Format: int64 */
-            version?: number;
         };
         OnlineSessionVO: {
             client_type?: string;
@@ -8286,18 +7741,6 @@ export interface components {
             count?: number;
             state?: string;
         };
-        TrendPoint: {
-            /** Format: date-time */
-            bucket_at?: string;
-            /** Format: int64 */
-            failed_count?: number;
-            /** Format: int64 */
-            success_count?: number;
-            /** Format: int64 */
-            total_count?: number;
-            /** Format: int64 */
-            unknown_count?: number;
-        };
         UploadSessionVO: {
             /** Format: int64 */
             chunk_size?: number;
@@ -8593,7 +8036,7 @@ export interface operations {
             };
         };
     };
-    page_20: {
+    page_21: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -8677,7 +8120,7 @@ export interface operations {
             };
         };
     };
-    detail_8: {
+    detail_11: {
         parameters: {
             query: {
                 occurredAt: string;
@@ -11342,7 +10785,7 @@ export interface operations {
             };
         };
     };
-    page_19: {
+    page_20: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -11598,7 +11041,7 @@ export interface operations {
             };
         };
     };
-    preview_5: {
+    preview_3: {
         parameters: {
             query?: {
                 referenceType?: string;
@@ -11773,7 +11216,7 @@ export interface operations {
             };
         };
     };
-    page_18: {
+    page_19: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -11939,7 +11382,7 @@ export interface operations {
             };
         };
     };
-    create_10: {
+    create_9: {
         parameters: {
             query?: never;
             header?: {
@@ -12024,7 +11467,7 @@ export interface operations {
             };
         };
     };
-    page_17: {
+    page_18: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -12107,7 +11550,7 @@ export interface operations {
             };
         };
     };
-    get_9: {
+    get_8: {
         parameters: {
             query?: never;
             header?: {
@@ -12190,7 +11633,7 @@ export interface operations {
             };
         };
     };
-    modify_6: {
+    modify_8: {
         parameters: {
             query?: never;
             header?: {
@@ -12277,7 +11720,7 @@ export interface operations {
             };
         };
     };
-    disable_4: {
+    disable_3: {
         parameters: {
             query?: never;
             header?: {
@@ -12360,7 +11803,7 @@ export interface operations {
             };
         };
     };
-    enable_4: {
+    enable_3: {
         parameters: {
             query?: never;
             header?: {
@@ -12443,7 +11886,7 @@ export interface operations {
             };
         };
     };
-    create_9: {
+    create_8: {
         parameters: {
             query?: never;
             header?: {
@@ -12528,7 +11971,7 @@ export interface operations {
             };
         };
     };
-    page_16: {
+    page_17: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -12695,7 +12138,7 @@ export interface operations {
             };
         };
     };
-    cancel_6: {
+    cancel_5: {
         parameters: {
             query?: never;
             header?: {
@@ -12857,7 +12300,7 @@ export interface operations {
             };
         };
     };
-    detail_7: {
+    detail_10: {
         parameters: {
             query?: never;
             header?: {
@@ -13269,7 +12712,7 @@ export interface operations {
             };
         };
     };
-    created_5: {
+    created_8: {
         parameters: {
             query?: never;
             header?: {
@@ -13434,7 +12877,7 @@ export interface operations {
             };
         };
     };
-    modify_5: {
+    modify_7: {
         parameters: {
             query?: never;
             header?: {
@@ -13599,7 +13042,7 @@ export interface operations {
             };
         };
     };
-    deleteById_5: {
+    deleteById_8: {
         parameters: {
             query?: never;
             header?: {
@@ -13681,7 +13124,7 @@ export interface operations {
             };
         };
     };
-    list: {
+    created_7: {
         parameters: {
             query?: never;
             header?: {
@@ -13690,7 +13133,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationEmailConfigSaveFrom"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -13701,425 +13148,8 @@ export interface operations {
                     "*/*": {
                         /** Format: int32 */
                         code: number;
-                        data?: components["schemas"]["NotificationUserPreferenceEntity"][];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    save: {
-        parameters: {
-            query: {
-                purpose: string;
-                channel: string;
-                enabled: boolean;
-                doNotDisturb?: boolean;
-            };
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: int32 */
-                        code: number;
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    availability: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                channel: "IN_APP" | "SMS" | "EMAIL";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationChannelAvailability"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    pageDeliveries: {
-        parameters: {
-            query: {
-                page: components["schemas"]["PageFrom"];
-                params: components["schemas"]["NotificationAdminQueryFrom"];
-            };
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["IPageNotificationDeliveryAdminVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    getDelivery: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationDeliveryAdminVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    overview: {
-        parameters: {
-            query: {
-                from: components["schemas"]["NotificationOverviewFrom"];
-            };
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationOverviewVO"];
+                        /** Format: uuid */
+                        data?: string;
                         msg: string;
                     };
                 };
@@ -14200,7 +13230,7 @@ export interface operations {
                     "*/*": {
                         /** Format: int32 */
                         code: number;
-                        data?: components["schemas"]["NotificationProviderVO"][];
+                        data?: components["schemas"]["NotificationEmailConfigVO"][];
                         msg: string;
                     };
                 };
@@ -14261,431 +13291,7 @@ export interface operations {
             };
         };
     };
-    get_8: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                channel: "IN_APP" | "SMS" | "EMAIL";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationProviderVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    modify_4: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                channel: "IN_APP" | "SMS" | "EMAIL";
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationProviderSaveFrom"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationProviderVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    health: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                channel: "IN_APP" | "SMS" | "EMAIL";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationProviderHealth"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    test: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                channel: "IN_APP" | "SMS" | "EMAIL";
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationProviderTestFrom"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationProviderTestVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    pageRequests: {
-        parameters: {
-            query: {
-                page: components["schemas"]["PageFrom"];
-                params: components["schemas"]["NotificationAdminQueryFrom"];
-            };
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["IPageNotificationRequestAdminVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    getRequest: {
+    detail_3: {
         parameters: {
             query?: never;
             header?: {
@@ -14707,7 +13313,7 @@ export interface operations {
                     "*/*": {
                         /** Format: int32 */
                         code: number;
-                        data?: components["schemas"]["NotificationRequestAdminVO"];
+                        data?: components["schemas"]["NotificationEmailConfigVO"];
                         msg: string;
                     };
                 };
@@ -14768,261 +13374,7 @@ export interface operations {
             };
         };
     };
-    apply_2: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationControlledSendApplyFrom"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationControlledSendApplyVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    preview_4: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationControlledSendFrom"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationControlledSendPreviewVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    pageTasks: {
-        parameters: {
-            query: {
-                page: components["schemas"]["PageFrom"];
-                params: components["schemas"]["NotificationAdminQueryFrom"];
-            };
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["IPageNotificationTaskAdminVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    getTask: {
+    modify_6: {
         parameters: {
             query?: never;
             header?: {
@@ -15033,7 +13385,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationEmailConfigSaveFrom"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -15041,10 +13397,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": {
+                    "application/json": {
                         /** Format: int32 */
                         code: number;
-                        data?: components["schemas"]["NotificationTaskAdminVO"];
                         msg: string;
                     };
                 };
@@ -15105,7 +13460,7 @@ export interface operations {
             };
         };
     };
-    cancel_5: {
+    deleteById_4: {
         parameters: {
             query?: never;
             header?: {
@@ -15187,7 +13542,7 @@ export interface operations {
             };
         };
     };
-    retry: {
+    activate_3: {
         parameters: {
             query?: never;
             header?: {
@@ -15269,11 +13624,11 @@ export interface operations {
             };
         };
     };
-    page: {
+    page_16: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
-                params: components["schemas"]["NotificationTemplatePageFrom"];
+                params: components["schemas"]["NotificationHistoryQueryFrom"];
             };
             header?: {
                 "Api-Version"?: "1.0.0";
@@ -15292,7 +13647,7 @@ export interface operations {
                     "*/*": {
                         /** Format: int32 */
                         code: number;
-                        data?: components["schemas"]["IPageNotificationTemplateVO"];
+                        data?: components["schemas"]["IPageNotificationMessageVO"];
                         msg: string;
                     };
                 };
@@ -15353,7 +13708,590 @@ export interface operations {
             };
         };
     };
-    create_8: {
+    detail_9: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Api-Version"?: "1.0.0";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": {
+                        /** Format: int32 */
+                        code: number;
+                        data?: components["schemas"]["NotificationMessageVO"];
+                        msg: string;
+                    };
+                };
+            };
+            /** @description 统一错误响应 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    created_6: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Api-Version"?: "1.0.0";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationSmsConfigSaveFrom"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": {
+                        /** Format: int32 */
+                        code: number;
+                        /** Format: uuid */
+                        data?: string;
+                        msg: string;
+                    };
+                };
+            };
+            /** @description 统一错误响应 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_3: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Api-Version"?: "1.0.0";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": {
+                        /** Format: int32 */
+                        code: number;
+                        data?: components["schemas"]["NotificationSmsConfigVO"][];
+                        msg: string;
+                    };
+                };
+            };
+            /** @description 统一错误响应 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    detail_2: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Api-Version"?: "1.0.0";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": {
+                        /** Format: int32 */
+                        code: number;
+                        data?: components["schemas"]["NotificationSmsConfigVO"];
+                        msg: string;
+                    };
+                };
+            };
+            /** @description 统一错误响应 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    modify_5: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Api-Version"?: "1.0.0";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationSmsConfigSaveFrom"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int32 */
+                        code: number;
+                        msg: string;
+                    };
+                };
+            };
+            /** @description 统一错误响应 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    deleteById_3: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Api-Version"?: "1.0.0";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int32 */
+                        code: number;
+                        msg: string;
+                    };
+                };
+            };
+            /** @description 统一错误响应 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    activate_2: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Api-Version"?: "1.0.0";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int32 */
+                        code: number;
+                        msg: string;
+                    };
+                };
+            };
+            /** @description 统一错误响应 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    created_5: {
         parameters: {
             query?: never;
             header?: {
@@ -15377,7 +14315,8 @@ export interface operations {
                     "*/*": {
                         /** Format: int32 */
                         code: number;
-                        data?: components["schemas"]["NotificationTemplateVO"];
+                        /** Format: uuid */
+                        data?: string;
                         msg: string;
                     };
                 };
@@ -15438,11 +14377,11 @@ export interface operations {
             };
         };
     };
-    groupPage: {
+    page_15: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
-                params: components["schemas"]["NotificationTemplatePageFrom"];
+                params: components["schemas"]["NotificationTemplateQueryFrom"];
             };
             header?: {
                 "Api-Version"?: "1.0.0";
@@ -15461,92 +14400,7 @@ export interface operations {
                     "*/*": {
                         /** Format: int32 */
                         code: number;
-                        data?: components["schemas"]["IPageNotificationTemplateGroupVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    preview_3: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationTemplatePreviewFrom"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationTemplatePreviewVO"];
+                        data?: components["schemas"]["IPageNotificationTemplateVO"];
                         msg: string;
                     };
                 };
@@ -15690,7 +14544,7 @@ export interface operations {
             };
         };
     };
-    update_7: {
+    modify_4: {
         parameters: {
             query?: never;
             header?: {
@@ -15713,93 +14567,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationTemplateVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    archive_2: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationTemplateActionFrom"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
                     "application/json": {
                         /** Format: int32 */
                         code: number;
@@ -15863,269 +14630,9 @@ export interface operations {
             };
         };
     };
-    disable_3: {
+    deleteById_2: {
         parameters: {
             query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationTemplateActionFrom"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: int32 */
-                        code: number;
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    enable_3: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationTemplateActionFrom"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: int32 */
-                        code: number;
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    publish_3: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationTemplateActionFrom"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: int32 */
-                        code: number;
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    versions_3: {
-        parameters: {
-            query: {
-                page: components["schemas"]["PageFrom"];
-            };
             header?: {
                 "Api-Version"?: "1.0.0";
             };
@@ -16142,10 +14649,95 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": {
+                    "application/json": {
                         /** Format: int32 */
                         code: number;
-                        data?: components["schemas"]["IPageNotificationTemplateVO"];
+                        msg: string;
+                    };
+                };
+            };
+            /** @description 统一错误响应 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description 统一错误响应 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changeEnabled: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Api-Version"?: "1.0.0";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationTemplateEnabledFrom"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int32 */
+                        code: number;
                         msg: string;
                     };
                 };
@@ -16290,7 +14882,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_2: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -16314,94 +14906,6 @@ export interface operations {
                         /** Format: int32 */
                         code: number;
                         data?: components["schemas"]["IPageNotificationInboxVO"];
-                        msg: string;
-                    };
-                };
-            };
-            /** @description 统一错误响应 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description 统一错误响应 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    callback: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Notification-Signature"?: string;
-                "Api-Version"?: "1.0.0";
-            };
-            path: {
-                channel: "IN_APP" | "SMS" | "EMAIL";
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": string;
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": {
-                        /** Format: int32 */
-                        code: number;
-                        data?: components["schemas"]["NotificationProviderCallbackVO"];
                         msg: string;
                     };
                 };
@@ -16624,7 +15128,7 @@ export interface operations {
             };
         };
     };
-    detail_6: {
+    detail_8: {
         parameters: {
             query?: never;
             header?: {
@@ -16707,7 +15211,7 @@ export interface operations {
             };
         };
     };
-    deleteById_4: {
+    deleteById_7: {
         parameters: {
             query?: never;
             header?: {
@@ -16871,7 +15375,7 @@ export interface operations {
             };
         };
     };
-    page_15: {
+    page_14: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -17371,7 +15875,7 @@ export interface operations {
             };
         };
     };
-    get_12: {
+    get_11: {
         parameters: {
             query?: never;
             header?: {
@@ -18042,7 +16546,7 @@ export interface operations {
             };
         };
     };
-    page_14: {
+    page_13: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -18810,7 +17314,7 @@ export interface operations {
             };
         };
     };
-    page_13: {
+    page_12: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -19146,7 +17650,7 @@ export interface operations {
             };
         };
     };
-    page_12: {
+    page_11: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -19316,7 +17820,7 @@ export interface operations {
             };
         };
     };
-    page_11: {
+    page_10: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -20743,7 +19247,7 @@ export interface operations {
             };
         };
     };
-    page_10: {
+    page_9: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -21500,7 +20004,7 @@ export interface operations {
             };
         };
     };
-    page_9: {
+    page_8: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -22087,7 +20591,7 @@ export interface operations {
             };
         };
     };
-    page_8: {
+    page_7: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -22510,7 +21014,7 @@ export interface operations {
             };
         };
     };
-    page_7: {
+    page_6: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -22594,7 +21098,7 @@ export interface operations {
             };
         };
     };
-    get_11: {
+    get_10: {
         parameters: {
             query?: never;
             header?: {
@@ -23009,7 +21513,7 @@ export interface operations {
             };
         };
     };
-    page_6: {
+    page_5: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -23770,7 +22274,7 @@ export interface operations {
             };
         };
     };
-    page_5: {
+    page_4: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -24687,7 +23191,7 @@ export interface operations {
             };
         };
     };
-    page_4: {
+    page_3: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -25618,7 +24122,7 @@ export interface operations {
             };
         };
     };
-    page_3: {
+    page_2: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -25785,7 +24289,7 @@ export interface operations {
             };
         };
     };
-    detail_5: {
+    detail_7: {
         parameters: {
             query?: never;
             header?: {
@@ -25868,7 +24372,7 @@ export interface operations {
             };
         };
     };
-    deleteById_3: {
+    deleteById_6: {
         parameters: {
             query?: never;
             header?: {
@@ -26035,7 +24539,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_1: {
         parameters: {
             query?: never;
             header?: {
@@ -26116,7 +24620,7 @@ export interface operations {
             };
         };
     };
-    page_2: {
+    page_1: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -26200,7 +24704,7 @@ export interface operations {
             };
         };
     };
-    detail_4: {
+    detail_6: {
         parameters: {
             query?: never;
             header?: {
@@ -26283,7 +24787,7 @@ export interface operations {
             };
         };
     };
-    deleteById_2: {
+    deleteById_5: {
         parameters: {
             query?: never;
             header?: {
@@ -30136,7 +28640,7 @@ export interface operations {
             };
         };
     };
-    list_1: {
+    list: {
         parameters: {
             query?: never;
             header?: {
@@ -32635,7 +31139,7 @@ export interface operations {
             };
         };
     };
-    get_10: {
+    get_9: {
         parameters: {
             query?: never;
             header?: {
@@ -33714,7 +32218,7 @@ export interface operations {
             };
         };
     };
-    detail_3: {
+    detail_5: {
         parameters: {
             query?: never;
             header?: {
@@ -34305,7 +32809,7 @@ export interface operations {
             };
         };
     };
-    page_1: {
+    page: {
         parameters: {
             query: {
                 page: components["schemas"]["PageFrom"];
@@ -34888,7 +33392,7 @@ export interface operations {
             };
         };
     };
-    detail_2: {
+    detail_4: {
         parameters: {
             query?: never;
             header?: {

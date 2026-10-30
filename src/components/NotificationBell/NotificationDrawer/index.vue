@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { User } from "@element-plus/icons-vue";
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 
-import ComponentsIcons from "@/components/ComponentsIcons/index.vue";
 import { useNotificationStore } from "@/plugin/store/modules/use-notification-store.ts";
 import NotificationDetail from "@/views/Notification/components/NotificationDetail/index.vue";
 
@@ -24,16 +22,9 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
-const activeTab = ref<string>("all");
 const detailVisible = ref(false);
 const currentNotification = ref<Notification | null>(null);
 const deleteLoading = ref(false);
-
-/** 按通知用途生成筛选 Tab */
-const tabs = computed(() => [
-    { label: "全部", value: "all" },
-    ...notificationStore.purposeConfigs.map(({ purpose, label }) => ({ label, value: purpose }))
-]);
 
 /** 当前详情消息在筛选列表中的位置 */
 const currentDetailIndex = computed(() => {
@@ -68,12 +59,6 @@ watch(
 /** 加载消息列表 */
 async function loadNotifications(): Promise<void> {
     await notificationStore.fetchNotifications({ page_num: 1, page_size: 20 });
-}
-
-/** 切换Tab */
-function handleTabChange(tab: string): void {
-    activeTab.value = tab;
-    notificationStore.setCurrentPurpose(tab as NotificationPurpose | "all");
 }
 
 /** 点击消息项 */
@@ -178,21 +163,6 @@ function formatTime(time: string): string {
     return date.toLocaleDateString("zh-CN");
 }
 
-/** 获取用途图标 */
-function getPurposeIcon(purpose: NotificationPurpose): string {
-    return notificationStore.getPurposeIcon(purpose);
-}
-
-/** 获取用途颜色 */
-function getPurposeColor(purpose: NotificationPurpose): string {
-    return notificationStore.getPurposeColor(purpose);
-}
-
-/** 获取用途名称 */
-function getPurposeName(purpose: NotificationPurpose): string {
-    return notificationStore.getPurposeLabel(purpose);
-}
-
 onMounted(() => {
     if (props.modelValue) {
         loadNotifications();
@@ -215,18 +185,6 @@ onMounted(() => {
         </template>
 
         <div class="drawer-content">
-            <div class="filter-bar">
-                <span class="filter-label">通知类型</span>
-                <el-select
-                    v-model="activeTab"
-                    class="type-select"
-                    size="small"
-                    aria-label="通知类型"
-                    @change="handleTabChange">
-                    <el-option v-for="tab in tabs" :key="tab.value" :label="tab.label" :value="tab.value" />
-                </el-select>
-            </div>
-
             <div class="notification-list" v-loading="notificationStore.loading">
                 <el-empty v-if="notificationStore.filteredNotifications.length === 0" description="暂无消息" />
 
@@ -236,28 +194,14 @@ onMounted(() => {
                     class="notification-item"
                     :class="{ unread: !item.is_read }"
                     @click="handleNotificationClick(item)">
-                    <div class="item-icon" :style="{ backgroundColor: getPurposeColor(item.purpose) + '15' }">
-                        <ComponentsIcons :name="getPurposeIcon(item.purpose)" class-name="icon-sidebar" />
-                    </div>
                     <div class="item-content">
                         <div class="item-header">
                             <div class="item-title-row">
-                                <el-tag
-                                    :color="getPurposeColor(item.purpose)"
-                                    effect="dark"
-                                    size="small"
-                                    class="type-tag">
-                                    {{ getPurposeName(item.purpose) }}
-                                </el-tag>
                                 <span class="item-title">{{ item.title }}</span>
                             </div>
                             <span class="item-time">{{ formatTime(item.created_at) }}</span>
                         </div>
                         <div class="item-desc">{{ item.content }}</div>
-                        <div v-if="item.sender_name" class="item-sender">
-                            <el-icon :size="12"><User /></el-icon>
-                            {{ item.sender_name }}
-                        </div>
                     </div>
                     <div v-if="!item.is_read" class="item-dot" />
                 </div>

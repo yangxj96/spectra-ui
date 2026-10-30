@@ -5,30 +5,12 @@ import { NotificationApi } from "@/api/notification/notification-api.ts";
 /** 通知查询的会话代数；身份切换后旧响应不能写回新会话。 */
 let notificationScopeGeneration = 0;
 
-/** 消息类型配置 */
-const notificationPurposeConfigs: NotificationPurposeConfig[] = [
-    { purpose: "SYSTEM_NOTICE", label: "系统通知", color: "#409eff", icon: "icon-notification" },
-    { purpose: "WORKFLOW_TODO", label: "工作流待办", color: "#e6a23c", icon: "icon-workflow" },
-    { purpose: "WORKFLOW_RESULT", label: "工作流结果", color: "#f56c6c", icon: "icon-workflow" },
-    { purpose: "OA_NOTICE", label: "OA 通知", color: "#67c23a", icon: "icon-office" },
-    { purpose: "OA_REMINDER", label: "OA 提醒", color: "#67c23a", icon: "icon-office" },
-    { purpose: "INNER_MESSAGE", label: "站内信", color: "#909399", icon: "icon-mail" },
-    { purpose: "SECURITY_ALERT", label: "安全告警", color: "#f56c6c", icon: "icon-warning" },
-    { purpose: "LOGIN_CODE", label: "登录验证", color: "#909399", icon: "icon-lock" },
-    { purpose: "BIND_PHONE_CODE", label: "手机验证", color: "#909399", icon: "icon-lock" },
-    { purpose: "BIND_EMAIL_CODE", label: "邮箱验证", color: "#909399", icon: "icon-lock" },
-    { purpose: "RESET_PASSWORD_CODE", label: "密码重置验证", color: "#909399", icon: "icon-lock" }
-];
-
 function buildNotificationQuery(params?: NotificationQueryParams): NotificationQueryParams {
     const queryParams: NotificationQueryParams = {
         page_num: params?.page_num ?? 1,
         page_size: params?.page_size ?? 20
     };
     const optionalKeys: Array<keyof NotificationQueryParams> = ["is_read", "keyword", "start_time", "end_time"];
-    if (params?.purpose && params.purpose !== "all") {
-        queryParams.purpose = params.purpose;
-    }
     optionalKeys.forEach(key => {
         const value = params?.[key];
         if (value !== undefined && value !== "") {
@@ -46,54 +28,25 @@ interface NotificationState {
     unreadCount: number;
     /** 是否正在加载 */
     loading: boolean;
-    /** 当前筛选的通知用途 */
-    currentPurpose: NotificationPurpose | "all";
-    /** 通知用途配置列表 */
-    purposeConfigs: NotificationPurposeConfig[];
     /** 消息总数 */
     total: number;
 }
 
 /**
  * 消息通知状态管理
- * 管理消息列表、未读数、类型筛选、已读/删除操作
+ * 管理消息列表、未读数和已读/删除操作
  */
 export const useNotificationStore = defineStore("notification", {
     state: (): NotificationState => ({
         notifications: [],
         unreadCount: 0,
         loading: false,
-        currentPurpose: "all",
-        purposeConfigs: notificationPurposeConfigs,
         total: 0
     }),
 
     getters: {
-        /** 根据用途获取标签 */
-        getPurposeLabel:
-            state =>
-            (purpose: NotificationPurpose): string => {
-                return state.purposeConfigs.find(c => c.purpose === purpose)?.label ?? purpose;
-            },
-        /** 根据用途获取颜色 */
-        getPurposeColor:
-            state =>
-            (purpose: NotificationPurpose): string => {
-                return state.purposeConfigs.find(c => c.purpose === purpose)?.color ?? "#909399";
-            },
-        /** 根据用途获取图标 */
-        getPurposeIcon:
-            state =>
-            (purpose: NotificationPurpose): string => {
-                return state.purposeConfigs.find(c => c.purpose === purpose)?.icon ?? "icon-notification";
-            },
-        /** 筛选后的消息列表 */
-        filteredNotifications: (state): Notification[] => {
-            if (state.currentPurpose === "all") {
-                return state.notifications;
-            }
-            return state.notifications.filter(n => n.purpose === state.currentPurpose);
-        }
+        /** 当前消息列表 */
+        filteredNotifications: (state): Notification[] => state.notifications
     },
 
     actions: {
@@ -188,18 +141,12 @@ export const useNotificationStore = defineStore("notification", {
             }
         },
 
-        /** 设置当前筛选用途 */
-        setCurrentPurpose(purpose: NotificationPurpose | "all"): void {
-            this.currentPurpose = purpose;
-        },
-
         /** 会话切换或退出时清空身份范围数据，并使在途查询失效。 */
         resetSessionScope(): void {
             notificationScopeGeneration++;
             this.notifications = [];
             this.unreadCount = 0;
             this.loading = false;
-            this.currentPurpose = "all";
             this.total = 0;
         }
     }

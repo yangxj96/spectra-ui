@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { reactive } from "vue";
 
-import { useNotificationStore } from "@/plugin/store/modules/use-notification-store.ts";
 import { toIsoDateRange } from "@/utils/date-utils";
 
 defineOptions({
@@ -13,11 +12,8 @@ const emit = defineEmits<{
     reset: [];
 }>();
 
-const notificationStore = useNotificationStore();
-
 const searchForm = reactive({
     keyword: "",
-    purpose: "all" as NotificationPurpose | "all",
     is_read: "" as boolean | "",
     dateRange: [] as string[]
 });
@@ -31,9 +27,6 @@ function handleSearch(): void {
 
     if (searchForm.keyword) {
         params.keyword = searchForm.keyword;
-    }
-    if (searchForm.purpose !== "all") {
-        params.purpose = searchForm.purpose;
     }
     if (searchForm.is_read !== "") {
         params.is_read = searchForm.is_read;
@@ -50,7 +43,6 @@ function handleSearch(): void {
 /** 重置 */
 function handleReset(): void {
     searchForm.keyword = "";
-    searchForm.purpose = "all";
     searchForm.is_read = "";
     searchForm.dateRange = [];
     emit("reset");
@@ -61,16 +53,6 @@ function handleReset(): void {
     <el-form :model="searchForm" inline label-width="80px">
         <el-form-item label="关键词">
             <el-input v-model="searchForm.keyword" placeholder="搜索标题或内容" clearable style="width: 200px" />
-        </el-form-item>
-        <el-form-item label="消息类型">
-            <el-select v-model="searchForm.purpose" placeholder="全部" style="width: 140px">
-                <el-option label="全部" value="all" />
-                <el-option
-                    v-for="item in notificationStore.purposeConfigs"
-                    :key="item.purpose"
-                    :label="item.label"
-                    :value="item.purpose" />
-            </el-select>
         </el-form-item>
         <el-form-item label="状态">
             <el-select v-model="searchForm.is_read" placeholder="全部" clearable style="width: 120px">

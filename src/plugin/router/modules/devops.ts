@@ -24,27 +24,10 @@ export default [
                 meta: { title: "应用健康检查", requiresAuth: true, requiredMenu: "DevopsApplicationHealth" }
             },
             {
-                path: "notification/overview",
-                name: "DevopsNotificationOverview",
-                component: () => import("@/views/Devops/Notification/Overview/index.vue"),
-                meta: { title: "通知运行概览", requiresAuth: true, requiredMenu: "DevopsNotificationOverview" }
-            },
-            {
-                path: "notification/request",
-                name: "DevopsNotificationRequest",
-                component: () => import("@/views/Devops/Notification/Request/index.vue"),
-                meta: { title: "通知请求", requiresAuth: true, requiredMenu: "DevopsNotificationRequest" }
-            },
-            {
-                path: "notification/request/detail",
-                name: "DevopsNotificationRequestDetail",
-                component: () => import("@/views/Devops/Notification/Request/Detail/index.vue"),
-                meta: {
-                    title: "通知请求详情",
-                    requiresAuth: true,
-                    requiredMenu: "DevopsNotificationRequest",
-                    activeMenu: "DevopsNotificationRequest"
-                }
+                path: "notification/history",
+                name: "DevopsNotificationHistory",
+                component: () => import("@/views/Devops/Notification/History/index.vue"),
+                meta: { title: "通知历史", requiresAuth: true, requiredMenu: "DevopsNotificationHistory" }
             },
             {
                 path: "notification/template",
@@ -53,28 +36,16 @@ export default [
                 meta: { title: "模板管理", requiresAuth: true, requiredMenu: "DevopsNotificationTemplate" }
             },
             {
-                path: "notification/template/edit",
-                name: "DevopsNotificationTemplateEdit",
-                component: () => import("@/views/Devops/Notification/Template/Edit/index.vue"),
-                meta: {
-                    title: "编辑通知模板",
-                    requiresAuth: true,
-                    requiredMenu: "DevopsNotificationTemplate",
-                    requiredPermissions: ["notification:template:write"],
-                    activeMenu: "DevopsNotificationTemplate"
-                }
+                path: "notification/sms-config",
+                name: "DevopsNotificationSmsConfig",
+                component: () => import("@/views/Devops/Notification/SmsConfig/index.vue"),
+                meta: { title: "短信配置", requiresAuth: true, requiredMenu: "DevopsNotificationSmsConfig" }
             },
             {
-                path: "notification/provider",
-                name: "DevopsNotificationProvider",
-                component: () => import("@/views/Devops/Notification/Provider/index.vue"),
-                meta: { title: "渠道配置", requiresAuth: true, requiredMenu: "DevopsNotificationProvider" }
-            },
-            {
-                path: "notification/send",
-                name: "DevopsNotificationSend",
-                component: () => import("@/views/Devops/Notification/Send/index.vue"),
-                meta: { title: "受控发送", requiresAuth: true, requiredMenu: "DevopsNotificationSend" }
+                path: "notification/email-config",
+                name: "DevopsNotificationEmailConfig",
+                component: () => import("@/views/Devops/Notification/EmailConfig/index.vue"),
+                meta: { title: "邮件配置", requiresAuth: true, requiredMenu: "DevopsNotificationEmailConfig" }
             },
             {
                 path: "scheduler/task",

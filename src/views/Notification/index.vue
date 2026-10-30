@@ -22,7 +22,6 @@ const queryParams = ref<NotificationQueryParams>({
 /** 搜索表单 */
 const searchForm = ref({
     keyword: "",
-    purpose: "all" as NotificationPurpose | "all",
     is_read: "" as boolean | "",
     dateRange: [] as string[]
 });
@@ -56,9 +55,6 @@ function handleSearch(): void {
     if (searchForm.value.keyword) {
         queryParams.value.keyword = searchForm.value.keyword;
     }
-    if (searchForm.value.purpose !== "all") {
-        queryParams.value.purpose = searchForm.value.purpose;
-    }
     if (searchForm.value.is_read !== "") {
         queryParams.value.is_read = searchForm.value.is_read;
     }
@@ -75,7 +71,6 @@ function handleSearch(): void {
 function handleReset(): void {
     searchForm.value = {
         keyword: "",
-        purpose: "all",
         is_read: "",
         dateRange: []
     };
@@ -175,16 +170,6 @@ function formatTime(time: string): string {
     return date.toLocaleDateString("zh-CN");
 }
 
-/** 获取用途标签 */
-function getPurposeLabel(purpose: NotificationPurpose): string {
-    return notificationStore.getPurposeLabel(purpose);
-}
-
-/** 获取用途颜色 */
-function getPurposeColor(purpose: NotificationPurpose): string {
-    return notificationStore.getPurposeColor(purpose);
-}
-
 onMounted(() => {
     loadData();
 });
@@ -207,16 +192,6 @@ onMounted(() => {
                         placeholder="搜索标题或内容"
                         clearable
                         style="width: 200px" />
-                </el-form-item>
-                <el-form-item label="消息类型">
-                    <el-select v-model="searchForm.purpose" placeholder="全部" style="width: 140px">
-                        <el-option label="全部" value="all" />
-                        <el-option
-                            v-for="item in notificationStore.purposeConfigs"
-                            :key="item.purpose"
-                            :label="item.label"
-                            :value="item.purpose" />
-                    </el-select>
                 </el-form-item>
                 <el-form-item label="状态">
                     <el-select v-model="searchForm.is_read" placeholder="全部" clearable style="width: 120px">
@@ -256,13 +231,6 @@ onMounted(() => {
                 @selection-change="handleSelectionChange"
                 @row-click="handleViewDetail">
                 <el-table-column type="selection" width="50" />
-                <el-table-column label="类型" width="100">
-                    <template #default="{ row }">
-                        <el-tag :color="getPurposeColor(row.purpose)" effect="dark" size="small">
-                            {{ getPurposeLabel(row.purpose) }}
-                        </el-tag>
-                    </template>
-                </el-table-column>
                 <el-table-column label="标题" min-width="200">
                     <template #default="{ row }">
                         <span class="notification-title" :class="{ unread: !row.is_read }">{{ row.title }}</span>

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
-import { useNotificationStore } from "@/plugin/store/modules/use-notification-store.ts";
-
 defineOptions({
     name: "NotificationList"
 });
@@ -24,7 +22,6 @@ const emit = defineEmits<{
     "size-change": [size: number];
 }>();
 
-const notificationStore = useNotificationStore();
 const localPageSize = ref(props.pageSize);
 const localCurrentPage = ref(props.currentPage);
 
@@ -78,16 +75,6 @@ function formatTime(time: string): string {
     if (days < 7) return `${days}天前`;
     return date.toLocaleDateString("zh-CN");
 }
-
-/** 获取用途标签 */
-function getPurposeLabel(purpose: NotificationPurpose): string {
-    return notificationStore.getPurposeLabel(purpose);
-}
-
-/** 获取用途颜色 */
-function getPurposeColor(purpose: NotificationPurpose): string {
-    return notificationStore.getPurposeColor(purpose);
-}
 </script>
 
 <template>
@@ -100,13 +87,6 @@ function getPurposeColor(purpose: NotificationPurpose): string {
             @selection-change="handleSelectionChange"
             @row-click="handleViewDetail">
             <el-table-column type="selection" width="50" />
-            <el-table-column label="类型" width="100">
-                <template #default="{ row }">
-                    <el-tag :color="getPurposeColor(row.purpose)" effect="dark" size="small">
-                        {{ getPurposeLabel(row.purpose) }}
-                    </el-tag>
-                </template>
-            </el-table-column>
             <el-table-column label="标题" min-width="200">
                 <template #default="{ row }">
                     <span class="notification-title" :class="{ unread: !row.is_read }">{{ row.title }}</span>
